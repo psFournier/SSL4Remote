@@ -7,13 +7,14 @@ from src.transforms import Merge_labels
 
 class Isprs(Dataset):
 
-    def __init__(self, data_path, idxs):
+    def __init__(self, data_path, idxs, transforms):
 
         super(Isprs, self).__init__()
         self.data_path = data_path
         self.idxs = idxs
+        self.transforms = transforms
 
-    def get_images(self, idx):
+    def get_image(self, idx):
 
         # Surface model
         dsm_filepath = os.path.join(self.data_path, 'dsm',
@@ -69,17 +70,17 @@ class Isprs_unlabeled(Isprs):
                  idxs,
                  transforms=None):
 
-        super(Isprs_unlabeled, self).__init__(data_path, idxs)
-        self.transforms = transforms
+        super(Isprs_unlabeled, self).__init__(data_path, idxs, transforms)
+
 
     def __getitem__(self, idx):
 
         idx = self.idxs[idx]
-        images = self.get_images(idx)
+        image = self.get_image(idx)
         if self.transforms is not None:
-            images = self.transforms(image=images)['image']
+            image = self.transforms(image=image)['image']
 
-        return images
+        return image
 
 class Isprs_labeled(Isprs):
 
@@ -88,22 +89,21 @@ class Isprs_labeled(Isprs):
                  idxs,
                  transforms=None):
 
-        super(Isprs_labeled, self).__init__(data_path, idxs)
-        self.transforms = transforms
+        super(Isprs_labeled, self).__init__(data_path, idxs, transforms)
         self.label_merger = Merge_labels([[0], [1]])
 
     def __getitem__(self, idx):
 
         idx = self.idxs[idx]
-        images = self.get_images(idx)
+        image = self.get_image(idx)
         ground_truth = self.get_truth(idx)
         ground_truth = self.isprs_colors_to_labels(ground_truth)
         ground_truth = self.label_merger(ground_truth)
 
         if self.transforms is not None:
-            transformed = self.transforms(image=images,
+            transformed = self.transforms(image=image,
                                           mask=ground_truth)
-            images = transformed['image']
+            image = transformed['image']
             ground_truth = transformed['mask']
 
         # if self.co_transforms is not None:
@@ -113,7 +113,7 @@ class Isprs_labeled(Isprs):
         # if self.label_transforms is not None:
         #     ground_truth = self.label_transforms(ground_truth)
 
-        return images, ground_truth
+        return image, ground_truth
 
 
 

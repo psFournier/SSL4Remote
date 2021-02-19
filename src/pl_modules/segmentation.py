@@ -25,7 +25,7 @@ class Semisup_segm(pl.LightningModule):
 
         return (pred.argmax(dim=1) == label).float().mean()
 
-    def training_step(self, batch):
+    def training_step(self, batch, batch_idx):
 
         sup_data, unsup_data = batch
         sup_train_inputs, sup_train_labels = sup_data
@@ -61,8 +61,8 @@ class Semisup_segm(pl.LightningModule):
 
         return {'loss': total_loss, 'log': log_dict}
 
-    def validation_step(self, batch):
-        print(batch)
+    def validation_step(self, batch, batch_idx):
+
         val_inputs, val_labels = batch
         outputs = self.network(val_inputs)
         sup_loss = F.cross_entropy(outputs, val_labels)
