@@ -35,8 +35,8 @@ def main():
 
     TB_logger = loggers.TensorBoardLogger(save_dir=log_dir,
                                           name='tensorboard')
-    CSV_logger = loggers.CSVLogger(save_dir=log_dir,
-                                   name='csv')
+    # CSV_logger = loggers.CSVLogger(save_dir=log_dir,
+    #                                name='csv')
 
     # Create network
     network = Unet(IN_CHANNELS, NUM_CLASSES)
@@ -58,9 +58,9 @@ def main():
         top_k=1,
         subset_accuracy=False
     )
-    average_precision = M.AveragePrecision(
-        num_classes=NUM_CLASSES,
-    )
+    # average_precision = M.AveragePrecision(
+    #     num_classes=NUM_CLASSES,
+    # )
     # global_precision = M.Precision(
     #     num_classes=NUM_CLASSES,
     #     mdmc_average='global',
@@ -69,11 +69,11 @@ def main():
     per_class_precision = M.Precision(
         num_classes=NUM_CLASSES,
         mdmc_average='global',
-        average='none'
+        average='weighted'
     )
     per_class_F1 = M.F1(
         num_classes=NUM_CLASSES,
-        average='none'
+        average='macro'
     )
     IoU = M.IoU(
         num_classes=NUM_CLASSES,
@@ -82,7 +82,7 @@ def main():
     
     metrics = M.MetricCollection([
         accuracy,
-        average_precision,
+        # average_precision,
         # global_precision,
         per_class_precision,
         per_class_F1,
@@ -91,11 +91,10 @@ def main():
     
     pl_module = Semisup_segm(network, metrics)
 
-    trainer = Trainer(logger=[TB_logger,
-                              CSV_logger],
+    trainer = Trainer(logger=TB_logger,
                       default_root_dir=OUTPUT_PATH,
                       max_epochs=NB_EPOCHS,
-                      log_every_n_steps=5,
+                      log_every_n_steps=1,
                       multiple_trainloader_mode='min_size')
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

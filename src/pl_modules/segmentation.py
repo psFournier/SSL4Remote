@@ -40,7 +40,11 @@ class Semisup_segm(pl.LightningModule):
         sup_data, unsup_data = batch['sup'], batch['unsup']
         sup_train_inputs, sup_train_labels = sup_data
         outputs = self.network(sup_train_inputs)
+
         sup_loss = F.cross_entropy(outputs, sup_train_labels)
+        self.train_metrics(outputs.softmax(dim=1), sup_train_labels)
+        self.log('sup_loss', sup_loss)
+        self.log_dict(self.train_metrics)
 
         rotation_1, rotation_2 = np.random.choice(
             [0, 1, 2, 3],
@@ -61,9 +65,7 @@ class Semisup_segm(pl.LightningModule):
 
         total_loss = sup_loss + unsup_loss
 
-        self.log('sup_loss', sup_loss)
         self.log('unsup_loss', unsup_loss)
-        self.log_dict(self.train_metrics)
 
         return {'loss': total_loss}
 
@@ -72,13 +74,13 @@ class Semisup_segm(pl.LightningModule):
         val_inputs, val_labels = batch
         outputs = self.network(val_inputs)
         sup_loss = F.cross_entropy(outputs, val_labels)
+        self.val_metrics(outputs.softmax(dim=1), val_labels)
         self.log('sup_loss', sup_loss)
         self.log_dict(self.val_metrics)
 
-        cm = self.val_cm(outputs, val_labels)
-        figure = plot_confusion_matrix(cm, class_names=['0', '1'])
-        tensorboard = self.logger.experiment
-        tensorboard.add_figure('Confusion matrix', figure)
+        cm = self.val_cm(outputs.softmax(dim=1), val_labels)
+        figure = plot_confusion_matrix(cm.numpy(), class_names=['0', '1'])
+        self.logger.experiment.add_figure('Confusion matrix', figure)
 
 class SegmentationModule(pl.LightningModule):
 
