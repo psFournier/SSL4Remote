@@ -8,6 +8,9 @@ class Unet(torch.nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
 
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+
         self.conv1 = self.contract_block(in_channels, 32, 7, 3)
         self.conv2 = self.contract_block(32, 64, 3, 1)
         self.conv3 = self.contract_block(64, 128, 3, 1)

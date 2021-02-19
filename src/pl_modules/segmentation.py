@@ -3,15 +3,25 @@ import pytorch_lightning as pl
 import torch.nn.functional as F
 import numpy as np
 from torch.optim import Adam
+from pytorch_lightning.metrics import ConfusionMatrix
+from src.utils.utils import plot_confusion_matrix
 
 class Semisup_segm(pl.LightningModule):
 
     def __init__(self,
-                 network):
+                 network,
+                 metrics):
 
         super(Semisup_segm, self).__init__()
+
         self.network = network
         self.save_hyperparameters()
+
+        self.train_metrics = metrics.clone()
+        self.val_metrics = metrics.clone()
+        self.val_cm = ConfusionMatrix(
+            num_classes=network.out_channels
+        )
 
     def forward(self, x):
 
@@ -21,9 +31,9 @@ class Semisup_segm(pl.LightningModule):
 
         return Adam(self.parameters(), lr=0.01)
 
-    def accuracy(self, pred, label):
-
-        return (pred.argmax(dim=1) == label).float().mean()
+    # def accuracy(self, pred, label):
+    #
+    #     return (pred.argmax(dim=1) == label).float().mean()
 
     def training_step(self, batch, batch_idx):
 
@@ -31,7 +41,6 @@ class Semisup_segm(pl.LightningModule):
         sup_train_inputs, sup_train_labels = sup_data
         outputs = self.network(sup_train_inputs)
         sup_loss = F.cross_entropy(outputs, sup_train_labels)
-        acc = self.accuracy(outputs, sup_train_labels)
 
         rotation_1, rotation_2 = np.random.choice(
             [0, 1, 2, 3],
@@ -52,25 +61,24 @@ class Semisup_segm(pl.LightningModule):
 
         total_loss = sup_loss + unsup_loss
 
+        self.log('sup_loss', sup_loss)
+        self.log('unsup_loss', unsup_loss)
+        self.log_dict(self.train_metrics)
 
-        log_dict = {
-            'sup_loss': sup_loss,
-            'unsup_loss': unsup_loss,
-            'acc': acc
-        }
-
-        return {'loss': total_loss, 'log': log_dict}
+        return {'loss': total_loss}
 
     def validation_step(self, batch, batch_idx):
 
         val_inputs, val_labels = batch
         outputs = self.network(val_inputs)
         sup_loss = F.cross_entropy(outputs, val_labels)
-        acc = self.accuracy(outputs, val_labels)
-        log_dict = {'sup_loss': sup_loss,
-                    'acc': acc}
+        self.log('sup_loss', sup_loss)
+        self.log_dict(self.val_metrics)
 
-        # return {'loss': sup_loss, 'log': log_dict}
+        cm = self.val_cm(outputs, val_labels)
+        figure = plot_confusion_matrix(cm, class_names=['0', '1'])
+        tensorboard = self.logger.experiment
+        tensorboard.add_figure('Confusion matrix', figure)
 
 class SegmentationModule(pl.LightningModule):
 

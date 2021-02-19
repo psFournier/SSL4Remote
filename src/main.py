@@ -15,13 +15,14 @@ from src.pl_datamodules import Isprs_semisup
 from src.networks import Unet
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+import pytorch_lightning.metrics as M
 
 def main():
 
     # Hyperparameters
     NB_EPOCHS = 10
     IN_CHANNELS = 4
-    OUT_CHANNELS = 2
+    NUM_CLASSES = 2
     BATCH_SIZE = 12
     DATA_PATH = '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN'
     CROP_SIZE = 128
@@ -38,7 +39,7 @@ def main():
                                    name='csv')
 
     # Create network
-    network = Unet(IN_CHANNELS, OUT_CHANNELS)
+    network = Unet(IN_CHANNELS, NUM_CLASSES)
 
     transform = A.Compose([
         A.RandomCrop(CROP_SIZE, CROP_SIZE),
@@ -51,8 +52,44 @@ def main():
                                   sup_train_transforms=transform,
                                   val_transforms=transform,
                                   unsup_train_transforms=transform)
+    
 
-    pl_module = Semisup_segm(network)
+    accuracy = M.Accuracy(
+        top_k=1,
+        subset_accuracy=False
+    )
+    average_precision = M.AveragePrecision(
+        num_classes=NUM_CLASSES,
+    )
+    # global_precision = M.Precision(
+    #     num_classes=NUM_CLASSES,
+    #     mdmc_average='global',
+    #     average='macro'
+    # )
+    per_class_precision = M.Precision(
+        num_classes=NUM_CLASSES,
+        mdmc_average='global',
+        average='none'
+    )
+    per_class_F1 = M.F1(
+        num_classes=NUM_CLASSES,
+        average='none'
+    )
+    IoU = M.IoU(
+        num_classes=NUM_CLASSES,
+        reduction='elementwise_mean'
+    )
+    
+    metrics = M.MetricCollection([
+        accuracy,
+        average_precision,
+        # global_precision,
+        per_class_precision,
+        per_class_F1,
+        IoU
+    ])
+    
+    pl_module = Semisup_segm(network, metrics)
 
     trainer = Trainer(logger=[TB_logger,
                               CSV_logger],
