@@ -58,7 +58,8 @@ def main():
                               CSV_logger],
                       default_root_dir=OUTPUT_PATH,
                       max_epochs=NB_EPOCHS,
-                      log_every_n_steps=5)
+                      log_every_n_steps=5,
+                      multiple_trainloader_mode='min_size')
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)
 

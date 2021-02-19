@@ -27,7 +27,7 @@ class Semisup_segm(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        sup_data, unsup_data = batch
+        sup_data, unsup_data = batch['sup'], batch['unsup']
         sup_train_inputs, sup_train_labels = sup_data
         outputs = self.network(sup_train_inputs)
         sup_loss = F.cross_entropy(outputs, sup_train_labels)

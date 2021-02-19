@@ -53,11 +53,10 @@ class Isprs_semisup(LightningDataModule):
 
     def train_dataloader(self):
 
-        num_samples = self.nb_pass_per_epoch*len(self.sup_train_set)
         sup_train_sampler = RandomSampler(
             data_source=self.sup_train_set,
             replacement=True,
-            num_samples=num_samples
+            num_samples=self.nb_pass_per_epoch*len(self.sup_train_set)
         )
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
@@ -68,16 +67,20 @@ class Isprs_semisup(LightningDataModule):
         unsup_train_sampler = RandomSampler(
             data_source=self.unsup_train_set,
             replacement=True,
-            num_samples=num_samples
+            num_samples=self.nb_pass_per_epoch*len(self.unsup_train_set)
         )
         unsup_train_dataloader = DataLoader(
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
             sampler=unsup_train_sampler
         )
-        train_dataloader = zip(sup_train_dataloader, unsup_train_dataloader)
 
-        return train_dataloader
+        train_dataloaders = {
+            'sup': sup_train_dataloader,
+            'unsup': unsup_train_dataloader
+        }
+
+        return train_dataloaders
 
     def val_dataloader(self):
 
