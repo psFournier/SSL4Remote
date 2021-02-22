@@ -31,10 +31,6 @@ class Semisup_segm(pl.LightningModule):
 
         return Adam(self.parameters(), lr=0.01)
 
-    # def accuracy(self, pred, label):
-    #
-    #     return (pred.argmax(dim=1) == label).float().mean()
-
     def training_step(self, batch, batch_idx):
 
         sup_data, unsup_data = batch['sup'], batch['unsup']
