@@ -16,6 +16,7 @@ from src.networks import Unet
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import pytorch_lightning.metrics as M
+import segmentation_models_pytorch as smp
 
 def main():
 
@@ -39,7 +40,14 @@ def main():
     #                                name='csv')
 
     # Create network
-    network = Unet(IN_CHANNELS, NUM_CLASSES)
+    # network = Unet(IN_CHANNELS, NUM_CLASSES)
+    network = smp.Unet(
+        encoder_name='efficientnet-b0',
+        encoder_weights='imagenet',
+        in_channels=IN_CHANNELS,
+        classes=NUM_CLASSES,
+        decoder_attention_type='scse'
+    )
 
     transform = A.Compose([
         A.RandomCrop(CROP_SIZE, CROP_SIZE),
@@ -80,7 +88,7 @@ def main():
         reduction='elementwise_mean'
     )
     
-    metrics = M.MetricCollection([
+    scalar_metrics = M.MetricCollection([
         accuracy,
         # average_precision,
         # global_precision,
@@ -89,7 +97,9 @@ def main():
         IoU
     ])
     
-    pl_module = Semisup_segm(network, metrics)
+    pl_module = Semisup_segm(network,
+                             scalar_metrics=scalar_metrics,
+                             num_classes=NUM_CLASSES)
 
     trainer = Trainer(logger=TB_logger,
                       default_root_dir=OUTPUT_PATH,

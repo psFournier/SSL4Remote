@@ -10,17 +10,18 @@ class Semisup_segm(pl.LightningModule):
 
     def __init__(self,
                  network,
-                 metrics):
+                 scalar_metrics,
+                 num_classes):
 
         super(Semisup_segm, self).__init__()
 
         self.network = network
         self.save_hyperparameters()
 
-        self.train_metrics = metrics.clone()
-        self.val_metrics = metrics.clone()
+        self.train_metrics = scalar_metrics.clone()
+        self.val_metrics = scalar_metrics.clone()
         self.val_cm = ConfusionMatrix(
-            num_classes=network.out_channels
+            num_classes=num_classes
         )
 
     def forward(self, x):
