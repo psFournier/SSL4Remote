@@ -40,14 +40,14 @@ def main():
     #                                name='csv')
 
     # Create network
-    # network = Unet(IN_CHANNELS, NUM_CLASSES)
-    network = smp.Unet(
-        encoder_name='efficientnet-b0',
-        encoder_weights='imagenet',
-        in_channels=IN_CHANNELS,
-        classes=NUM_CLASSES,
-        decoder_attention_type='scse'
-    )
+    network = Unet(IN_CHANNELS, NUM_CLASSES)
+    # network = smp.Unet(
+    #     encoder_name='efficientnet-b0',
+    #     encoder_weights='imagenet',
+    #     in_channels=IN_CHANNELS,
+    #     classes=NUM_CLASSES,
+    #     decoder_attention_type='scse'
+    # )
 
     transform = A.Compose([
         A.RandomCrop(CROP_SIZE, CROP_SIZE),
@@ -67,7 +67,7 @@ def main():
         subset_accuracy=False
     )
     # average_precision = M.AveragePrecision(
-    #     num_classes=NUM_CLASSES,
+    #     num_classes=NUM_CLASSES
     # )
     # global_precision = M.Precision(
     #     num_classes=NUM_CLASSES,
