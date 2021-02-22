@@ -3,8 +3,6 @@ import pytorch_lightning as pl
 import torch.nn.functional as F
 import numpy as np
 from torch.optim import Adam
-from pytorch_lightning.metrics import ConfusionMatrix, AveragePrecision
-from src.utils.utils import plot_confusion_matrix
 
 class Semisup_segm(pl.LightningModule):
 
@@ -20,13 +18,6 @@ class Semisup_segm(pl.LightningModule):
 
         self.train_metrics = scalar_metrics.clone()
         self.val_metrics = scalar_metrics.clone()
-        self.val_cm = ConfusionMatrix(
-            num_classes=num_classes,
-            normalize='true'
-        )
-        self.val_avg_precision = AveragePrecision(
-            num_classes=num_classes
-        )
 
     def forward(self, x):
 
@@ -79,13 +70,6 @@ class Semisup_segm(pl.LightningModule):
         self.val_metrics(softmax, val_labels)
         self.log('sup_loss', sup_loss)
         self.log_dict(self.val_metrics)
-
-        cm = self.val_cm(softmax, val_labels)
-        figure = plot_confusion_matrix(cm.numpy(), class_names=['0', '1'])
-        self.logger.experiment.add_figure('Confusion matrix', figure)
-
-        ap = self.val_avg_precision(softmax, val_labels)
-
 
 class SegmentationModule(pl.LightningModule):
 

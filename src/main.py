@@ -13,10 +13,12 @@ from pytorch_lightning import Trainer, loggers
 from src.pl_modules import Semisup_segm
 from src.pl_datamodules import Isprs_semisup
 from src.networks import Unet
+from src.metrics import MAPMetric
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import pytorch_lightning.metrics as M
 import segmentation_models_pytorch as smp
+from src.callbacks import Conf_mat
 
 def main():
 
@@ -66,6 +68,7 @@ def main():
         top_k=1,
         subset_accuracy=False
     )
+    average_precision = MAPMetric()
     # average_precision = M.AveragePrecision(
     #     num_classes=NUM_CLASSES
     # )
@@ -101,11 +104,16 @@ def main():
                              scalar_metrics=scalar_metrics,
                              num_classes=NUM_CLASSES)
 
-    trainer = Trainer(logger=TB_logger,
-                      default_root_dir=OUTPUT_PATH,
-                      max_epochs=NB_EPOCHS,
-                      log_every_n_steps=1,
-                      multiple_trainloader_mode='min_size')
+    trainer = Trainer(
+        logger=TB_logger,
+        default_root_dir=OUTPUT_PATH,
+        max_epochs=NB_EPOCHS,
+        log_every_n_steps=1,
+        multiple_trainloader_mode='min_size',
+        callbacks=[
+            Conf_mat(NUM_CLASSES)
+        ]
+    )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)
 
