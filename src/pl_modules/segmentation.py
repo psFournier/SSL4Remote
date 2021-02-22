@@ -3,13 +3,13 @@ import pytorch_lightning as pl
 import torch.nn.functional as F
 import numpy as np
 from torch.optim import Adam
+from argparse import ArgumentParser
 
 class Semisup_segm(pl.LightningModule):
 
     def __init__(self,
                  network,
-                 scalar_metrics,
-                 num_classes):
+                 scalar_metrics):
 
         super(Semisup_segm, self).__init__()
 
@@ -18,6 +18,12 @@ class Semisup_segm(pl.LightningModule):
 
         self.train_metrics = scalar_metrics.clone()
         self.val_metrics = scalar_metrics.clone()
+
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument('--in_channels', type=int, default=12)
+        return parser
 
     def forward(self, x):
 

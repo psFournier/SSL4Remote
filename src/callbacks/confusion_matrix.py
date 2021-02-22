@@ -29,4 +29,6 @@ class Conf_mat(pl.Callback):
 
         cm = self.conf_mat.compute()
         figure = plot_confusion_matrix(cm.numpy(), class_names=['0', '1'])
-        trainer.logger.experiment.add_figure('Confusion matrix', figure)
+        trainer.logger.experiment.add_figure('Confusion matrix',
+                                             figure,
+                                             global_step=trainer.global_step)

@@ -18,57 +18,89 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import pytorch_lightning.metrics as M
 import segmentation_models_pytorch as smp
-from src.callbacks import Conf_mat
+from src.callbacks import Conf_mat, Map
+from argparse import ArgumentParser
 
 def main():
 
-    # Hyperparameters
-    NB_EPOCHS = 10
-    IN_CHANNELS = 4
-    NUM_CLASSES = 2
-    BATCH_SIZE = 12
+    parser = ArgumentParser()
+
     DATA_PATH = '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN'
-    CROP_SIZE = 128
-    NB_PASS_PER_EPOCH = 2
+    parser.add_argument('--data_path',
+                        type=str,
+                        default=DATA_PATH)
+
+    parser.add_argument('--nb_epochs',
+                        type=int,
+                        default=10)
+
+    parser.add_argument('--batch_size',
+                        type=int,
+                        default=12)
+
+    parser.add_argument('--nb_pass_per_epoch',
+                        type=int,
+                        default=2)
+
+    parser.add_argument('--crop_size',
+                        type=int,
+                        default=128)
+
     OUTPUT_PATH = '/home/pierre/PycharmProjects/RemoteSensing/outputs'
+    parser.add_argument('--output_path',
+                        type=str,
+                        default=OUTPUT_PATH)
+
+    parser.add_argument('--in_channels',
+                        type=int,
+                        default=4)
+
+    parser.add_argument('--num_classes',
+                        type=int,
+                        default=2)
+
+    parser.add_argument('--log_every_n_step',
+                        type=int,
+                        default=10)
+
+    args = parser.parse_args()
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     log_dir = os.path.expanduser(
-        os.path.join(OUTPUT_PATH, '%s_%s' % (current_date, 'unet_isprs/')))
-
+        os.path.join(args.output_path, '%s_%s' % (current_date, 'unet_isprs/')))
     TB_logger = loggers.TensorBoardLogger(save_dir=log_dir,
                                           name='tensorboard')
-    # CSV_logger = loggers.CSVLogger(save_dir=log_dir,
-    #                                name='csv')
 
     # Create network
-    network = Unet(IN_CHANNELS, NUM_CLASSES)
+    network = Unet(args.in_channels, args.num_classes)
     # network = smp.Unet(
     #     encoder_name='efficientnet-b0',
     #     encoder_weights='imagenet',
-    #     in_channels=IN_CHANNELS,
-    #     classes=NUM_CLASSES,
+    #     in_channels=args.in_channels,
+    #     classes=args.num_classes,
     #     decoder_attention_type='scse'
     # )
 
     transform = A.Compose([
-        A.RandomCrop(CROP_SIZE, CROP_SIZE),
+        A.RandomCrop(args.crop_size, args.crop_size),
         ToTensorV2()
     ])
 
-    pl_datamodule = Isprs_semisup(DATA_PATH,
-                                  NB_PASS_PER_EPOCH,
-                                  BATCH_SIZE,
-                                  sup_train_transforms=transform,
-                                  val_transforms=transform,
-                                  unsup_train_transforms=transform)
+    pl_datamodule = Isprs_semisup(
+        args.data_path,
+        args.nb_pass_per_epoch,
+        args.batch_size,
+        sup_train_transforms=transform,
+        val_transforms=transform,
+        unsup_train_transforms=transform
+    )
     
 
     accuracy = M.Accuracy(
         top_k=1,
         subset_accuracy=False
     )
-    average_precision = MAPMetric()
+    # average_precision = MAPMetric()
     # average_precision = M.AveragePrecision(
     #     num_classes=NUM_CLASSES
     # )
@@ -78,16 +110,16 @@ def main():
     #     average='macro'
     # )
     per_class_precision = M.Precision(
-        num_classes=NUM_CLASSES,
+        num_classes=args.num_classes,
         mdmc_average='global',
         average='weighted'
     )
     per_class_F1 = M.F1(
-        num_classes=NUM_CLASSES,
+        num_classes=args.num_classes,
         average='macro'
     )
     IoU = M.IoU(
-        num_classes=NUM_CLASSES,
+        num_classes=args.num_classes,
         reduction='elementwise_mean'
     )
     
@@ -100,18 +132,21 @@ def main():
         IoU
     ])
     
-    pl_module = Semisup_segm(network,
-                             scalar_metrics=scalar_metrics,
-                             num_classes=NUM_CLASSES)
+    pl_module = Semisup_segm(
+        network,
+        scalar_metrics=scalar_metrics
+    )
 
-    trainer = Trainer(
+    cm = Conf_mat(
+        num_classes=args.num_classes
+    )
+
+    trainer = Trainer.from_argparse_args(
+        args,
         logger=TB_logger,
-        default_root_dir=OUTPUT_PATH,
-        max_epochs=NB_EPOCHS,
-        log_every_n_steps=1,
         multiple_trainloader_mode='min_size',
         callbacks=[
-            Conf_mat(NUM_CLASSES)
+            cm
         ]
     )
 
