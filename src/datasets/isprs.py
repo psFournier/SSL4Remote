@@ -10,7 +10,7 @@ class Isprs(Dataset):
     def __init__(self, data_path, idxs, transforms):
 
         super(Isprs, self).__init__()
-        self.data_path = data_path
+        self.data_path = os.path.join(data_path,'ISPRS_VAIHINGEN')
         self.idxs = idxs
         self.transforms = transforms
 

@@ -20,15 +20,15 @@ import pytorch_lightning.metrics as M
 import segmentation_models_pytorch as smp
 from src.callbacks import Conf_mat, Map
 from argparse import ArgumentParser
+import shutil
 
 def main():
 
     parser = ArgumentParser()
 
-    DATA_PATH = '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN'
-    parser.add_argument('--data_path',
+    parser.add_argument("--data_dir",
                         type=str,
-                        default=DATA_PATH)
+                        default=os.environ['TMPDIR'])
 
     parser.add_argument('--nb_epochs',
                         type=int,
@@ -46,10 +46,9 @@ def main():
                         type=int,
                         default=128)
 
-    OUTPUT_PATH = '/home/pierre/PycharmProjects/RemoteSensing/outputs'
-    parser.add_argument('--output_path',
+    parser.add_argument('--output_dir',
                         type=str,
-                        default=OUTPUT_PATH)
+                        default='~/scratch')
 
     parser.add_argument('--in_channels',
                         type=int,
@@ -67,9 +66,16 @@ def main():
 
     args = parser.parse_args()
 
+    if not os.path.exists(os.path.join(args.data_dir,'ISPRS_VAIHINGEN')):
+        shutil.copytree(os.path.expanduser('~/work/DATA/REF/ISPRS_VAIHINGEN'),
+                        os.path.join(args.data_dir,'ISPRS_VAIHINGEN'))
+
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     log_dir = os.path.expanduser(
-        os.path.join(args.output_path, '%s_%s' % (current_date, 'unet_isprs/')))
+        os.path.join(
+            args.output_dir, '%s_%s' % (current_date, 'unet_isprs/')
+        )
+    )
     TB_logger = loggers.TensorBoardLogger(save_dir=log_dir,
                                           name='tensorboard')
 
@@ -89,7 +95,7 @@ def main():
     ])
 
     pl_datamodule = Isprs_semisup(
-        args.data_path,
+        args.data_dir,
         args.nb_pass_per_epoch,
         args.batch_size,
         sup_train_transforms=transform,
