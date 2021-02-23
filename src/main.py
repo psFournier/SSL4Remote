@@ -63,6 +63,8 @@ def main():
                         type=int,
                         default=10)
 
+    parser = Semisup_segm.add_model_specific_args(parser)
+
     args = parser.parse_args()
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -94,7 +96,6 @@ def main():
         val_transforms=transform,
         unsup_train_transforms=transform
     )
-    
 
     accuracy = M.Accuracy(
         top_k=1,
@@ -122,7 +123,7 @@ def main():
         num_classes=args.num_classes,
         reduction='elementwise_mean'
     )
-    
+
     scalar_metrics = M.MetricCollection([
         accuracy,
         # average_precision,
@@ -131,11 +132,16 @@ def main():
         per_class_F1,
         IoU
     ])
-    
+
     pl_module = Semisup_segm(
-        network,
-        scalar_metrics=scalar_metrics
+        network = network,
+        scalar_metrics=scalar_metrics,
+        unsup_loss_prop=args.unsup_loss_prop
     )
+    # pl_module = Semisup_segm(
+    #     network,
+    #     scalar_metrics=scalar_metrics,
+    # )
 
     cm = Conf_mat(
         num_classes=args.num_classes

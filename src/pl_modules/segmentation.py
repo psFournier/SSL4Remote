@@ -9,11 +9,13 @@ class Semisup_segm(pl.LightningModule):
 
     def __init__(self,
                  network,
+                 unsup_loss_prop,
                  scalar_metrics):
 
         super(Semisup_segm, self).__init__()
 
         self.network = network
+        self.unsup_loss_prop = unsup_loss_prop
         self.save_hyperparameters()
 
         self.train_metrics = scalar_metrics.clone()
@@ -21,8 +23,12 @@ class Semisup_segm(pl.LightningModule):
 
     @staticmethod
     def add_model_specific_args(parent_parser):
+
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument('--in_channels', type=int, default=12)
+        parser.add_argument('--unsup_loss_prop',
+                            type=float,
+                            default=0.5)
+
         return parser
 
     def forward(self, x):
@@ -76,43 +82,3 @@ class Semisup_segm(pl.LightningModule):
         self.val_metrics(softmax, val_labels)
         self.log('sup_loss', sup_loss)
         self.log_dict(self.val_metrics)
-
-class SegmentationModule(pl.LightningModule):
-
-    def __init__(self, backbone):
-
-        super(SegmentationModule, self).__init__()
-        self.save_hyperparameters()
-        self.backbone = backbone
-
-    def forward(self, x):
-
-        return self.backbone(x)
-
-    def configure_optimizers(self):
-
-        opt = Adam(self.parameters(), lr=0.01)
-        return opt
-
-    def accuracy(self, pred, label):
-
-        return (pred.argmax(dim=1) == label).float().mean()
-
-    def training_step(self, batch, batch_idx):
-
-        x, y = batch
-        output = self.forward(x)
-        loss = F.cross_entropy(output,y)
-        acc = self.accuracy(output, y)
-        self.log('train_loss', loss)
-        self.log('train_acc', acc)
-        return loss
-
-    def validation_step(self, batch, batch_idx):
-
-        x, y = batch
-        output = self.forward(x)
-        loss = F.cross_entropy(output,y)
-        acc = self.accuracy(output, y)
-        self.log('val_loss', loss)
-        self.log('val_acc', acc)

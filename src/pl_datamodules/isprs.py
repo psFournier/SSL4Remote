@@ -94,7 +94,8 @@ class Isprs_semisup(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             batch_size=self.batch_size,
-            sampler=val_sampler
+            sampler=val_sampler,
+            shuffle=False
         )
 
         return val_dataloader
