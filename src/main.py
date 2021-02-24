@@ -13,12 +13,12 @@ from pytorch_lightning import Trainer, loggers
 from src.pl_modules import Semisup_segm
 from src.pl_datamodules import Isprs_semisup
 from src.networks import Unet
-from src.metrics import MAPMetric
+# from src.metrics import MAPMetric
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import pytorch_lightning.metrics as M
 import segmentation_models_pytorch as smp
-from src.callbacks import Conf_mat, Map
+from src.callbacks import Conf_mat #, Map
 from argparse import ArgumentParser
 import shutil
 
@@ -65,10 +65,6 @@ def main():
     parser = Semisup_segm.add_model_specific_args(parser)
 
     args = parser.parse_args()
-
-    if not os.path.exists(os.path.join(args.data_dir,'ISPRS_VAIHINGEN')):
-        shutil.copytree(os.path.expanduser('~/work/DATA/REF/ISPRS_VAIHINGEN'),
-                        os.path.join(args.data_dir,'ISPRS_VAIHINGEN'))
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     log_dir = os.path.expanduser(
