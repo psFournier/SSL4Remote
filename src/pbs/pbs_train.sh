@@ -6,7 +6,7 @@
 
 
 # AI4Geo Jupyter container
-export SINGULARITY_IMAGE_VERSION="stable" #current"
+export SINGULARITY_IMAGE_VERSION="latest" #current"
 source /softs/projets/ai4geo/code/nbremote-hpc/resources/setup/nbremote-env.sh
 source /softs/projets/ai4geo/code/nbremote-hpc/resources/setup/nbremote-aliases.sh
 source /softs/projets/ai4geo/code/nbremote-hpc/resources/setup/nbremote.sh
