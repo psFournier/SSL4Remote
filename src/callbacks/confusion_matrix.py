@@ -1,7 +1,7 @@
 import pytorch_lightning as pl
 from pytorch_lightning.metrics import ConfusionMatrix
 import torch
-from src.utils.utils import plot_confusion_matrix
+from utils.utils import plot_confusion_matrix
 
 class Conf_mat(pl.Callback):
     

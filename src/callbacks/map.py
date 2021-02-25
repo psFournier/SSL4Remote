@@ -1,5 +1,5 @@
 import pytorch_lightning as pl
-from src.metrics import MAPMetric
+from metrics import MAPMetric
 import torch
 
 class Map(pl.Callback):

@@ -9,16 +9,17 @@ The file follows the sampleISPRS from ai4geo_dl
 
 import os
 import datetime
+
 from pytorch_lightning import Trainer, loggers
-from src.pl_modules import Semisup_segm
-from src.pl_datamodules import Isprs_semisup
-from src.networks import Unet
-# from src.metrics import MAPMetric
+from pl_modules import Semisup_segm
+from pl_datamodules import Isprs_semisup
+from networks import Unet
+# from metrics import MAPMetric
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import pytorch_lightning.metrics as M
 import segmentation_models_pytorch as smp
-from src.callbacks import Conf_mat #, Map
+from callbacks import Conf_mat #, Map
 from argparse import ArgumentParser
 import shutil
 
@@ -28,7 +29,7 @@ def main():
 
     parser.add_argument("--data_dir",
                         type=str,
-                        default=os.environ['TMPDIR'])
+                        default='/home/pierre/Documents/ONERA/ai4geo/')
 
     parser.add_argument('--nb_epochs',
                         type=int,

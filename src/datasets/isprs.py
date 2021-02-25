@@ -3,7 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 from albumentations import RandomCrop
-from src.transforms import Merge_labels
+from transforms import Merge_labels
 
 class Isprs(Dataset):
 

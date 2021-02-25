@@ -1,1 +1,1 @@
-from src.samplers.multiple_pass import Multiple_pass
+from samplers.multiple_pass import Multiple_pass
