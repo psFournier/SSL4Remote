@@ -156,7 +156,8 @@ def main():
         multiple_trainloader_mode='min_size',
         callbacks=[
             cm
-        ]
+        ],
+        gpus=1
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

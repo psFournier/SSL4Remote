@@ -17,8 +17,7 @@ class Conf_mat(pl.Callback):
                                 batch_idx, dataloader_idx):
 
         image, target = batch
-        predictions = pl_module(image.to(pl_module.device).float())
-        target = target.to(pl_module.device)
+        predictions = pl_module(image)
 
         # Get maximum of energy
         predictions = torch.argmax(predictions, dim=1)
