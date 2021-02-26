@@ -99,7 +99,6 @@ class Isprs_semisup(LightningDataModule):
             dataset=self.val_set,
             batch_size=self.batch_size,
             sampler=val_sampler,
-            shuffle=False,
             num_workers=8,
             pin_memory=True
         )
