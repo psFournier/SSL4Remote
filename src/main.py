@@ -64,6 +64,7 @@ def main():
                         default=10)
 
     parser = Semisup_segm.add_model_specific_args(parser)
+    parser = Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
 
@@ -156,8 +157,7 @@ def main():
         multiple_trainloader_mode='min_size',
         callbacks=[
             cm
-        ],
-        gpus=1
+        ]
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

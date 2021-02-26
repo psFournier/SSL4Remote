@@ -62,7 +62,9 @@ class Isprs_semisup(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            sampler=sup_train_sampler
+            sampler=sup_train_sampler,
+            num_workers=8,
+            pin_memory=True
         )
 
         unsup_train_sampler = RandomSampler(
@@ -73,7 +75,9 @@ class Isprs_semisup(LightningDataModule):
         unsup_train_dataloader = DataLoader(
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
-            sampler=unsup_train_sampler
+            sampler=unsup_train_sampler,
+            num_workers=8,
+            pin_memory=True
         )
 
         train_dataloaders = {
@@ -95,7 +99,9 @@ class Isprs_semisup(LightningDataModule):
             dataset=self.val_set,
             batch_size=self.batch_size,
             sampler=val_sampler,
-            shuffle=False
+            shuffle=False,
+            num_workers=8,
+            pin_memory=True
         )
 
         return val_dataloader
