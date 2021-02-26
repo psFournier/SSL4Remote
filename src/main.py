@@ -78,14 +78,14 @@ def main():
                                           name='tensorboard')
 
     # Create network
-    # network = Unet(args.in_channels, args.num_classes)
-    network = smp.Unet(
-        encoder_name='efficientnet-b0',
-        encoder_weights='imagenet',
-        in_channels=args.in_channels,
-        classes=args.num_classes
-        # decoder_attention_type='scse'
-    )
+    network = Unet(args.in_channels, args.num_classes)
+    # network = smp.Unet(
+    #     encoder_name='efficientnet-b0',
+    #     encoder_weights='imagenet',
+    #     in_channels=args.in_channels,
+    #     classes=args.num_classes,
+    #     decoder_attention_type='scse'
+    # )
 
     transform = A.Compose([
         A.RandomCrop(args.crop_size, args.crop_size),
