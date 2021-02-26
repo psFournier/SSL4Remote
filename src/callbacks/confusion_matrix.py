@@ -17,12 +17,14 @@ class Conf_mat(pl.Callback):
                                 batch_idx, dataloader_idx):
 
         image, target = batch
+        image = image.to(pl_module.device)
+        target = target.to(pl_module.device)
         predictions = pl_module(image)
 
         # Get maximum of energy
         predictions = torch.argmax(predictions, dim=1)
         
-        self.conf_mat(predictions, target)
+        self.conf_mat(predictions.cpu(), target.cpu())
 
     def on_validation_epoch_end(self, trainer, pl_module):
 
