@@ -4,15 +4,28 @@ import numpy as np
 from PIL import Image
 from albumentations import RandomCrop
 from transforms import Merge_labels
+import rasterio
+from rasterio.windows import Window
 
 class Isprs(Dataset):
 
-    def __init__(self, data_path, idxs, transforms):
+    def __init__(self, data_path, idxs, crop, transforms):
 
         super(Isprs, self).__init__()
         self.data_path = os.path.join(data_path,'ISPRS_VAIHINGEN')
         self.idxs = idxs
+        self.crop = crop
         self.transforms = transforms
+
+    def get_crop_window(self, dataset):
+
+        cols = dataset.width
+        rows = dataset.height
+        cx = np.random.randint(0, cols - self.crop - 1)
+        cy = np.random.randint(0, rows - self.crop - 1)
+        w = Window(cx, cy, self.crop, self.crop)
+
+        return w
 
     def get_image(self, idx):
 
@@ -23,9 +36,21 @@ class Isprs(Dataset):
         top_filepath = os.path.join(self.data_path, 'top',
                                     'top_mosaic_09cm_area{}.tif'.format(idx))
 
-        top = np.array(Image.open(top_filepath), dtype=np.float32) / 255
-        dsm = np.array(Image.open(dsm_filepath), dtype=np.float32) / 255
-        input = np.concatenate((top, np.expand_dims(dsm, axis=2)), axis=2)
+        with rasterio.open(dsm_filepath) as dsm_dataset:
+
+            w = self.get_crop_window(dsm_dataset)
+            dsm = dsm_dataset.read(
+                window=w, out_dtype=np.float32
+            ).transpose(1,2,0) / 255
+
+        with rasterio.open(top_filepath) as top_dataset:
+
+            w = self.get_crop_window(top_dataset)
+            top = top_dataset.read(
+                window=w, out_dtype=np.float32
+            ).transpose(1,2,0) / 255
+
+        input = np.concatenate((top, dsm), axis=2)
 
         return input
 
@@ -34,7 +59,13 @@ class Isprs(Dataset):
         # Ground truth
         gt_filepath = os.path.join(self.data_path, 'gts_for_participants',
                                    'top_mosaic_09cm_area{}.tif'.format(idx))
-        gt = np.array(Image.open(gt_filepath))
+
+        with rasterio.open(gt_filepath) as gt_dataset:
+
+            w = self.get_crop_window(gt_dataset)
+            gt = gt_dataset.read(
+                window=w, out_dtype=np.float32
+            ).transpose(1,2,0) / 255
 
         return gt
 
@@ -68,9 +99,11 @@ class Isprs_unlabeled(Isprs):
     def __init__(self,
                  data_path,
                  idxs,
+                 crop,
                  transforms=None):
 
-        super(Isprs_unlabeled, self).__init__(data_path, idxs, transforms)
+        super(Isprs_unlabeled, self).__init__(data_path, idxs, crop,
+                                              transforms)
 
 
     def __getitem__(self, idx):
@@ -87,9 +120,10 @@ class Isprs_labeled(Isprs):
     def __init__(self,
                  data_path,
                  idxs,
+                 crop,
                  transforms=None):
 
-        super(Isprs_labeled, self).__init__(data_path, idxs, transforms)
+        super(Isprs_labeled, self).__init__(data_path, idxs, crop, transforms)
         self.label_merger = Merge_labels([[0], [1]])
 
     def __getitem__(self, idx):

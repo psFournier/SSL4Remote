@@ -22,6 +22,8 @@ import segmentation_models_pytorch as smp
 from callbacks import Conf_mat #, Map
 from argparse import ArgumentParser
 import shutil
+from pytorch_lightning.profiler import PyTorchProfiler, SimpleProfiler
+import torch.autograd.profiler as profiler
 
 def main():
 
@@ -37,7 +39,7 @@ def main():
 
     parser.add_argument('--batch_size',
                         type=int,
-                        default=12)
+                        default=16)
 
     parser.add_argument('--nb_pass_per_epoch',
                         type=int,
@@ -61,7 +63,7 @@ def main():
 
     parser.add_argument('--log_every_n_step',
                         type=int,
-                        default=10)
+                        default=1)
 
     parser = Semisup_segm.add_model_specific_args(parser)
     parser = Trainer.add_argparse_args(parser)
@@ -88,7 +90,6 @@ def main():
     # )
 
     transform = A.Compose([
-        A.RandomCrop(args.crop_size, args.crop_size),
         ToTensorV2()
     ])
 
@@ -151,16 +152,33 @@ def main():
         num_classes=args.num_classes
     )
 
+    # profiler = PyTorchProfiler(
+    #     # output_filename=os.path.join(log_dir, 'profile'),
+    #     profile_memory=False,
+    #     # use_cpu=True,
+    #     # use_cuda=False
+    # )
     trainer = Trainer.from_argparse_args(
         args,
         logger=TB_logger,
-        multiple_trainloader_mode='min_size',
+        multiple_trainloader_mode='max_size_cycle',
         callbacks=[
-            cm
-        ]
+            # cm
+        ],
+        # profiler=profiler
     )
+    # with profiler.profile(with_stack=True, profile_memory=True) as prof:
+    #     trainer.fit(
+    #         model=pl_module,
+    #         datamodule=pl_datamodule
+    #     )
+    # print(prof.key_averages(group_by_stack_n=5).table(
+    #     sort_by='self_cpu_time_total', row_limit=5))
 
-    trainer.fit(model=pl_module, datamodule=pl_datamodule)
+    trainer.fit(
+        model=pl_module,
+        datamodule=pl_datamodule
+    )
 
 if __name__ == "__main__":
     # execute only if run as a script

@@ -41,15 +41,18 @@ class Isprs_semisup(LightningDataModule):
 
         self.sup_train_set = Isprs_labeled(self.data_path,
                                            train_idxs,
+                                           128,
                                            self.sup_train_transforms)
 
         self.val_set = Isprs_labeled(self.data_path,
-                                      val_idxs,
-                                      self.val_transforms)
+                                     val_idxs,
+                                     128,
+                                     self.val_transforms)
 
         unsup_train_idxs = train_idxs + self.unlabeled_idxs
         self.unsup_train_set = Isprs_unlabeled(self.data_path,
                                                unsup_train_idxs,
+                                               128,
                                                self.unsup_train_transforms)
 
     def train_dataloader(self):
@@ -63,7 +66,7 @@ class Isprs_semisup(LightningDataModule):
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
             sampler=sup_train_sampler,
-            num_workers=8,
+            num_workers=2,
             pin_memory=True
         )
 
@@ -76,7 +79,7 @@ class Isprs_semisup(LightningDataModule):
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
             sampler=unsup_train_sampler,
-            num_workers=8,
+            num_workers=2,
             pin_memory=True
         )
 
@@ -99,7 +102,7 @@ class Isprs_semisup(LightningDataModule):
             dataset=self.val_set,
             batch_size=self.batch_size,
             sampler=val_sampler,
-            num_workers=8,
+            num_workers=2,
             pin_memory=True
         )
 
