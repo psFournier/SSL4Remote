@@ -1,57 +1,111 @@
-# -*- coding: utf-8 -*-
 import torch
-import math
+import numpy as np
+from torch import nn
+import torch.autograd.profiler as profiler
+from networks import Unet
+import rasterio
+from rasterio.windows import Window
+import os
+from albumentations.pytorch import ToTensorV2
+from torch.utils.data import DataLoader, RandomSampler
+from datasets import Isprs_labeled
+from torch.optim import Adam
+import torch.nn.functional as F
 
-dtype = torch.float
-device = torch.device("cpu")
-# device = torch.device("cuda:0")  # Uncomment this to run on GPU
 
-# Create Tensors to hold input and outputs.
-# By default, requires_grad=False, which indicates that we do not need to
-# compute gradients with respect to these Tensors during the backward pass.
-x = torch.linspace(-math.pi, math.pi, 2000, device=device, dtype=dtype)
-y = torch.sin(x)
+def get_crop_window(dataset, crop):
+    cols = dataset.width
+    rows = dataset.height
+    cx = np.random.randint(0, cols - crop - 1)
+    cy = np.random.randint(0, rows - crop - 1)
+    w = Window(cx, cy, crop, crop)
 
-# Create random Tensors for weights. For a third order polynomial, we need
-# 4 weights: y = a + b x + c x^2 + d x^3
-# Setting requires_grad=True indicates that we want to compute gradients with
-# respect to these Tensors during the backward pass.
-a = torch.randn((), device=device, dtype=dtype, requires_grad=True)
-b = torch.randn((), device=device, dtype=dtype, requires_grad=True)
-c = torch.randn((), device=device, dtype=dtype, requires_grad=True)
-d = torch.randn((), device=device, dtype=dtype, requires_grad=True)
+    return w
 
-learning_rate = 1e-6
-for t in range(2000):
-    # Forward pass: compute predicted y using operations on Tensors.
-    y_pred = a + b * x + c * x ** 2 + d * x ** 3
 
-    # Compute and print loss using operations on Tensors.
-    # Now loss is a Tensor of shape (1,)
-    # loss.item() gets the scalar value held in the loss.
-    loss = (y_pred - y).pow(2).sum()
-    if t % 100 == 99:
-        print(t, loss.item())
+data_path = '/home/pierre/Documents/ONERA/ai4geo'
+# Surface model
+# dsm_filepath = os.path.join(data_path, 'dsm',
+#                             'dsm_09cm_matching_area{}.tif'.format(3))
+# # True orthophoto
+# top_filepath = os.path.join(data_path, 'top',
+#                             'top_mosaic_09cm_area{}.tif'.format(3))
+#
+# with rasterio.open(dsm_filepath) as dsm_dataset:
+#     w = get_crop_window(dsm_dataset, 128)
+#     dsm = dsm_dataset.read(
+#         window=w, out_dtype=np.float32
+#     ).transpose(1, 2, 0) / 255
+#
+# with rasterio.open(top_filepath) as top_dataset:
+#     w = get_crop_window(top_dataset, 128)
+#     top = top_dataset.read(
+#         window=w, out_dtype=np.float32
+#     ).transpose(1, 2, 0) / 255
+#
+# transfo = ToTensorV2()
+#
+# input = transfo(image=np.concatenate((top, dsm), axis=2))['image']
 
-    # Use autograd to compute the backward pass. This call will compute the
-    # gradient of loss with respect to all Tensors with requires_grad=True.
-    # After this call a.grad, b.grad. c.grad and d.grad will be Tensors holding
-    # the gradient of the loss with respect to a, b, c, d respectively.
-    loss.backward()
+sup_train_set = Isprs_labeled(data_path,
+                              [1, 3, 5, 7, 11, 13, 15, 17, 21, 23, 26, 28],
+                              128,
+                              ToTensorV2())
 
-    # Manually update weights using gradient descent. Wrap in torch.no_grad()
-    # because weights have requires_grad=True, but we don't need to track this
-    # in autograd.
-    with torch.no_grad():
-        a -= learning_rate * a.grad
-        b -= learning_rate * b.grad
-        c -= learning_rate * c.grad
-        d -= learning_rate * d.grad
+sup_train_sampler = RandomSampler(
+    data_source=sup_train_set,
+    replacement=True,
+    num_samples=len(sup_train_set)
+)
+sup_train_dataloader = DataLoader(
+    dataset=sup_train_set,
+    batch_size=16,
+    sampler=sup_train_sampler,
+    num_workers=2,
+    pin_memory=True
+)
 
-        # Manually zero the gradients after updating weights
-        a.grad = None
-        b.grad = None
-        c.grad = None
-        d.grad = None
 
-print(f'Result: y = {a.item()} + {b.item()} x + {c.item()} x^2 + {d.item()} x^3')
+
+network = Unet(4,2)
+optimizer = Adam(network.parameters(), lr=0.01)
+
+network.train(True)
+
+with profiler.profile(with_stack=True, profile_memory=True) as prof:
+    for data in sup_train_dataloader:
+
+        train_inputs, train_labels = data
+        optimizer.zero_grad()
+        outputs = network(train_inputs)
+        supervised_loss = F.cross_entropy(outputs, train_labels)
+        rotation_1, rotation_2 = np.random.choice(
+            [0, 1, 2, 3],
+            size=2,
+            replace=False
+        )
+        augmented_1 = torch.rot90(train_inputs, k=rotation_1, dims=[2, 3])
+        augmented_2 = torch.rot90(train_inputs, k=rotation_2, dims=[2, 3])
+        outputs_1 = network(augmented_1)
+        outputs_2 = network(augmented_2)
+        unaugmented_1 = torch.rot90(outputs_1, k=-rotation_1, dims=[2, 3])
+        unaugmented_2 = torch.rot90(outputs_2, k=-rotation_2, dims=[2, 3])
+
+        unsupervised_loss = F.mse_loss(
+            unaugmented_1,
+            unaugmented_2
+        )
+
+
+        # For now, test supervised learning
+        # total_loss = supervised_loss
+        total_loss = supervised_loss + unsupervised_loss
+
+        total_loss.backward()
+        optimizer.step()
+
+print(
+    prof.key_averages(group_by_stack_n=5).table(
+        sort_by='cpu_memory_usage'
+    )
+)

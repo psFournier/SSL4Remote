@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from torch.optim import Adam
 from argparse import ArgumentParser
+from memory_profiler import profile
 
 class Semisup_segm(pl.LightningModule):
 
@@ -39,6 +40,7 @@ class Semisup_segm(pl.LightningModule):
 
         return Adam(self.parameters(), lr=0.01)
 
+    @profile
     def training_step(self, batch, batch_idx):
 
         sup_data, unsup_data = batch['sup'], batch['unsup']
@@ -67,7 +69,7 @@ class Semisup_segm(pl.LightningModule):
             unaugmented_2
         )
 
-        total_loss = sup_loss + unsup_loss
+        total_loss = sup_loss + self.unsup_loss_prop*unsup_loss
 
         self.log('unsup_loss', unsup_loss)
 

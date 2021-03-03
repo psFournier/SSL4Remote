@@ -152,12 +152,12 @@ def main():
         num_classes=args.num_classes
     )
 
-    # profiler = PyTorchProfiler(
-    #     # output_filename=os.path.join(log_dir, 'profile'),
-    #     profile_memory=False,
-    #     # use_cpu=True,
-    #     # use_cuda=False
-    # )
+    profiler = PyTorchProfiler(
+        output_filename=os.path.join(log_dir, 'profile'),
+        # profile_memory=False,
+        # use_cpu=True,
+        # use_cuda=False
+    )
     trainer = Trainer.from_argparse_args(
         args,
         logger=TB_logger,
