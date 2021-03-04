@@ -27,44 +27,19 @@ import torch.autograd.profiler as profiler
 
 def main():
 
-    parser = ArgumentParser()
-
-    parser.add_argument("--data_dir",
-                        type=str,
-                        default='/home/pierre/Documents/ONERA/ai4geo/')
-
-    parser.add_argument('--nb_epochs',
-                        type=int,
-                        default=10)
-
-    parser.add_argument('--batch_size',
-                        type=int,
-                        default=16)
-
-    parser.add_argument('--nb_pass_per_epoch',
-                        type=int,
-                        default=2)
-
-    parser.add_argument('--crop_size',
-                        type=int,
-                        default=128)
+    parser = ArgumentParser(add_help=True)
 
     parser.add_argument('--output_dir',
                         type=str,
-                        default='~/scratch')
-
-    parser.add_argument('--in_channels',
-                        type=int,
-                        default=4)
-
-    parser.add_argument('--num_classes',
-                        type=int,
-                        default=2)
+                        default='~/scratch',
+                        help='Where to store results')
 
     parser.add_argument('--log_every_n_step',
                         type=int,
                         default=1)
 
+    parser = Unet.add_model_specific_args(parser)
+    parser = Isprs_semisup.add_model_specific_args(parser)
     parser = Semisup_segm.add_model_specific_args(parser)
     parser = Trainer.add_argparse_args(parser)
 
@@ -95,6 +70,7 @@ def main():
 
     pl_datamodule = Isprs_semisup(
         args.data_dir,
+        args.crop_size,
         args.nb_pass_per_epoch,
         args.batch_size,
         sup_train_transforms=transform,
@@ -162,9 +138,9 @@ def main():
         args,
         logger=TB_logger,
         multiple_trainloader_mode='max_size_cycle',
-        callbacks=[
-            # cm
-        ],
+        # callbacks=[
+        #     # cm
+        # ],
         # profiler=profiler
     )
     # with profiler.profile(with_stack=True, profile_memory=True) as prof:

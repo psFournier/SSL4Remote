@@ -3,8 +3,11 @@ Code taken from https://medium.com/analytics-vidhya/creating-a-very-simple-u-net
 '''
 
 import torch
+from argparse import ArgumentParser
+
 
 class Unet(torch.nn.Module):
+
     def __init__(self, in_channels, out_channels):
         super().__init__()
 
@@ -18,6 +21,20 @@ class Unet(torch.nn.Module):
         self.upconv3 = self.expand_block(128, 64, 3, 1)
         self.upconv2 = self.expand_block(64*2, 32, 3, 1)
         self.upconv1 = self.expand_block(32*2, out_channels, 3, 1)
+
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument('--in_channels',
+                            type=int,
+                            default=4)
+
+        parser.add_argument('--num_classes',
+                            type=int,
+                            default=2)
+
+        return parser
 
     def __call__(self, x):
 

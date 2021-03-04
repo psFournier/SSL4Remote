@@ -40,7 +40,7 @@ class Semisup_segm(pl.LightningModule):
 
         return Adam(self.parameters(), lr=0.01)
 
-    @profile
+    # @profile
     def training_step(self, batch, batch_idx):
 
         sup_data, unsup_data = batch['sup'], batch['unsup']

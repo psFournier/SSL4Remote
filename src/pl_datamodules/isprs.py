@@ -2,12 +2,15 @@ from pytorch_lightning import LightningDataModule
 import numpy as np
 from datasets import Isprs_labeled, Isprs_unlabeled
 from torch.utils.data import DataLoader, RandomSampler
+from argparse import ArgumentParser
+
 # from samplers import Multiple_pass
 
 class Isprs_semisup(LightningDataModule):
 
     def __init__(self,
                  data_path,
+                 crop_size,
                  nb_pass_per_epoch,
                  batch_size,
                  sup_train_transforms,
@@ -21,6 +24,7 @@ class Isprs_semisup(LightningDataModule):
         self.unlabeled_idxs = [2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 29,
                                31, 33, 35, 38]
         self.data_path = data_path
+        self.crop_size = crop_size
         self.nb_pass_per_epoch = nb_pass_per_epoch
         self.batch_size = batch_size
         self.sup_train_transforms = sup_train_transforms
@@ -33,6 +37,25 @@ class Isprs_semisup(LightningDataModule):
         # preprocessing necessary
         pass
 
+    @staticmethod
+    def add_model_specific_args(parent_parser):
+
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument('--nb_pass_per_epoch',
+                            type=int,
+                            default=1)
+        parser.add_argument("--data_dir",
+                            type=str,
+                            default='/home/pierre/Documents/ONERA/ai4geo/')
+        parser.add_argument('--batch_size',
+                            type=int,
+                            default=16)
+        parser.add_argument('--crop_size',
+                            type=int,
+                            default=128)
+
+        return parser
+
     def setup(self, stage=None):
 
         np.random.shuffle(self.labeled_idxs)
@@ -41,18 +64,18 @@ class Isprs_semisup(LightningDataModule):
 
         self.sup_train_set = Isprs_labeled(self.data_path,
                                            train_idxs,
-                                           128,
+                                           self.crop_size,
                                            self.sup_train_transforms)
 
         self.val_set = Isprs_labeled(self.data_path,
                                      val_idxs,
-                                     128,
+                                     self.crop_size,
                                      self.val_transforms)
 
         unsup_train_idxs = train_idxs + self.unlabeled_idxs
         self.unsup_train_set = Isprs_unlabeled(self.data_path,
                                                unsup_train_idxs,
-                                               128,
+                                               self.crop_size,
                                                self.unsup_train_transforms)
 
     def train_dataloader(self):

@@ -6,6 +6,8 @@ from albumentations import RandomCrop
 from transforms import Merge_labels
 import rasterio
 from rasterio.windows import Window
+import warnings
+warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 class Isprs(Dataset):
 
