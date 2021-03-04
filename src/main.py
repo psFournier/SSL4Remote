@@ -34,11 +34,7 @@ def main():
                         type=str,
                         default='~/scratch',
                         help='Where to store results')
-
-    parser.add_argument('--log_every_n_step',
-                        type=int,
-                        default=1)
-
+    
     parser = Unet.add_model_specific_args(parser)
     parser = Isprs_semisup.add_model_specific_args(parser)
     parser = Semisup_segm.add_model_specific_args(parser)
@@ -156,7 +152,6 @@ def main():
     trainer = Trainer.from_argparse_args(
         args,
         logger=TB_logger,
-        multiple_trainloader_mode='max_size_cycle',
         # callbacks=[
         #     # cm
         # ],
