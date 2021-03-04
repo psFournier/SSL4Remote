@@ -40,23 +40,22 @@ class Isprs(Dataset):
 
         with rasterio.open(dsm_filepath) as dsm_dataset:
 
-            w = self.get_crop_window(dsm_dataset)
+            window = self.get_crop_window(dsm_dataset)
             dsm = dsm_dataset.read(
-                window=w, out_dtype=np.float32
+                window=window, out_dtype=np.float32
             ).transpose(1,2,0) / 255
 
         with rasterio.open(top_filepath) as top_dataset:
 
-            w = self.get_crop_window(top_dataset)
             top = top_dataset.read(
-                window=w, out_dtype=np.float32
+                window=window, out_dtype=np.float32
             ).transpose(1,2,0) / 255
 
         input = np.concatenate((top, dsm), axis=2)
 
-        return input
+        return input, window
 
-    def get_truth(self, idx):
+    def get_truth(self, idx, window):
 
         # Ground truth
         gt_filepath = os.path.join(self.data_path, 'gts_for_participants',
@@ -64,10 +63,9 @@ class Isprs(Dataset):
 
         with rasterio.open(gt_filepath) as gt_dataset:
 
-            w = self.get_crop_window(gt_dataset)
             gt = gt_dataset.read(
-                window=w, out_dtype=np.float32
-            ).transpose(1,2,0) / 255
+                window=window
+            ).transpose(1,2,0)
 
         return gt
 
@@ -111,7 +109,7 @@ class Isprs_unlabeled(Isprs):
     def __getitem__(self, idx):
 
         idx = self.idxs[idx]
-        image = self.get_image(idx)
+        image, window = self.get_image(idx)
         if self.transforms is not None:
             image = self.transforms(image=image)['image']
 
@@ -131,8 +129,8 @@ class Isprs_labeled(Isprs):
     def __getitem__(self, idx):
 
         idx = self.idxs[idx]
-        image = self.get_image(idx)
-        ground_truth = self.get_truth(idx)
+        image, window = self.get_image(idx)
+        ground_truth = self.get_truth(idx, window)
         ground_truth = self.isprs_colors_to_labels(ground_truth)
         ground_truth = self.label_merger(ground_truth)
 
