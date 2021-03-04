@@ -19,8 +19,8 @@ class Semisup_segm(pl.LightningModule):
         self.unsup_loss_prop = unsup_loss_prop
         self.save_hyperparameters()
 
-        self.train_metrics = scalar_metrics.clone()
-        self.val_metrics = scalar_metrics.clone()
+        self.train_metrics = scalar_metrics["train"]
+        self.val_metrics = scalar_metrics["val"]
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -49,7 +49,7 @@ class Semisup_segm(pl.LightningModule):
 
         sup_loss = F.cross_entropy(outputs, sup_train_labels)
         self.train_metrics(outputs.softmax(dim=1), sup_train_labels)
-        self.log('sup_loss', sup_loss)
+        self.log('train_sup_loss', sup_loss)
         self.log_dict(self.train_metrics)
 
         rotation_1, rotation_2 = np.random.choice(
@@ -71,7 +71,7 @@ class Semisup_segm(pl.LightningModule):
 
         total_loss = sup_loss + self.unsup_loss_prop*unsup_loss
 
-        self.log('unsup_loss', unsup_loss)
+        self.log('train_unsup_loss', unsup_loss)
 
         return {'loss': total_loss}
 
@@ -82,5 +82,5 @@ class Semisup_segm(pl.LightningModule):
         sup_loss = F.cross_entropy(outputs, val_labels)
         softmax = outputs.softmax(dim=1)
         self.val_metrics(softmax, val_labels)
-        self.log('sup_loss', sup_loss)
+        self.log('val_sup_loss', sup_loss)
         self.log_dict(self.val_metrics)

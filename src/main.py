@@ -18,6 +18,7 @@ from networks import Unet
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import pytorch_lightning.metrics as M
+from metrics import MyMetricCollection
 import segmentation_models_pytorch as smp
 from callbacks import Conf_mat #, Map
 from argparse import ArgumentParser
@@ -105,18 +106,36 @@ def main():
         reduction='elementwise_mean'
     )
 
-    scalar_metrics = M.MetricCollection([
-        accuracy,
-        # average_precision,
-        # global_precision,
-        per_class_precision,
-        per_class_F1,
-        IoU
-    ])
+    train_scalar_metrics = MyMetricCollection(
+        [
+            accuracy,
+            # average_precision,
+            # global_precision,
+            per_class_precision,
+            per_class_F1,
+            IoU
+        ],
+        "train"
+    )
+
+    val_scalar_metrics = MyMetricCollection(
+        [
+            accuracy,
+            # average_precision,
+            # global_precision,
+            per_class_precision,
+            per_class_F1,
+            IoU
+        ],
+        "val"
+    )
 
     pl_module = Semisup_segm(
         network = network,
-        scalar_metrics=scalar_metrics,
+        scalar_metrics={
+            "train": train_scalar_metrics,
+            "val": val_scalar_metrics
+        },
         unsup_loss_prop=args.unsup_loss_prop
     )
     # pl_module = Semisup_segm(
