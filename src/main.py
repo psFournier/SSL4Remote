@@ -34,7 +34,7 @@ def main():
                         type=str,
                         default='~/scratch',
                         help='Where to store results')
-    
+
     parser = Unet.add_model_specific_args(parser)
     parser = Isprs_semisup.add_model_specific_args(parser)
     parser = Semisup_segm.add_model_specific_args(parser)
@@ -50,6 +50,8 @@ def main():
     )
     TB_logger = loggers.TensorBoardLogger(save_dir=log_dir,
                                           name='tensorboard')
+    CSV_logger = loggers.CSVLogger(save_dir=log_dir,
+                                   name='csv')
 
     # Create network
     network = Unet(args.in_channels, args.num_classes)
@@ -151,7 +153,7 @@ def main():
     )
     trainer = Trainer.from_argparse_args(
         args,
-        logger=TB_logger,
+        logger=[TB_logger, CSV_logger],
         # callbacks=[
         #     # cm
         # ],
