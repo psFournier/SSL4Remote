@@ -4,7 +4,6 @@ import torch.nn.functional as F
 import numpy as np
 from torch.optim import Adam
 from argparse import ArgumentParser
-from memory_profiler import profile
 
 class Semisup_segm(pl.LightningModule):
 
