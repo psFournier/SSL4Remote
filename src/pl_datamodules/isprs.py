@@ -59,8 +59,8 @@ class Isprs_semisup(LightningDataModule):
     def setup(self, stage=None):
 
         np.random.shuffle(self.labeled_idxs)
-        val_idxs = self.labeled_idxs[:4]
-        train_idxs = self.labeled_idxs[4:]
+        val_idxs = self.labeled_idxs[:7]
+        train_idxs = self.labeled_idxs[14:]
 
         self.sup_train_set = Isprs_labeled(self.data_path,
                                            train_idxs,
@@ -72,7 +72,7 @@ class Isprs_semisup(LightningDataModule):
                                      self.crop_size,
                                      self.val_transforms)
 
-        unsup_train_idxs = train_idxs + self.unlabeled_idxs
+        unsup_train_idxs = self.labeled_idxs[7:] + self.unlabeled_idxs
         self.unsup_train_set = Isprs_unlabeled(self.data_path,
                                                unsup_train_idxs,
                                                self.crop_size,
