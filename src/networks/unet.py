@@ -28,7 +28,7 @@ class Unet(torch.nn.Module):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument('--in_channels',
                             type=int,
-                            default=4)
+                            default=3)
 
         parser.add_argument('--num_classes',
                             type=int,

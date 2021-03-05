@@ -32,26 +32,27 @@ class Isprs(Dataset):
     def get_image(self, idx):
 
         # Surface model
-        dsm_filepath = os.path.join(self.data_path, 'dsm',
-                                    'dsm_09cm_matching_area{}.tif'.format(idx))
+        # dsm_filepath = os.path.join(self.data_path, 'dsm',
+        #                             'dsm_09cm_matching_area{}.tif'.format(idx))
         # True orthophoto
         top_filepath = os.path.join(self.data_path, 'top',
                                     'top_mosaic_09cm_area{}.tif'.format(idx))
 
-        with rasterio.open(dsm_filepath) as dsm_dataset:
-
-            window = self.get_crop_window(dsm_dataset)
-            dsm = dsm_dataset.read(
-                window=window, out_dtype=np.float32
-            ).transpose(1,2,0) / 255
-
         with rasterio.open(top_filepath) as top_dataset:
 
+            window = self.get_crop_window(top_dataset)
             top = top_dataset.read(
                 window=window, out_dtype=np.float32
             ).transpose(1,2,0) / 255
 
-        input = np.concatenate((top, dsm), axis=2)
+        # with rasterio.open(dsm_filepath) as dsm_dataset:
+        #
+        #     dsm = dsm_dataset.read(
+        #         window=window, out_dtype=np.float32
+        #     ).transpose(1,2,0) / 255
+
+        # input = np.concatenate((top, dsm), axis=2)
+        input = top
 
         return input, window
 
