@@ -17,7 +17,6 @@ class Semisup_segm(pl.LightningModule):
         self.network = network
         self.unsup_loss_prop = unsup_loss_prop
         self.save_hyperparameters()
-
         self.train_metrics = scalar_metrics["train"]
         self.val_metrics = scalar_metrics["val"]
 
@@ -39,7 +38,6 @@ class Semisup_segm(pl.LightningModule):
 
         return Adam(self.parameters(), lr=0.01)
 
-    # @profile
     def training_step(self, batch, batch_idx):
 
         sup_data, unsup_data = batch['sup'], batch['unsup']

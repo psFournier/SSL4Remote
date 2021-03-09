@@ -20,11 +20,12 @@ from albumentations.pytorch import ToTensorV2
 import pytorch_lightning.metrics as M
 from metrics import MyMetricCollection
 import segmentation_models_pytorch as smp
-from callbacks import Conf_mat #, Map
+from callbacks import Conf_mat_logger, Array_val_logger
 from argparse import ArgumentParser
 import shutil
 from pytorch_lightning.profiler import PyTorchProfiler, SimpleProfiler
 import torch.autograd.profiler as profiler
+from copy import deepcopy
 
 def main():
 
@@ -81,52 +82,32 @@ def main():
         top_k=1,
         subset_accuracy=False
     )
-    # average_precision = MAPMetric()
-    # average_precision = M.AveragePrecision(
-    #     num_classes=NUM_CLASSES
-    # )
-    # global_precision = M.Precision(
-    #     num_classes=NUM_CLASSES,
-    #     mdmc_average='global',
-    #     average='macro'
-    # )
-    per_class_precision = M.Precision(
+
+    global_precision = M.Precision(
         num_classes=args.num_classes,
         mdmc_average='global',
-        average='weighted'
-    )
-    per_class_F1 = M.F1(
-        num_classes=args.num_classes,
         average='macro'
     )
+
     IoU = M.IoU(
         num_classes=args.num_classes,
         reduction='elementwise_mean'
     )
 
+    scalar_metrics_dict = {
+        'acc': accuracy,
+        'global_precision': global_precision,
+        'IoU': IoU
+    }
     train_scalar_metrics = MyMetricCollection(
-        [
-            accuracy,
-            # average_precision,
-            # global_precision,
-            per_class_precision,
-            per_class_F1,
-            IoU
-        ],
-        "train"
+        scalar_metrics_dict,
+        "train_"
+    )
+    val_scalar_metrics = MyMetricCollection(
+        deepcopy(scalar_metrics_dict),
+        "val_"
     )
 
-    val_scalar_metrics = MyMetricCollection(
-        [
-            accuracy,
-            # average_precision,
-            # global_precision,
-            per_class_precision,
-            per_class_F1,
-            IoU
-        ],
-        "val"
-    )
 
     pl_module = Semisup_segm(
         network = network,
@@ -136,29 +117,47 @@ def main():
         },
         unsup_loss_prop=args.unsup_loss_prop
     )
-    # pl_module = Semisup_segm(
-    #     network,
-    #     scalar_metrics=scalar_metrics,
-    # )
 
-    cm = Conf_mat(
+    per_class_precision = M.Precision(
+        num_classes=args.num_classes,
+        mdmc_average='global',
+        average='none'
+    )
+    per_class_precision_logger = Array_val_logger(
+        array_metric=per_class_precision,
+        name='per_class_precision'
+    )
+
+    per_class_F1 = M.F1(
+        num_classes=args.num_classes,
+        average='none'
+    )
+    per_class_F1_logger = Array_val_logger(
+        array_metric=per_class_F1,
+        name='per_class_F1'
+    )
+    cm = Conf_mat_logger(
         num_classes=args.num_classes
     )
 
-    profiler = PyTorchProfiler(
-        output_filename=os.path.join(log_dir, 'profile'),
-        # profile_memory=False,
-        # use_cpu=True,
-        # use_cuda=False
-    )
+    # profiler = PyTorchProfiler(
+    #     output_filename=os.path.join(log_dir, 'profile'),
+    #     # profile_memory=False,
+    #     # use_cpu=True,
+    #     # use_cuda=False
+    # )
+
     trainer = Trainer.from_argparse_args(
         args,
         logger=TB_logger,
-        # callbacks=[
-        #     # cm
-        # ],
+        callbacks=[
+            cm,
+            per_class_precision_logger,
+            per_class_F1_logger
+        ],
         # profiler=profiler
     )
+
     # with profiler.profile(with_stack=True, profile_memory=True) as prof:
     #     trainer.fit(
     #         model=pl_module,
