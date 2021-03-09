@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
-import io
+plt.switch_backend('agg')
 
 class MergeLabels:
     def __init__(self, labels):
