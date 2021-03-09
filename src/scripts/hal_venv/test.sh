@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PARAMS=$(seq 1 2) # Create an array of seed values from 1 to NSEEDS
+PARAMS=$(seq 1 1) # Create an array of seed values from 1 to NSEEDS
 export ROOT=/home/eh/fournip/SemiSupervised/SSL4Remote
 export PROGRAM=${ROOT}/src/main.py
 export INTERPRETER=${ROOT}/venv/bin/python
