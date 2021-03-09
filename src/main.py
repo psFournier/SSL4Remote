@@ -153,7 +153,7 @@ def main():
     )
     trainer = Trainer.from_argparse_args(
         args,
-        logger=[TB_logger, CSV_logger],
+        logger=TB_logger,
         # callbacks=[
         #     # cm
         # ],
