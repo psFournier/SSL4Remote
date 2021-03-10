@@ -154,5 +154,7 @@ static
 .settings
 
 # Data
-data/
 outputs/
+
+# Local files
+local/
