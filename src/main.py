@@ -20,7 +20,7 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--output_dir", type=str, default="./outputs")
     parser.add_argument("--in_channels", type=int, default=3)
-    parser.add_argument("--num_classes", type=int, default=2)
+    parser.add_argument("--num_classes", type=int, default=6)
 
     # Each class of interest contains a method to add its specific arguments
     # to the parser
@@ -101,8 +101,13 @@ def main():
     )
     cm = ConfMatLogger(num_classes=args.num_classes)
 
-    # Using from_argparse_args enables to use any standard parameter of the
+    # Using from_argparse_args enables to use any standard parameter of thea
     # lightning Trainer class without having to manually add them to the parser.
+    # In particular, a parameter that does not explicitly appears here but is
+    # important is multiple_trainloader_mode, which governs how the supervised and
+    # unsupervised dataloaders interact.
+    # See https://pytorch-lightning.readthedocs.io/en/latest/advanced/multiple_loaders.html
+    # for information.
     trainer = Trainer.from_argparse_args(
         args,
         logger=tensorboard,

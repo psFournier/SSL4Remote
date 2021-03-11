@@ -99,7 +99,7 @@ class RotEquivarianceIsprsVaihingen(LightningDataModule):
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
             sampler=sup_train_sampler,
-            num_workers=2,
+            num_workers=4,
             pin_memory=True,
         )
 
@@ -114,7 +114,7 @@ class RotEquivarianceIsprsVaihingen(LightningDataModule):
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
             sampler=unsup_train_sampler,
-            num_workers=2,
+            num_workers=4,
             pin_memory=True,
         )
 
@@ -137,7 +137,7 @@ class RotEquivarianceIsprsVaihingen(LightningDataModule):
             dataset=self.val_set,
             batch_size=self.batch_size,
             sampler=val_sampler,
-            num_workers=2,
+            num_workers=4,
             pin_memory=True,
         )
 

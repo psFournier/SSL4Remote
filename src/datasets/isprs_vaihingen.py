@@ -132,8 +132,8 @@ class IsprsVaihingenLabeled(IsprsVaihingen):
 
         super(IsprsVaihingenLabeled, self).__init__(data_path, idxs, crop, transforms)
 
-        # For binary classification, all labels other than that of interest are collapsed
-        self.label_merger = MergeLabels([[0], [1]])
+        # # For binary classification, all labels other than that of interest are collapsed
+        # self.label_merger = MergeLabels([[0], [1]])
 
     def __getitem__(self, idx):
 
@@ -141,7 +141,7 @@ class IsprsVaihingenLabeled(IsprsVaihingen):
         image, window = self.get_image(idx)
         ground_truth = self.get_truth(idx, window)
         ground_truth = self.isprs_colors_to_labels(ground_truth)
-        ground_truth = self.label_merger(ground_truth)
+        # ground_truth = self.label_merger(ground_truth)
 
         if self.transforms is not None:
             transformed = self.transforms(image=image, mask=ground_truth)
