@@ -1,10 +1,14 @@
+"""
+Implementation taken from https://github.com/PyTorchLightning/pytorch-lightning/issues/6124
+"""
+
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple, Union
 
 import torch
+from pytorch_lightning.metrics import Metric
 from torch import nn
 
-from pytorch_lightning.metrics import Metric
 
 class MyMetricCollection(nn.ModuleDict):
     """
@@ -42,10 +46,11 @@ class MyMetricCollection(nn.ModuleDict):
 
     """
 
-    def __init__(self,
-                 metrics: Union[List[Metric], Tuple[Metric], Dict[str,
-                                                                  Metric]],
-                 prefix=None):
+    def __init__(
+        self,
+        metrics: Union[List[Metric], Tuple[Metric], Dict[str, Metric]],
+        prefix=None,
+    ):
         super().__init__()
         prefix = prefix if prefix is not None else ""
         if isinstance(metrics, dict):

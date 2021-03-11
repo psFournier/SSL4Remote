@@ -1,1 +1,1 @@
-from .segmentation import Semisup_segm
+from .rot_equivariance import RotEquivariance

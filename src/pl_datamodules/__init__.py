@@ -1,1 +1,1 @@
-from .isprs import Isprs_semisup
+from .rot_equivariance_isprs_vaihingen import RotEquivarianceIsprsVaihingen

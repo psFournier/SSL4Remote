@@ -1,1 +1,1 @@
-from .isprs import Isprs, Isprs_labeled, Isprs_unlabeled
+from datasets.isprs_vaihingen import IsprsVaihingenUnlabeled, IsprsVaihingenLabeled, IsprsVaihingen

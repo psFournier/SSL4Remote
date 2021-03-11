@@ -1,30 +1,7 @@
 import numpy as np
 
-class Albu_image_transfo:
 
-    def __init__(self, transform):
-
-        self.transform = transform
-
-    def __call__(self, image):
-
-        return self.transform(image=image)['image']
-
-class Albu_image_label_transfo:
-
-    def __init__(self, transform):
-
-        self.transform = transform
-
-    def __call__(self, image, label):
-
-        transformed = self.transform(image=image,
-                                     mask=label)
-
-        return transformed['image'], transformed['mask']
-
-class Merge_labels:
-
+class MergeLabels:
     def __init__(self, labels):
 
         self.labels = labels
