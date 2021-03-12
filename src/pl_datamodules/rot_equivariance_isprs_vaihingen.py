@@ -108,7 +108,7 @@ class RotEquivarianceIsprsVaihingen(LightningDataModule):
             replacement=True,
             num_samples=self.nb_pass_per_epoch * len(self.unsup_train_set),
         )
-
+        print(self.nb_pass_per_epoch * len(self.unsup_train_set))
         # num_workers should be the number of cpus on the machine.
         unsup_train_dataloader = DataLoader(
             dataset=self.unsup_train_set,
