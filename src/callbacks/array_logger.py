@@ -16,7 +16,7 @@ class ArrayValLogger(pl.Callback):
 
         predictions = torch.argmax(predictions, dim=1)
 
-        self.array_metric(predictions, target)
+        self.array_metric(predictions.cpu(), target.cpu())
 
     def on_validation_epoch_end(self, trainer, pl_module):
         array_val = self.array_metric.compute()

@@ -18,6 +18,7 @@ from pl_modules import RotEquivariance
 def main():
 
     parser = ArgumentParser()
+    parser.add_argument("--exp_name", type=str, default="default")
     parser.add_argument("--output_dir", type=str, default="./outputs")
     parser.add_argument("--in_channels", type=int, default=3)
     parser.add_argument("--num_classes", type=int, default=6)
@@ -31,10 +32,11 @@ def main():
     args = parser.parse_args()
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-    log_dir = os.path.expanduser(
-        os.path.join(args.output_dir, "%s_%s" % (current_date, "unet_isprs/"))
+    tensorboard = loggers.TensorBoardLogger(
+        save_dir=args.output_dir,
+        name="tensorboard",
+        version="%s_%s" % (args.exp_name, current_date)
     )
-    tensorboard = loggers.TensorBoardLogger(save_dir=log_dir, name="tensorboard")
 
     # The effect of using imagenet pre-training instead is to be measured, but
     # for now we don't.
