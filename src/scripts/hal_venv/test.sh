@@ -1,10 +1,10 @@
 #!/bin/bash
 
 export ROOT=/home/eh/fournip/SemiSupervised/SSL4Remote
-export PROGRAM=${ROOT}/src/main.py
+export PROGRAM=${ROOT}/src/mainMT.py
 export INTERPRETER=${ROOT}/venv/bin/python
 export DATASET=ISPRS_VAIHINGEN
-export ALGO=RotEq
+export ALGO=MT
 
 # lancement du programme CPU
 for PARAM in 0. 0.01 0.1

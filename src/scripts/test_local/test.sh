@@ -1,11 +1,11 @@
 #!/bin/bash
 
 export ROOT=/home/pierre/PycharmProjects/RemoteSensing
-export PROGRAM=${ROOT}/src/main.py
+export PROGRAM=${ROOT}/src/mainMT.py
 export INTERPRETER=${ROOT}/venv/bin/python
 
 # lancement du programme CPU
-for PARAM in 0.
+for PARAM in 0.1
 do
   export PARAM
   for SEED in 1

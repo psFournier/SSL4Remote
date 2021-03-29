@@ -42,8 +42,8 @@ def main():
     # for now we don't.
     network = smp.Unet(
         encoder_name="timm-regnetx_002",
-        encoder_depth=1,
-        decoder_channels=[256],
+        # encoder_depth=1,
+        # decoder_channels=[256],
         encoder_weights=None,
         in_channels=args.in_channels,
         classes=args.num_classes,

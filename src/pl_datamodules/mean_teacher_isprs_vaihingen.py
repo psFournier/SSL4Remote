@@ -56,7 +56,7 @@ class MeanTeacherIsprsVaihingen(LightningDataModule):
 
         # Here we use very few labeled images for training (2)...
         val_idxs = labeled_idxs[:7]
-        train_idxs = labeled_idxs[14:]
+        train_idxs = labeled_idxs[15:]
 
         self.sup_train_set = IsprsVaihingenLabeled(
             self.data_path, train_idxs, self.crop_size,
