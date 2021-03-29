@@ -1,1 +1,2 @@
-from .rot_equivariance import RotEquivariance
+from pl_modules.rot_equivariance import RotEquivariance
+from pl_modules.mean_teacher import MeanTeacher

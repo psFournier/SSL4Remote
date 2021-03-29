@@ -11,8 +11,8 @@ from pytorch_lightning import Trainer, loggers
 
 from callbacks import ArrayValLogger, ConfMatLogger
 from metrics import MyMetricCollection
-from pl_datamodules import RotEquivarianceIsprsVaihingen
-from pl_modules import RotEquivariance
+from pl_datamodules import MeanTeacherIsprsVaihingen
+from pl_modules import MeanTeacher
 
 
 def main():
@@ -25,8 +25,8 @@ def main():
 
     # Each class of interest contains a method to add its specific arguments
     # to the parser
-    parser = RotEquivarianceIsprsVaihingen.add_model_specific_args(parser)
-    parser = RotEquivariance.add_model_specific_args(parser)
+    parser = MeanTeacherIsprsVaihingen.add_model_specific_args(parser)
+    parser = MeanTeacher.add_model_specific_args(parser)
     parser = Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
@@ -53,7 +53,7 @@ def main():
     transform = A.Compose([ToTensorV2()])
 
     # The lightning datamodule deals with instantiating the proper dataloaders.
-    pl_datamodule = RotEquivarianceIsprsVaihingen(
+    pl_datamodule = MeanTeacherIsprsVaihingen(
         args.data_dir,
         args.crop_size,
         args.nb_pass_per_epoch,
@@ -86,10 +86,11 @@ def main():
     val_scalar_metrics = MyMetricCollection(deepcopy(scalar_metrics_dict), "val_")
 
     # The lightning module is where the training schema is implemented.
-    pl_module = RotEquivariance(
+    pl_module = MeanTeacher(
         network=network,
         scalar_metrics={"train": train_scalar_metrics, "val": val_scalar_metrics},
         unsup_loss_prop=args.unsup_loss_prop,
+        ema=args.ema
     )
 
     # Non-scalar metrics are bundled in callbacks that deal with logging them
