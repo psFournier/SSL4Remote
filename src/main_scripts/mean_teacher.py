@@ -1,3 +1,7 @@
+# This folder should disappear when using hydra:
+# a single 'main' file would be enough given that hydra enables to instantiate
+# whole classes (modules, datamodules in particular) from command line arguments.
+
 import datetime
 from argparse import ArgumentParser
 

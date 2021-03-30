@@ -10,6 +10,7 @@ import copy
 import pytorch_lightning.metrics as M
 from metrics import MyMetricCollection
 from callbacks import ArrayValLogger, ConfMatLogger
+from losses import SoftDiceLoss, DiceCE
 
 class MeanTeacher(pl.LightningModule):
     def __init__(self, arguments):
@@ -43,6 +44,8 @@ class MeanTeacher(pl.LightningModule):
 
         # Exponential moving average
         self.ema = arguments.ema
+
+        self.loss = DiceCE()
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -121,7 +124,7 @@ class MeanTeacher(pl.LightningModule):
         student_outputs = self.student_network(sup_train_inputs)
 
         # Supervised learning
-        sup_loss = F.cross_entropy(student_outputs, sup_train_labels)
+        sup_loss = self.loss(student_outputs, sup_train_labels)
         self.train_metrics(student_outputs.softmax(dim=1), sup_train_labels)
 
         augmentation = np.random.randint(5)
@@ -137,7 +140,7 @@ class MeanTeacher(pl.LightningModule):
 
         total_loss = sup_loss + self.unsup_loss_prop * unsup_loss
 
-        self.log("train_sup_loss", sup_loss)
+        self.log("sup_loss", sup_loss)
         self.log_dict(self.train_metrics)
         self.log("train_unsup_loss", unsup_loss)
 
