@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import segmentation_models_pytorch as smp
 
 import numpy as np
 import pytorch_lightning as pl
@@ -6,23 +7,42 @@ import torch.nn.functional as F
 from torch import rot90, no_grad
 from torch.optim import Adam
 import copy
+import pytorch_lightning.metrics as M
+from metrics import MyMetricCollection
+from callbacks import ArrayValLogger, ConfMatLogger
 
 class MeanTeacher(pl.LightningModule):
-    def __init__(self, network, unsup_loss_prop, ema, scalar_metrics):
+    def __init__(self, arguments):
 
-        super(MeanTeacher, self).__init__()
+        super().__init__()
+
+        # The effect of using imagenet pre-training instead is to be measured, but
+        # for now we don't.
+        network = smp.Unet(
+            encoder_name="timm-regnetx_002",
+            encoder_depth=1,
+            decoder_channels=[256],
+            encoder_weights=None,
+            in_channels=arguments.in_channels,
+            classes=arguments.num_classes,
+        )
 
         self.student_network = network
         self.teacher_network = copy.deepcopy(network)
         self.save_hyperparameters()
-        self.train_metrics = scalar_metrics["train"]
-        self.val_metrics = scalar_metrics["val"]
+
+        self.train_metrics = None
+        self.val_metrics = None
+        self.init_metrics(arguments)
+
+        self.callbacks = None
+        self.init_callbacks(arguments)
 
         # For the linear combination of loss
-        self.unsup_loss_prop = unsup_loss_prop
+        self.unsup_loss_prop = arguments.unsup_loss_prop
 
         # Exponential moving average
-        self.ema = ema
+        self.ema = arguments.ema
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -30,8 +50,59 @@ class MeanTeacher(pl.LightningModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--unsup_loss_prop", type=float, default=0.5)
         parser.add_argument("--ema", type=float, default=0.95)
+        parser.add_argument("--num_classes", type=int, default=2)
+        parser.add_argument("--in_channels", type=int, default=3)
 
         return parser
+
+    def init_metrics(self, args):
+
+        # Scalar metrics are separated because lightning can deal with logging
+        # them automatically.
+        accuracy = M.Accuracy(top_k=1, subset_accuracy=False)
+        global_precision = M.Precision(
+            num_classes=args.num_classes, mdmc_average="global", average="macro"
+        )
+        iou = M.IoU(num_classes=args.num_classes, reduction="elementwise_mean")
+
+        scalar_metrics_dict = {
+            "acc": accuracy,
+            "global_precision": global_precision,
+            "IoU": iou,
+        }
+
+        # Two things here:
+        # 1. MyMetricCollection adds a prefix to metrics names, and should be
+        # included in future versions of lightning
+        # 2. The metric objects keep statistics during runs, and deepcopy should be
+        # necessary to ensure these stats do not overlap
+        self.train_metrics = MyMetricCollection(
+            scalar_metrics_dict,
+            "train_"
+        )
+        self.val_metrics = MyMetricCollection(
+            copy.deepcopy(scalar_metrics_dict),
+            "val_"
+        )
+
+    def init_callbacks(self, args):
+
+        # Non-scalar metrics are bundled in callbacks that deal with logging them
+        per_class_precision = M.Precision(
+            num_classes=args.num_classes, mdmc_average="global", average="none"
+        )
+        per_class_precision_logger = ArrayValLogger(
+            array_metric=per_class_precision, name="per_class_precision"
+        )
+        per_class_F1 = M.F1(num_classes=args.num_classes, average="none")
+        per_class_F1_logger = ArrayValLogger(
+            array_metric=per_class_F1, name="per_class_F1"
+        )
+        cm = ConfMatLogger(num_classes=args.num_classes)
+
+        self.callbacks = [
+            cm, per_class_F1_logger, per_class_precision_logger
+        ]
 
     def forward(self, x):
 

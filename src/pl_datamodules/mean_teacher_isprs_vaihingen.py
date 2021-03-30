@@ -6,29 +6,30 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
 from datasets import IsprsVaihingen, IsprsVaihingenLabeled, IsprsVaihingenUnlabeled
+from transforms import MergeLabels
 
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 class MeanTeacherIsprsVaihingen(LightningDataModule):
-    def __init__(
-        self,
-        data_path,
-        crop_size,
-        nb_pass_per_epoch,
-        batch_size,
-        sup_train_transforms,
-        val_transforms,
-        unsup_train_transforms,
-    ):
+    def __init__(self, arguments):
 
         super().__init__()
 
-        self.data_path = data_path
-        self.crop_size = crop_size
-        self.nb_pass_per_epoch = nb_pass_per_epoch
-        self.batch_size = batch_size
-        self.sup_train_transforms = sup_train_transforms
-        self.val_transforms = val_transforms
-        self.unsup_train_transforms = unsup_train_transforms
+        self.data_dir = arguments.data_dir
+        self.crop_size = arguments.crop_size
+        self.nb_pass_per_epoch = arguments.nb_pass_per_epoch
+        self.batch_size = arguments.batch_size
+
+        # Additional transforms should be employed: which ones?
+        transform = A.Compose([ToTensorV2()])
+        self.sup_train_transforms = transform
+        self.val_transforms = transform
+        self.unsup_train_transforms = transform
+
+        # For binary classification, all labels other than that of interest are collapsed
+        self.label_merger = MergeLabels([[0], [1]])
+
 
     def prepare_data(self, *args, **kwargs):
 
@@ -59,12 +60,12 @@ class MeanTeacherIsprsVaihingen(LightningDataModule):
         train_idxs = labeled_idxs[15:]
 
         self.sup_train_set = IsprsVaihingenLabeled(
-            self.data_path, train_idxs, self.crop_size,
+            self.data_dir, train_idxs, self.crop_size,
             transforms=None
         )
 
         self.val_set = IsprsVaihingenLabeled(
-            self.data_path, val_idxs, self.crop_size,
+            self.data_dir, val_idxs, self.crop_size,
             transforms=None
         )
 
@@ -73,7 +74,7 @@ class MeanTeacherIsprsVaihingen(LightningDataModule):
         unlabeled_idxs = IsprsVaihingen.unlabeled_idxs
         unsup_train_idxs = labeled_idxs[7:] + unlabeled_idxs
         self.unsup_train_set = IsprsVaihingenUnlabeled(
-            self.data_path,
+            self.data_dir,
             unsup_train_idxs,
             self.crop_size,
             transforms=None,
@@ -87,17 +88,25 @@ class MeanTeacherIsprsVaihingen(LightningDataModule):
 
     def collate_labeled(self, batch):
 
-        transformed_batch = [self.sup_train_transforms(image=image,
-                                                       mask=ground_truth) for
-                             image,ground_truth in batch]
+        transformed_batch = [
+            self.sup_train_transforms(
+                image=image,
+                mask=self.label_merger(ground_truth)
+            )
+            for image,ground_truth in batch
+        ]
         batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
 
         return default_collate(batch)
 
     def collate_unlabeled(self, batch):
 
-        transformed_batch = [self.unsup_train_transforms(image=image) for
-                             image in batch]
+        transformed_batch = [
+            self.unsup_train_transforms(
+                image=image
+            )
+            for image in batch
+        ]
         batch = [(elem["image"]) for elem in transformed_batch]
 
         return default_collate(batch)

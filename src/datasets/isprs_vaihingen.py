@@ -6,8 +6,6 @@ import rasterio
 from rasterio.windows import Window
 from torch.utils.data import Dataset
 
-from transforms import MergeLabels
-
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 
@@ -132,16 +130,12 @@ class IsprsVaihingenLabeled(IsprsVaihingen):
 
         super(IsprsVaihingenLabeled, self).__init__(data_path, idxs, crop, transforms)
 
-        # # For binary classification, all labels other than that of interest are collapsed
-        # self.label_merger = MergeLabels([[0], [1]])
-
     def __getitem__(self, idx):
 
         idx = self.idxs[idx]
         image, window = self.get_image(idx)
         ground_truth = self.get_truth(idx, window)
         ground_truth = self.isprs_colors_to_labels(ground_truth)
-        # ground_truth = self.label_merger(ground_truth)
 
         if self.transforms is not None:
             transformed = self.transforms(image=image, mask=ground_truth)
