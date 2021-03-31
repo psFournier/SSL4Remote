@@ -156,7 +156,7 @@ class MeanTeacher(pl.LightningModule):
 
         val_inputs, val_labels = batch
         outputs = self.teacher_network(val_inputs)
-        sup_loss = F.cross_entropy(outputs, val_labels)
+        sup_loss = self.loss(outputs, val_labels)
         softmax = outputs.softmax(dim=1)
         self.val_metrics(softmax, val_labels)
 

@@ -18,12 +18,11 @@ class IsprsVaihingen(Dataset):
     unlabeled_idxs = [2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 29,
                       31, 33, 35, 38]
 
-    def __init__(self, data_path, idxs, crop, transforms):
+    def __init__(self, data_path, idxs, crop):
 
         super(IsprsVaihingen, self).__init__()
         self.data_path = os.path.join(data_path, "ISPRS_VAIHINGEN")
         self.idxs = idxs
-        self.transforms = transforms
         self.crop = crop
 
     def get_crop_window(self, dataset):
@@ -113,14 +112,12 @@ class IsprsVaihingen(Dataset):
 class IsprsVaihingenUnlabeled(IsprsVaihingen):
     def __init__(self, data_path, idxs, crop, transforms=None):
 
-        super(IsprsVaihingenUnlabeled, self).__init__(data_path, idxs, crop, transforms)
+        super(IsprsVaihingenUnlabeled, self).__init__(data_path, idxs, crop)
 
     def __getitem__(self, idx):
 
         idx = self.idxs[idx]
         image, window = self.get_image(idx)
-        if self.transforms is not None:
-            image = self.transforms(image=image)["image"]
 
         return image
 
@@ -128,7 +125,7 @@ class IsprsVaihingenUnlabeled(IsprsVaihingen):
 class IsprsVaihingenLabeled(IsprsVaihingen):
     def __init__(self, data_path, idxs, crop, transforms=None):
 
-        super(IsprsVaihingenLabeled, self).__init__(data_path, idxs, crop, transforms)
+        super(IsprsVaihingenLabeled, self).__init__(data_path, idxs, crop)
 
     def __getitem__(self, idx):
 
@@ -136,10 +133,5 @@ class IsprsVaihingenLabeled(IsprsVaihingen):
         image, window = self.get_image(idx)
         ground_truth = self.get_truth(idx, window)
         ground_truth = self.isprs_colors_to_labels(ground_truth)
-
-        if self.transforms is not None:
-            transformed = self.transforms(image=image, mask=ground_truth)
-            image = transformed["image"]
-            ground_truth = transformed["mask"]
 
         return image, ground_truth

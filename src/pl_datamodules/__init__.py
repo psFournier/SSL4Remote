@@ -1,2 +1,3 @@
 from pl_datamodules.rot_equivariance_isprs_vaihingen import RotEquivarianceIsprsVaihingen
-from pl_datamodules.mean_teacher_isprs_vaihingen import MeanTeacherIsprsVaihingen
+from pl_datamodules.semi_supervised import IsprsVaiSemisup
+from pl_datamodules.isprs_vai_sup import IsprsVaiSup

@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 from pytorch_lightning import Trainer, loggers
 
-from pl_datamodules import MeanTeacherIsprsVaihingen
+from pl_datamodules import SemiSupervised
 from pl_modules import MeanTeacher
 
 
