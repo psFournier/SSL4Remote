@@ -18,8 +18,6 @@ class IsprsVaiSemisup(IsprsVaiSup):
 
         super().__init__(arguments)
 
-        self.unsup_train_transforms = self.sup_train_transforms
-
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
@@ -63,7 +61,7 @@ class IsprsVaiSemisup(IsprsVaiSup):
     def collate_unlabeled(self, batch):
 
         transformed_batch = [
-            self.unsup_train_transforms(
+            self.augmentations(
                 image=image
             )
             for image in batch

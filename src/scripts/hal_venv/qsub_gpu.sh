@@ -27,7 +27,8 @@ DATADIR=/work/OT/ai4geo/DATA/DATASETS
 --pretrained \
 --workers 4 \
 --precision 16 \
---inplaceBN
+--inplaceBN \
+--augmentations safe
 
 # recopie des donnees de sortie à conserver
 cp -r "${LOGDIR}" "${ROOT}"

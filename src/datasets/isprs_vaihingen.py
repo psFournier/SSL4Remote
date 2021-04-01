@@ -17,6 +17,8 @@ class IsprsVaihingen(Dataset):
                     34, 37]
     unlabeled_idxs = [2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 29,
                       31, 33, 35, 38]
+    mean_labeled_pixels = [0.4727, 0.3205, 0.3159]
+    std_labeled_pixels = [0.2100, 0.1496, 0.1426]
 
     def __init__(self, data_path, idxs, crop):
 
@@ -45,10 +47,8 @@ class IsprsVaihingen(Dataset):
         with rasterio.open(top_filepath) as top_dataset:
 
             window = self.get_crop_window(top_dataset)
-            top = (
-                top_dataset.read(window=window, out_dtype=np.float32).transpose(1, 2, 0)
-                / 255
-            )
+            top = top_dataset.read(window=window, out_dtype=np.float32)
+            top = top.transpose(1, 2, 0) / 255
 
         # If we want to use the surface model
         # dsm_filepath = os.path.join(self.data_path, 'dsm',

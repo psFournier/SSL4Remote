@@ -10,6 +10,7 @@ from transforms import MergeLabels
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from common_utils.augmentations import get_augmentations
 
 class IsprsVaiSup(LightningDataModule):
 
@@ -25,10 +26,11 @@ class IsprsVaiSup(LightningDataModule):
         self.batch_size = arguments.batch_size
         self.num_workers = arguments.workers
 
-        # Additional transforms should be employed: which ones?
-        transform = A.Compose([ToTensorV2()])
-        self.sup_train_transforms = transform
-        self.val_transforms = transform
+        train_augment = get_augmentations(self.args.augmentations)
+        self.normalize = A.Normalize(mean=IsprsVaihingen.mean_labeled_pixels,
+                                     std=IsprsVaihingen.std_labeled_pixels)
+        self.augmentations = A.Compose(train_augment + [
+            self.normalize, ToTensorV2(transpose_mask=False)])
 
         # For binary classification, all labels other than that of interest are collapsed
         self.label_merger = MergeLabels([[0], [1]])
@@ -54,7 +56,7 @@ class IsprsVaiSup(LightningDataModule):
         parser.add_argument("--nb_im_val", type=int, default=7)
         parser.add_argument("-w", "--workers", default=8, type=int,
                             help="Num workers")
-
+        parser.add_argument('--augmentations', type=str, default='safe')
 
         return parser
 
@@ -85,7 +87,7 @@ class IsprsVaiSup(LightningDataModule):
         # We apply transforms here because transforms are method-dependent
         # while the dataset class should be method independent.
         transformed_batch = [
-            self.sup_train_transforms(
+            self.augmentations(
                 image=image,
                 mask=self.label_merger(ground_truth)
             )
