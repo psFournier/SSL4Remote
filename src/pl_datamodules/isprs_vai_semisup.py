@@ -20,14 +20,8 @@ class IsprsVaiSemisup(IsprsVaiSup):
 
         self.unsup_train_transforms = self.sup_train_transforms
 
-    def prepare_data(self, *args, **kwargs):
-
-        # Nothing to write on disk, data is already there, no hard
-        # preprocessing necessary
-        pass
-
-    @staticmethod
-    def add_model_specific_args(parent_parser):
+    @classmethod
+    def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--nb_im_unsup_train", type=int, default=0)
@@ -58,7 +52,7 @@ class IsprsVaiSemisup(IsprsVaiSup):
         unlabeled_idxs = IsprsVaihingen.unlabeled_idxs
         all_unsup_train_idxs = labeled_idxs[self.args.nb_im_val:] + \
                               unlabeled_idxs
-        unsup_train_idxs = all_unsup_train_idxs[self.args.nb_im_unsup_train]
+        unsup_train_idxs = all_unsup_train_idxs[:self.args.nb_im_unsup_train]
         self.unsup_train_set = IsprsVaihingenUnlabeled(
             self.data_dir,
             unsup_train_idxs,

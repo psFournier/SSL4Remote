@@ -2,35 +2,47 @@ from argparse import ArgumentParser
 import segmentation_models_pytorch as smp
 
 import numpy as np
+import torch.nn as nn
 import pytorch_lightning as pl
 import torch.nn.functional as F
 from torch import rot90, no_grad
 from torch.optim import Adam
+from torch.optim.lr_scheduler import (
+    ExponentialLR,
+    CyclicLR,
+    MultiStepLR,
+    CosineAnnealingLR,
+    CosineAnnealingWarmRestarts,
+)
 import copy
 import pytorch_lightning.metrics as M
 from metrics import MyMetricCollection
 from callbacks import ArrayValLogger, ConfMatLogger
-from losses import SoftDiceLoss, DiceCE
+from pytorch_toolbelt import losses
+from common_utils.scheduler import get_scheduler
+
 
 class MeanTeacher(pl.LightningModule):
+
     def __init__(self, arguments):
 
         super().__init__()
 
-        # The effect of using imagenet pre-training instead is to be measured, but
-        # for now we don't.
+        self.args = arguments
+
         network = smp.Unet(
-            encoder_name="timm-regnetx_002",
-            encoder_depth=1,
-            decoder_channels=[256],
-            encoder_weights=None,
+            encoder_name=arguments.encoder,
+            encoder_weights='imagenet' if arguments.pretrained else None,
             in_channels=arguments.in_channels,
             classes=arguments.num_classes,
+            decoder_use_batchnorm='inplace' if self.args.inplaceBN else True
         )
 
         self.student_network = network
         self.teacher_network = copy.deepcopy(network)
         self.save_hyperparameters()
+
+        self.lr = arguments.learning_rate
 
         self.train_metrics = None
         self.val_metrics = None
@@ -45,7 +57,10 @@ class MeanTeacher(pl.LightningModule):
         # Exponential moving average
         self.ema = arguments.ema
 
-        self.loss = DiceCE()
+        self.loss = losses.JointLoss(
+            nn.CrossEntropyLoss(),
+            losses.DiceLoss(mode='multiclass', ignore_index=0)
+        )
 
     @staticmethod
     def add_model_specific_args(parent_parser):
@@ -55,6 +70,12 @@ class MeanTeacher(pl.LightningModule):
         parser.add_argument("--ema", type=float, default=0.95)
         parser.add_argument("--num_classes", type=int, default=2)
         parser.add_argument("--in_channels", type=int, default=3)
+        parser.add_argument("--pretrained", action='store_true')
+        parser.add_argument("--encoder", type=str, default='timm-regnetx_002')
+        parser.add_argument("-lr", "--learning-rate", type=float, default=1e-3,
+                            help="Initial learning rate")
+        parser.add_argument("--inplaceBN", action='store_true' )
+
 
         return parser
 
@@ -114,7 +135,17 @@ class MeanTeacher(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        return Adam(self.parameters(), lr=0.01)
+        optimizer = Adam(self.parameters(), lr=self.args.learning_rate)
+        scheduler = MultiStepLR(
+            optimizer,
+            milestones=[
+                int(self.args.max_epochs * 0.5),
+                int(self.args.max_epochs * 0.7),
+                int(self.args.max_epochs * 0.9)],
+            gamma=0.3
+        )
+
+        return [optimizer], [scheduler]
 
     def training_step(self, batch, batch_idx):
 

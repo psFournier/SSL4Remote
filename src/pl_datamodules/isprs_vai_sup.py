@@ -23,6 +23,7 @@ class IsprsVaiSup(LightningDataModule):
         self.crop_size = arguments.crop_size
         self.nb_pass_per_epoch = arguments.nb_pass_per_epoch
         self.batch_size = arguments.batch_size
+        self.num_workers = arguments.workers
 
         # Additional transforms should be employed: which ones?
         transform = A.Compose([ToTensorV2()])
@@ -39,8 +40,8 @@ class IsprsVaiSup(LightningDataModule):
         # preprocessing necessary
         pass
 
-    @staticmethod
-    def add_model_specific_args(parent_parser):
+    @classmethod
+    def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--nb_pass_per_epoch", type=int, default=1)
@@ -51,6 +52,8 @@ class IsprsVaiSup(LightningDataModule):
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--nb_im_train", type=int, default=2)
         parser.add_argument("--nb_im_val", type=int, default=7)
+        parser.add_argument("-w", "--workers", default=8, type=int,
+                            help="Num workers")
 
 
         return parser
@@ -116,7 +119,7 @@ class IsprsVaiSup(LightningDataModule):
             batch_size=self.batch_size,
             collate_fn=self.collate_labeled,
             sampler=sup_train_sampler,
-            num_workers=4,
+            num_workers=self.num_workers,
             pin_memory=True,
         )
 
@@ -135,7 +138,7 @@ class IsprsVaiSup(LightningDataModule):
             batch_size=self.batch_size,
             collate_fn=self.collate_labeled,
             sampler=val_sampler,
-            num_workers=4,
+            num_workers=self.num_workers,
             pin_memory=True,
         )
 

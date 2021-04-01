@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ROOT=/home/eh/fournip/SemiSupervised/SSL4Remote
-export PROGRAM=${ROOT}/src/mainMT.py
+export PROGRAM=${ROOT}/src/main_scripts/mean_teacher.py
 export INTERPRETER=${ROOT}/venv/bin/python
 export DATASET=ISPRS_VAIHINGEN
 export ALGO=MT

@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 
 from pytorch_lightning import Trainer, loggers
 
-from pl_datamodules import SemiSupervised
+from pl_datamodules import IsprsVaiSemisup
 from pl_modules import MeanTeacher
 
 
@@ -19,7 +19,7 @@ def main():
 
     # Each class of interest contains a method to add its specific arguments
     # to the parser
-    parser = MeanTeacherIsprsVaihingen.add_model_specific_args(parser)
+    parser = IsprsVaiSemisup.add_model_specific_args(parser)
     parser = MeanTeacher.add_model_specific_args(parser)
     parser = Trainer.add_argparse_args(parser)
 
@@ -33,7 +33,7 @@ def main():
     )
 
     # The lightning datamodule deals with instantiating the proper dataloaders.
-    pl_datamodule = MeanTeacherIsprsVaihingen(arguments=args)
+    pl_datamodule = IsprsVaiSemisup(arguments=args)
 
     # The lightning module is where the training schema is implemented.
     pl_module = MeanTeacher(arguments=args)
