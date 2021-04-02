@@ -9,6 +9,27 @@ from torch.utils.data import Dataset
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 
+def isprs_colors_to_labels(data):
+    labels = np.zeros(data.shape[:2], dtype=int)
+
+    colors = [
+        [255, 255, 255],
+        [0, 0, 255],
+        [0, 255, 255],
+        [255, 255, 0],
+        [0, 255, 0],
+        [255, 0, 0],
+    ]
+
+    for id_col, col in enumerate(colors):
+        d = data[:, :, 0] == col[0]
+        d = np.logical_and(d, (data[:, :, 1] == col[1]))
+        d = np.logical_and(d, (data[:, :, 2] == col[2]))
+        labels[d] = id_col
+
+    return labels
+
+
 class IsprsVaihingen(Dataset):
 
     # The labeled and unlabeled image indices are properties of the class
@@ -79,27 +100,6 @@ class IsprsVaihingen(Dataset):
 
         return gt
 
-    def isprs_colors_to_labels(self, data):
-
-        labels = np.zeros(data.shape[:2], dtype=int)
-
-        colors = [
-            [255, 255, 255],
-            [0, 0, 255],
-            [0, 255, 255],
-            [255, 255, 0],
-            [0, 255, 0],
-            [255, 0, 0],
-        ]
-
-        for id_col, col in enumerate(colors):
-            d = data[:, :, 0] == col[0]
-            d = np.logical_and(d, (data[:, :, 1] == col[1]))
-            d = np.logical_and(d, (data[:, :, 2] == col[2]))
-            labels[d] = id_col
-
-        return labels
-
     def __len__(self):
 
         return len(self.idxs)
@@ -132,6 +132,6 @@ class IsprsVaihingenLabeled(IsprsVaihingen):
         idx = self.idxs[idx]
         image, window = self.get_image(idx)
         ground_truth = self.get_truth(idx, window)
-        ground_truth = self.isprs_colors_to_labels(ground_truth)
+        ground_truth = isprs_colors_to_labels(ground_truth)
 
         return image, ground_truth
