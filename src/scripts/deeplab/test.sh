@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export ROOT=/home/pierre/PycharmProjects/RemoteSensing
-export DATADIR=/home/pierre/Documents/ONERA/ai4geo/
+export ROOT=/d/pfournie/SSL4Remote
+export DATADIR=
 export LOGDIR=$ROOT/outputs
 
 export PROGRAM=${ROOT}/src/mean_teacher.py
@@ -15,4 +15,5 @@ do
   sleep 1
   echo "done."
 done
+
 

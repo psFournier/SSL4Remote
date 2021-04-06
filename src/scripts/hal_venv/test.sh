@@ -1,22 +1,18 @@
 #!/bin/bash
 
 export ROOT=/home/eh/fournip/SemiSupervised/SSL4Remote
-export PROGRAM=${ROOT}/src/main_scripts/mean_teacher.py
-export INTERPRETER=${ROOT}/venv/bin/python
-export DATASET=ISPRS_VAIHINGEN
-export ALGO=MT
+export DATADIR=/work/OT/ai4geo/DATA/DATASETS
+#export LOGDIR=$ROOT/outputs
 
-# lancement du programme CPU
-for PARAM in 0. 0.01 0.1
+export PROGRAM=${ROOT}/src/main_scripts/mean_teacher.py
+
+
+for SEED in 1 2
 do
-  export PARAM
-  for SEED in 1 2 3 4 5
-  do
-    export NAME=${ALGO}_${DATASET}_param_${PARAM}_seed_${SEED}
-    echo "Submitting: $NAME"
-    qsub -V -N ${NAME} ${ROOT}/src/scripts/hal_venv/qsub_gpu.sh
-    sleep 1
-    echo "done."
-  done
+  export NAME=MT_ISPRS_VAI_seed_${SEED}
+  echo "Submitting: $NAME"
+  qsub -V -N ${NAME} ${ROOT}/src/scripts/hal_venv/qsub_gpu.sh
+  sleep 1
+  echo "done."
 done
 
