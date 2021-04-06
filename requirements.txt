@@ -1,0 +1,11 @@
+pytorch_lightning
+matplotlib
+numpy
+scipy
+Pillow
+rasterio
+albumentations
+segmentation_models_pytorch
+pytorch_toolbelt
+
+

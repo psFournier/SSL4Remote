@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export ROOT=/d/pfournie/SSL4Remote
-export DATADIR=
+export ROOT=/d/pfournie/semi-supervised-learning
+export DATADIR=/scratch_ai4geo/DATASETS
 export LOGDIR=$ROOT/outputs
 
 export PROGRAM=${ROOT}/src/mean_teacher.py
