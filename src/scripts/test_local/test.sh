@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ROOT=/home/pierre/PycharmProjects/RemoteSensing
-export DATADIR=/home/pierre/Documents/ONERA/ai4geo/
+export DATADIR=/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN
 export LOGDIR=$ROOT/outputs
 
 export PROGRAM=${ROOT}/src/mean_teacher.py

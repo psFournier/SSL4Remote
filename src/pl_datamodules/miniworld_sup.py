@@ -2,17 +2,18 @@ from argparse import ArgumentParser
 
 import numpy as np
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
 from torch.utils.data._utils.collate import default_collate
 
-from datasets import IsprsVaihingen, IsprsVaihingenLabeled
 from transforms import MergeLabels
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
+from datasets import MiniworldParis, MiniworldParisLabeled
+import importlib
 
-class IsprsVaiSup(LightningDataModule):
+class MiniworldSup(LightningDataModule):
 
     def __init__(self, arguments):
 
@@ -47,7 +48,7 @@ class IsprsVaiSup(LightningDataModule):
         parser.add_argument("--nb_pass_per_epoch", type=int, default=1,
                             help='how many times per epoch the dataset should be spanned')
         parser.add_argument(
-            "--data_dir", type=str, default="/home/pierre/Documents/ONERA/ai4geo/"
+            "--data_dir", type=str, default="/scratch_ai4geo/miniworld/paris"
         )
         parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -61,20 +62,34 @@ class IsprsVaiSup(LightningDataModule):
 
     def setup(self, stage=None):
 
-        shuffled_idxs = np.random.permutation(
-            len(IsprsVaihingen.labeled_image_paths)
-        )
+        sup_train_datasets = []
+        val_datasets = []
+        city_classes = [
+            getattr('datasets', name) for name in [
+                'MiniworldParisLabeled',
+                'MiniworldArlingtonLabeled'
+            ]
+        ]
 
-        val_idxs = shuffled_idxs[:self.args.nb_im_val]
-        train_idxs = shuffled_idxs[-self.args.nb_im_train:]
+        for city_class in city_classes:
 
-        self.sup_train_set = IsprsVaihingenLabeled(
-            self.data_dir, train_idxs, self.crop_size
-        )
+            shuffled_idxs = np.random.permutation(
+                len(city_class.labeled_image_paths)
+            )
 
-        self.val_set = IsprsVaihingenLabeled(
-            self.data_dir, val_idxs, self.crop_size
-        )
+            val_idxs = shuffled_idxs[:self.args.nb_im_val]
+            train_idxs = shuffled_idxs[-self.args.nb_im_train:]
+
+            sup_train_datasets.append(
+                city_class(self.data_dir, train_idxs, self.crop_size)
+            )
+
+            val_datasets.append(
+                city_class(self.data_dir, val_idxs, self.crop_size)
+            )
+
+        self.sup_train_set = ConcatDataset(sup_train_datasets)
+        self.val_set = ConcatDataset(val_datasets)
 
     # Following pytorch Dataloader doc, loading from a map-style dataset is
     # roughly equivalent with:
