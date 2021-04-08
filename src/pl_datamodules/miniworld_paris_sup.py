@@ -14,21 +14,30 @@ from datasets import MiniworldParis, MiniworldParisLabeled
 
 class MiniworldParisSup(LightningDataModule):
 
-    def __init__(self, arguments):
+    def __init__(self,
+                 data_dir,
+                 crop_size,
+                 nb_pass_per_epoch,
+                 batch_size,
+                 workers,
+                 augmentations,
+                 nb_im_val,
+                 nb_im_train):
 
         super().__init__()
 
-        self.args = arguments
-
-        self.data_dir = arguments.data_dir
-        self.crop_size = arguments.crop_size
-        self.nb_pass_per_epoch = arguments.nb_pass_per_epoch
-        self.batch_size = arguments.batch_size
-        self.num_workers = arguments.workers
+        self.data_dir = data_dir
+        self.crop_size = crop_size
+        self.nb_pass_per_epoch = nb_pass_per_epoch
+        self.batch_size = batch_size
+        self.num_workers = workers
+        self.nb_im_val = nb_im_val
+        self.nb_im_train = nb_im_train
 
         self.augmentations = A.Compose(
-            get_augmentations(arguments.augmentations)
+            get_augmentations(augmentations)
         )
+
 
         # For binary classification, all labels other than that of interest are collapsed
         self.label_merger = MergeLabels([[0], [1]])
@@ -65,8 +74,8 @@ class MiniworldParisSup(LightningDataModule):
             len(MiniworldParis.labeled_image_paths)
         )
 
-        val_idxs = shuffled_idxs[:self.args.nb_im_val]
-        train_idxs = shuffled_idxs[-self.args.nb_im_train:]
+        val_idxs = shuffled_idxs[:self.nb_im_val]
+        train_idxs = shuffled_idxs[-self.nb_im_train:]
 
         self.sup_train_set = MiniworldParisLabeled(
             self.data_dir, train_idxs, self.crop_size

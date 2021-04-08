@@ -72,10 +72,7 @@ class IsprsVaihingen(Dataset):
             mean=self.mean_labeled_pixels,
             std=self.std_labeled_pixels
         )
-        self.basic_augment = A.Compose([
-            self.normalize,
-            ToTensorV2(transpose_mask=False)
-        ])
+
 
     def get_crop_window(self, image_file):
 
@@ -119,8 +116,7 @@ class IsprsVaihingen(Dataset):
         # Ground truth
         label_filepath = os.path.join(
             self.data_path,
-            "gts_for_participants",
-            "top_mosaic_09cm_area{}.tif".format(idx),
+            self.label_paths[idx],
         )
 
         with rasterio.open(label_filepath) as label_file:
@@ -150,7 +146,7 @@ class IsprsVaihingen(Dataset):
 
 class IsprsVaihingenUnlabeled(IsprsVaihingen):
 
-    def __init__(self, data_path, idxs, crop, transforms=None):
+    def __init__(self, data_path, idxs, crop):
 
         super(IsprsVaihingenUnlabeled, self).__init__(data_path, idxs, crop)
 
@@ -158,14 +154,13 @@ class IsprsVaihingenUnlabeled(IsprsVaihingen):
 
         idx = self.idxs[idx % len(self.idxs)]
         image, window = self.get_image(idx)
-        image = self.basic_augment(image=image)['image']
 
         return image
 
 
 class IsprsVaihingenLabeled(IsprsVaihingen):
 
-    def __init__(self, data_path, idxs, crop, transforms=None):
+    def __init__(self, data_path, idxs, crop):
 
         super(IsprsVaihingenLabeled, self).__init__(data_path, idxs, crop)
 
@@ -175,9 +170,5 @@ class IsprsVaihingenLabeled(IsprsVaihingen):
         image, window = self.get_image(idx)
         label_colors = self.get_label(idx, window)
         label = self.colors_to_labels(label_colors)
-        normalized = self.basic_augment(
-            image=image,
-            mask=label
-        )
 
-        return normalized['image'], normalized['mask']
+        return image, label

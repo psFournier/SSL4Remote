@@ -24,38 +24,48 @@ from common_utils.scheduler import get_scheduler
 
 class MeanTeacher(pl.LightningModule):
 
-    def __init__(self, arguments):
+    def __init__(self,
+                 encoder,
+                 pretrained,
+                 in_channels,
+                 num_classes,
+                 inplaceBN,
+                 learning_rate,
+                 unsup_loss_prop,
+                 ema,
+                 max_epochs,
+                 *args,
+                 **kwargs):
 
         super().__init__()
 
-        self.args = arguments
-
         network = smp.Unet(
-            encoder_name=arguments.encoder,
-            encoder_weights='imagenet' if arguments.pretrained else None,
-            in_channels=arguments.in_channels,
-            classes=arguments.num_classes,
-            decoder_use_batchnorm='inplace' if self.args.inplaceBN else True
+            encoder_name=encoder,
+            encoder_weights='imagenet' if pretrained else None,
+            in_channels=in_channels,
+            classes=num_classes,
+            decoder_use_batchnorm='inplace' if inplaceBN else True
         )
 
         self.student_network = network
         self.teacher_network = copy.deepcopy(network)
         self.save_hyperparameters()
 
-        self.lr = arguments.learning_rate
+        self.learning_rate = learning_rate
+        self.max_epochs = max_epochs
 
         self.train_metrics = None
         self.val_metrics = None
-        self.init_metrics(arguments)
+        self.init_metrics(num_classes)
 
         self.callbacks = None
-        self.init_callbacks(arguments)
+        self.init_callbacks(num_classes)
 
         # For the linear combination of loss
-        self.unsup_loss_prop = arguments.unsup_loss_prop
+        self.unsup_loss_prop = unsup_loss_prop
 
         # Exponential moving average
-        self.ema = arguments.ema
+        self.ema = ema
 
         self.loss = losses.JointLoss(
             nn.CrossEntropyLoss(),
@@ -79,15 +89,15 @@ class MeanTeacher(pl.LightningModule):
 
         return parser
 
-    def init_metrics(self, args):
+    def init_metrics(self, num_classes):
 
         # Scalar metrics are separated because lightning can deal with logging
         # them automatically.
         accuracy = M.Accuracy(top_k=1, subset_accuracy=False)
         global_precision = M.Precision(
-            num_classes=args.num_classes, mdmc_average="global", average="macro"
+            num_classes=num_classes, mdmc_average="global", average="macro"
         )
-        iou = M.IoU(num_classes=args.num_classes, reduction="elementwise_mean")
+        iou = M.IoU(num_classes=num_classes, reduction="elementwise_mean")
 
         scalar_metrics_dict = {
             "acc": accuracy,
@@ -109,20 +119,20 @@ class MeanTeacher(pl.LightningModule):
             "val_"
         )
 
-    def init_callbacks(self, args):
+    def init_callbacks(self, num_classes):
 
         # Non-scalar metrics are bundled in callbacks that deal with logging them
         per_class_precision = M.Precision(
-            num_classes=args.num_classes, mdmc_average="global", average="none"
+            num_classes=num_classes, mdmc_average="global", average="none"
         )
         per_class_precision_logger = ArrayValLogger(
             array_metric=per_class_precision, name="per_class_precision"
         )
-        per_class_F1 = M.F1(num_classes=args.num_classes, average="none")
+        per_class_F1 = M.F1(num_classes=num_classes, average="none")
         per_class_F1_logger = ArrayValLogger(
             array_metric=per_class_F1, name="per_class_F1"
         )
-        cm = ConfMatLogger(num_classes=args.num_classes)
+        cm = ConfMatLogger(num_classes=num_classes)
 
         self.callbacks = [
             cm, per_class_F1_logger, per_class_precision_logger
@@ -135,13 +145,13 @@ class MeanTeacher(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        optimizer = Adam(self.parameters(), lr=self.args.learning_rate)
+        optimizer = Adam(self.parameters(), lr=self.learning_rate)
         scheduler = MultiStepLR(
             optimizer,
             milestones=[
-                int(self.args.max_epochs * 0.5),
-                int(self.args.max_epochs * 0.7),
-                int(self.args.max_epochs * 0.9)],
+                int(self.max_epochs * 0.5),
+                int(self.max_epochs * 0.7),
+                int(self.max_epochs * 0.9)],
             gamma=0.3
         )
 

@@ -14,9 +14,10 @@ from albumentations.pytorch import ToTensorV2
 
 class IsprsVaiSemisup(IsprsVaiSup):
 
-    def __init__(self, arguments):
+    def __init__(self, nb_im_unsup_train, *args, **kwargs):
 
-        super().__init__(arguments)
+        super().__init__(*args, **kwargs)
+        self.nb_im_unsup_train = nb_im_unsup_train
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -28,34 +29,33 @@ class IsprsVaiSemisup(IsprsVaiSup):
 
     def setup(self, stage=None):
 
-        labeled_idxs = IsprsVaihingen.labeled_idxs
-        np.random.shuffle(labeled_idxs)
+        shuffled_idxs = list(
+            np.random.permutation(
+                len(IsprsVaihingen.labeled_image_paths)
+            )
+        )
 
-        # Here we should use very few labeled images for training...
-        val_idxs = labeled_idxs[:self.args.nb_im_val]
-        train_idxs = labeled_idxs[-self.args.nb_im_train:]
+        val_idxs = shuffled_idxs[:self.nb_im_val]
+        train_idxs = shuffled_idxs[-self.nb_im_train:]
 
         self.sup_train_set = IsprsVaihingenLabeled(
-            self.data_dir, train_idxs, self.crop_size,
-            transforms=None
+            self.data_dir, train_idxs, self.crop_size
         )
 
         self.val_set = IsprsVaihingenLabeled(
-            self.data_dir, val_idxs, self.crop_size,
-            transforms=None
+            self.data_dir, val_idxs, self.crop_size
         )
 
         # ...but each non validation labeled image can be used without its
         # label for unsupervised training
-        unlabeled_idxs = IsprsVaihingen.unlabeled_idxs
-        all_unsup_train_idxs = labeled_idxs[self.args.nb_im_val:] + \
+        unlabeled_idxs = list(range(len(IsprsVaihingen.unlabeled_image_paths)))
+        all_unsup_train_idxs = shuffled_idxs[self.nb_im_val:] + \
                               unlabeled_idxs
-        unsup_train_idxs = all_unsup_train_idxs[:self.args.nb_im_unsup_train]
+        unsup_train_idxs = all_unsup_train_idxs[:self.nb_im_unsup_train]
         self.unsup_train_set = IsprsVaihingenUnlabeled(
             self.data_dir,
             unsup_train_idxs,
-            self.crop_size,
-            transforms=None,
+            self.crop_size
         )
 
     def collate_unlabeled(self, batch):
@@ -90,7 +90,7 @@ class IsprsVaiSemisup(IsprsVaiSup):
             batch_size=self.batch_size,
             collate_fn=self.collate_labeled,
             sampler=sup_train_sampler,
-            num_workers=4,
+            num_workers=self.num_workers,
             pin_memory=True,
         )
 
@@ -105,7 +105,7 @@ class IsprsVaiSemisup(IsprsVaiSup):
             batch_size=self.batch_size,
             collate_fn=self.collate_unlabeled,
             sampler=unsup_train_sampler,
-            num_workers=4,
+            num_workers=self.num_workers,
             pin_memory=True,
         )
 

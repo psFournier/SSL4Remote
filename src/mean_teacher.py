@@ -24,6 +24,7 @@ def main():
     parser = Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
+    args_dict = vars(args)
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     tensorboard = loggers.TensorBoardLogger(
@@ -33,10 +34,10 @@ def main():
     )
 
     # The lightning datamodule deals with instantiating the proper dataloaders.
-    pl_datamodule = IsprsVaiSemisup(arguments=args)
+    pl_datamodule = IsprsVaiSemisup(**args_dict)
 
     # The lightning module is where the training schema is implemented.
-    pl_module = MeanTeacher(arguments=args)
+    pl_module = MeanTeacher(**args_dict)
 
     # Using from_argparse_args enables to use any standard parameter of thea
     # lightning Trainer class without having to manually add them to the parser.

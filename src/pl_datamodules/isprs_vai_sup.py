@@ -14,20 +14,30 @@ from common_utils.augmentations import get_augmentations
 
 class IsprsVaiSup(LightningDataModule):
 
-    def __init__(self, arguments):
+    def __init__(self,
+                 data_dir,
+                 crop_size,
+                 nb_pass_per_epoch,
+                 batch_size,
+                 workers,
+                 augmentations,
+                 nb_im_val,
+                 nb_im_train,
+                 *args,
+                 **kwargs):
 
         super().__init__()
 
-        self.args = arguments
-
-        self.data_dir = arguments.data_dir
-        self.crop_size = arguments.crop_size
-        self.nb_pass_per_epoch = arguments.nb_pass_per_epoch
-        self.batch_size = arguments.batch_size
-        self.num_workers = arguments.workers
+        self.data_dir = data_dir
+        self.crop_size = crop_size
+        self.nb_pass_per_epoch = nb_pass_per_epoch
+        self.batch_size = batch_size
+        self.num_workers = workers
+        self.nb_im_val = nb_im_val
+        self.nb_im_train = nb_im_train
 
         self.augmentations = A.Compose(
-            get_augmentations(arguments.augmentations)
+            get_augmentations(augmentations) + [ToTensorV2(transpose_mask=False)]
         )
 
         # For binary classification, all labels other than that of interest are collapsed
@@ -44,10 +54,10 @@ class IsprsVaiSup(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--nb_pass_per_epoch", type=int, default=1,
+        parser.add_argument("--nb_pass_per_epoch", type=float, default=1.,
                             help='how many times per epoch the dataset should be spanned')
         parser.add_argument(
-            "--data_dir", type=str, default="/home/pierre/Documents/ONERA/ai4geo/"
+            "--data_dir", type=str, default="/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN"
         )
         parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -61,12 +71,14 @@ class IsprsVaiSup(LightningDataModule):
 
     def setup(self, stage=None):
 
-        shuffled_idxs = np.random.permutation(
-            len(IsprsVaihingen.labeled_image_paths)
+        shuffled_idxs = list(
+            np.random.permutation(
+                len(IsprsVaihingen.labeled_image_paths)
+            )
         )
 
-        val_idxs = shuffled_idxs[:self.args.nb_im_val]
-        train_idxs = shuffled_idxs[-self.args.nb_im_train:]
+        val_idxs = shuffled_idxs[:self.nb_im_val]
+        train_idxs = shuffled_idxs[-self.nb_im_train:]
 
         self.sup_train_set = IsprsVaihingenLabeled(
             self.data_dir, train_idxs, self.crop_size
@@ -138,7 +150,7 @@ class IsprsVaiSup(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             batch_size=self.batch_size,
-            collate_fn=default_collate,
+            collate_fn=self.collate_labeled,
             sampler=val_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
