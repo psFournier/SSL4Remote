@@ -13,6 +13,7 @@ from common_utils.augmentations import get_augmentations
 from datasets import MiniworldParis, MiniworldParisLabeled
 from pl_datamodules import BaseSupervisedDatamodule
 
+
 class MiniworldParisSup(BaseSupervisedDatamodule):
 
     def __init__(self, *args, **kwargs):

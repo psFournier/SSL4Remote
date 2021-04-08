@@ -1,19 +1,13 @@
-from argparse import ArgumentParser
 from functools import partial
 
-import numpy as np
-from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
-from transforms import MergeLabels
-
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from common_utils.augmentations import get_augmentations
 from pl_datamodules import BaseSupervisedDatamodule
+from abc import ABC
 
-class BaseSemisupDatamodule(BaseSupervisedDatamodule):
+
+class BaseSemisupDatamodule(BaseSupervisedDatamodule, ABC):
 
     def __init__(self, nb_im_unsup_train, *args, **kwargs):
 
