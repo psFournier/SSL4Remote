@@ -11,9 +11,9 @@ from pl_datamodules import IsprsVaiSup
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-from pl_datamodules import BaseClassSemisupervised
+from pl_datamodules import BaseSemisupDatamodule
 
-class IsprsVaiSemisup(BaseClassSemisupervised):
+class IsprsVaiSemisup(BaseSemisupDatamodule):
 
     def __init__(self, *args, **kwargs):
 

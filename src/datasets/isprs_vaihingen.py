@@ -5,11 +5,12 @@ import numpy as np
 import rasterio
 from rasterio.windows import Window
 from torch.utils.data import Dataset
-
+from abc import ABC
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
+from datasets import BaseDataset, BaseDatasetLabeled, BaseDatasetUnlabeled
 
 
-class IsprsVaihingen(Dataset):
+class IsprsVaihingen(BaseDataset, ABC):
 
     # The labeled and unlabeled image indices are properties of the class
     # independent of its instanciation.
@@ -56,76 +57,9 @@ class IsprsVaihingen(Dataset):
 
         return labels
 
+    def __init__(self, *args, **kwargs):
 
-    def __init__(self, data_path, idxs, crop):
-
-        super(IsprsVaihingen, self).__init__()
-        self.data_path = data_path
-        self.idxs = idxs
-        self.crop = crop
-        self.approx_crop_per_image = int(
-            self.__image_size__ / (crop**2)
-        )
-
-    def get_crop_window(self, image_file):
-
-        cols = image_file.width
-        rows = image_file.height
-        cx = np.random.randint(0, cols - self.crop - 1)
-        cy = np.random.randint(0, rows - self.crop - 1)
-        w = Window(cx, cy, self.crop, self.crop)
-
-        return w
-
-    def get_image(self, idx):
-
-        # True orthophoto
-        top_filepath = os.path.join(
-            self.data_path, self.labeled_image_paths[idx]
-        )
-
-        with rasterio.open(top_filepath) as image_file:
-
-            window = self.get_crop_window(image_file)
-            top = image_file.read(window=window, out_dtype=np.float32)
-            top = top.transpose(1, 2, 0) / 255
-
-
-        # If we want to use the surface model
-        # dsm_filepath = os.path.join(self.data_path, 'dsm',
-        #                             'dsm_09cm_matching_area{}.tif'.format(idx))
-        # with rasterio.open(dsm_filepath) as dsm_dataset:
-        #
-        #     dsm = dsm_dataset.read(
-        #         window=window, out_dtype=np.float32
-        #     ).transpose(1,2,0) / 255
-        # image = np.concatenate((top, dsm), axis=2)
-
-        image = top
-
-        return image, window
-
-    def get_label(self, idx, window):
-
-        # Ground truth
-        label_filepath = os.path.join(
-            self.data_path,
-            self.label_paths[idx],
-        )
-
-        with rasterio.open(label_filepath) as label_file:
-
-            gt = label_file.read(window=window).transpose(1, 2, 0)
-
-        return gt
-
-    def __len__(self):
-
-        return self.approx_crop_per_image * len(self.idxs)
-
-    def __getitem__(self, idx):
-
-        raise NotImplementedError
+        super().__init__(*args, **kwargs)
 
     # The length of the dataset should be the number of get_item calls needed to
     # span the whole dataset. If get_item gives the full image, this is obviously
@@ -138,31 +72,16 @@ class IsprsVaihingen(Dataset):
 
         return 1900 * 2600
 
-class IsprsVaihingenUnlabeled(IsprsVaihingen):
 
-    def __init__(self, data_path, idxs, crop):
+class IsprsVaihingenUnlabeled(IsprsVaihingen, BaseDatasetUnlabeled):
 
-        super(IsprsVaihingenUnlabeled, self).__init__(data_path, idxs, crop)
+    def __init__(self, *args, **kwargs):
 
-    def __getitem__(self, idx):
-
-        idx = self.idxs[idx % len(self.idxs)]
-        image, window = self.get_image(idx)
-
-        return image
+        super().__init__(*args, **kwargs)
 
 
-class IsprsVaihingenLabeled(IsprsVaihingen):
+class IsprsVaihingenLabeled(IsprsVaihingen, BaseDatasetLabeled):
 
-    def __init__(self, data_path, idxs, crop):
+    def __init__(self, *args, **kwargs):
 
-        super(IsprsVaihingenLabeled, self).__init__(data_path, idxs, crop)
-
-    def __getitem__(self, idx):
-
-        idx = self.idxs[idx % len(self.idxs)]
-        image, window = self.get_image(idx)
-        label_colors = self.get_label(idx, window)
-        label = self.colors_to_labels(label_colors)
-
-        return image, label
+        super().__init__(*args, **kwargs)

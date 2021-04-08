@@ -1,4 +1,5 @@
-from datasets import MiniworldCity, MiniworldCityLabeled, MiniworldCityUnlabeled
+from datasets import MiniworldCity
+from datasets import BaseDatasetLabeled, BaseDatasetUnlabeled
 
 
 class MiniworldArlington(MiniworldCity):
@@ -11,23 +12,23 @@ class MiniworldArlington(MiniworldCity):
 
     unlabeled_image_paths = []
 
-    def __init__(self, data_path, idxs, crop):
+    def __init__(self, *args, **kwargs):
 
-        super().__init__(data_path, idxs, crop)
+        super().__init__(*args, **kwargs)
 
     @property
     def __image_size__(cls):
 
         return 3000*3000
 
-class MiniworldArlingtonLabeled(MiniworldArlington, MiniworldCityLabeled):
+class MiniworldArlingtonLabeled(MiniworldArlington, BaseDatasetLabeled):
 
-    def __init__(self, data_path, idxs, crop):
+    def __init__(self, *args, **kwargs):
 
-        super().__init__(data_path, idxs, crop)
+        super().__init__(*args, **kwargs)
 
-class MiniworldArlingtonUnlabeled(MiniworldArlington, MiniworldCityUnlabeled):
+class MiniworldArlingtonUnlabeled(MiniworldArlington, BaseDatasetUnlabeled):
 
-    def __init__(self, data_path, idxs, crop):
+    def __init__(self, *args, **kwargs):
 
-        super().__init__(data_path, idxs, crop)
+        super().__init__(*args, **kwargs)

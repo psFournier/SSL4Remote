@@ -1,5 +1,5 @@
-from pl_datamodules.base_class_supervised import BaseClassSupervised
-from pl_datamodules.base_class_semisupervised import BaseClassSemisupervised
+from pl_datamodules.base_supervised_datamodule import BaseSupervisedDatamodule
+from pl_datamodules.base_semisup_datamodule import BaseSemisupDatamodule
 # from pl_datamodules.rot_equivariance_isprs_vaihingen import RotEquivarianceIsprsVaihingen
 from pl_datamodules.isprs_vai_sup import IsprsVaiSup
 from pl_datamodules.isprs_vai_semisup import IsprsVaiSemisup

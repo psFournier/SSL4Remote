@@ -11,9 +11,9 @@ from transforms import MergeLabels
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
-from pl_datamodules import BaseClassSupervised
+from pl_datamodules import BaseSupervisedDatamodule
 
-class IsprsVaiSup(BaseClassSupervised):
+class IsprsVaiSup(BaseSupervisedDatamodule):
 
     def __init__(self, *args, **kwargs):
 
