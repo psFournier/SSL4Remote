@@ -37,7 +37,12 @@ class IsprsVaiSup(LightningDataModule):
         self.nb_im_train = nb_im_train
 
         self.augmentations = A.Compose(
-            get_augmentations(augmentations) + [ToTensorV2(transpose_mask=False)]
+            get_augmentations(augmentations) + [
+                A.Normalize(
+                    mean=IsprsVaihingen.mean_labeled_pixels,
+                    std=IsprsVaihingen.std_labeled_pixels
+                ),
+                ToTensorV2(transpose_mask=False)]
         )
 
         # For binary classification, all labels other than that of interest are collapsed

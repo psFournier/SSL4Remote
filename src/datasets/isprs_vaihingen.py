@@ -68,11 +68,6 @@ class IsprsVaihingen(Dataset):
         self.approx_crop_per_image = int(
             self.__image_size__ / (crop**2)
         )
-        self.normalize = A.Normalize(
-            mean=self.mean_labeled_pixels,
-            std=self.std_labeled_pixels
-        )
-
 
     def get_crop_window(self, image_file):
 
@@ -96,6 +91,7 @@ class IsprsVaihingen(Dataset):
             window = self.get_crop_window(image_file)
             top = image_file.read(window=window, out_dtype=np.float32)
             top = top.transpose(1, 2, 0) / 255
+
 
         # If we want to use the surface model
         # dsm_filepath = os.path.join(self.data_path, 'dsm',

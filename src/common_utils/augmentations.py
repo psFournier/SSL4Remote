@@ -94,7 +94,7 @@ def hard_augmentations(mask_dropout=True) -> List[A.DualTransform]:
     ]
 
 
-def get_augmentations(augmentation: str) -> List[A.DualTransform]:
+def get_augmentations(augmentation):
     if augmentation == "hard":
         aug_transform = hard_augmentations()
     elif augmentation == "medium":
