@@ -5,8 +5,6 @@ import numpy as np
 import rasterio as rio
 from rasterio.windows import Window
 from torch.utils.data import Dataset
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 
 warnings.filterwarnings(
     "ignore", category=rio.errors.NotGeoreferencedWarning
@@ -37,15 +35,6 @@ class MiniworldCity(Dataset):
         self.approx_crop_per_image = int(
             self.__image_size__ / (crop**2)
         )
-        # self.normalize = A.Normalize(
-        #     mean=self.mean_labeled_pixels,
-        #     std=self.std_labeled_pixels
-        # )
-        self.normalize = A.NoOp()
-        self.basic_augment = A.Compose([
-            self.normalize,
-            ToTensorV2(transpose_mask=False)
-        ])
 
     def get_crop_window(self, image_file):
 
@@ -76,7 +65,8 @@ class MiniworldCity(Dataset):
     def get_label(self, idx, window):
 
         label_filepath = os.path.join(
-            self.data_path, self.label_paths[idx]
+            self.data_path,
+            self.label_paths[idx]
         )
 
         with rio.open(label_filepath) as label_file:
@@ -112,7 +102,6 @@ class MiniworldCityUnlabeled(MiniworldCity):
         # idx is taken between 0 and self.__len__, which can be greather than len(idxs) due to tiling.
         idx = self.idxs[idx % len(self.idxs)]
         image, window = self.get_image(idx)
-        image = self.basic_augment(image=image)['image']
 
         return image
 
@@ -129,9 +118,5 @@ class MiniworldCityLabeled(MiniworldCity):
         image, window = self.get_image(idx)
         label_colors = self.get_label(idx, window)
         label = self.colors_to_labels(label_colors)
-        normalized = self.basic_augment(
-            image=image,
-            mask=label
-        )
 
-        return normalized['image'], normalized['mask']
+        return image, label

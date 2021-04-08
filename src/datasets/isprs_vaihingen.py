@@ -5,8 +5,6 @@ import numpy as np
 import rasterio
 from rasterio.windows import Window
 from torch.utils.data import Dataset
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 

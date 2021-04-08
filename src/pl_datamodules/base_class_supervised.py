@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+from functools import partial
 
 import numpy as np
 from pytorch_lightning import LightningDataModule
@@ -10,9 +11,8 @@ from transforms import MergeLabels
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
-from datasets import MiniworldParis, MiniworldParisLabeled
 
-class MiniworldParisSup(LightningDataModule):
+class BaseClassSupervised(LightningDataModule):
 
     def __init__(self,
                  data_dir,
@@ -36,14 +36,19 @@ class MiniworldParisSup(LightningDataModule):
         self.nb_im_val = nb_im_val
         self.nb_im_train = nb_im_train
 
-        self.augmentations = A.Compose(
+        self.train_augment = A.Compose(
             get_augmentations(augmentations) + [
                 A.NoOp(),
                 ToTensorV2(transpose_mask=False)]
         )
+        self.val_augment = ToTensorV2(transpose_mask=False)
 
         # For binary classification, all labels other than that of interest are collapsed
         self.label_merger = MergeLabels([[0], [1]])
+
+        self.sup_train_set = None
+        self.val_set = None
+
 
     def prepare_data(self, *args, **kwargs):
 
@@ -57,9 +62,7 @@ class MiniworldParisSup(LightningDataModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--nb_pass_per_epoch", type=float, default=1.,
                             help='how many times per epoch the dataset should be spanned')
-        parser.add_argument(
-            "--data_dir", type=str, default="/scratch_ai4geo/miniworld/paris"
-        )
+        parser.add_argument("--data_dir", type=str)
         parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--nb_im_train", type=int, default=2)
@@ -72,20 +75,7 @@ class MiniworldParisSup(LightningDataModule):
 
     def setup(self, stage=None):
 
-        shuffled_idxs = np.random.permutation(
-            len(MiniworldParis.labeled_image_paths)
-        )
-
-        val_idxs = shuffled_idxs[:self.nb_im_val]
-        train_idxs = shuffled_idxs[-self.nb_im_train:]
-
-        self.sup_train_set = MiniworldParisLabeled(
-            self.data_dir, train_idxs, self.crop_size
-        )
-
-        self.val_set = MiniworldParisLabeled(
-            self.data_dir, val_idxs, self.crop_size
-        )
+        raise NotImplementedError
 
     # Following pytorch Dataloader doc, loading from a map-style dataset is
     # roughly equivalent with:
@@ -93,12 +83,12 @@ class MiniworldParisSup(LightningDataModule):
     #     for indices in batch_sampler:
     #         yield collate_fn([dataset[i] for i in indices])
 
-    def collate_labeled(self, batch):
+    def collate_labeled(self, batch, augment):
 
         # We apply transforms here because transforms are method-dependent
         # while the dataset class should be method independent.
         transformed_batch = [
-            self.augmentations(
+            augment(
                 image=image,
                 mask=self.label_merger(ground_truth)
             )
@@ -130,7 +120,10 @@ class MiniworldParisSup(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            collate_fn=self.collate_labeled,
+            collate_fn=partial(
+                self.collate_labeled,
+                augment=self.train_augment
+            ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -149,7 +142,10 @@ class MiniworldParisSup(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             batch_size=self.batch_size,
-            collate_fn=self.collate_labeled,
+            collate_fn=partial(
+                self.collate_labeled,
+                augment=self.val_augment
+            ),
             sampler=val_sampler,
             num_workers=self.num_workers,
             pin_memory=True,

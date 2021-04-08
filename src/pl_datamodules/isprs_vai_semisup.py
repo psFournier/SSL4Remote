@@ -11,21 +11,13 @@ from pl_datamodules import IsprsVaiSup
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
+from pl_datamodules import BaseClassSemisupervised
 
-class IsprsVaiSemisup(IsprsVaiSup):
+class IsprsVaiSemisup(BaseClassSemisupervised):
 
-    def __init__(self, nb_im_unsup_train, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.nb_im_unsup_train = nb_im_unsup_train
-
-    @classmethod
-    def add_model_specific_args(cls, parent_parser):
-
-        parser = super().add_model_specific_args(parent_parser)
-        parser.add_argument("--nb_im_unsup_train", type=int, default=0)
-
-        return parser
 
     def setup(self, stage=None):
 
@@ -57,61 +49,3 @@ class IsprsVaiSemisup(IsprsVaiSup):
             unsup_train_idxs,
             self.crop_size
         )
-
-    def collate_unlabeled(self, batch):
-
-        transformed_batch = [
-            self.augmentations(
-                image=image
-            )
-            for image in batch
-        ]
-        batch = [(elem["image"]) for elem in transformed_batch]
-
-        return default_collate(batch)
-
-    def train_dataloader(self):
-
-        """
-        See the supervised dataloader for comments on the need for samplers.
-        The semi supervised loader consists in two loaders for labeled and
-        unlabeled data.
-        """
-
-        sup_train_sampler = RandomSampler(
-            data_source=self.sup_train_set,
-            replacement=True,
-            num_samples=int(self.nb_pass_per_epoch * len(self.sup_train_set)),
-        )
-
-        # num_workers should be the number of cpus on the machine.
-        sup_train_dataloader = DataLoader(
-            dataset=self.sup_train_set,
-            batch_size=self.batch_size,
-            collate_fn=self.collate_labeled,
-            sampler=sup_train_sampler,
-            num_workers=self.num_workers,
-            pin_memory=True,
-        )
-
-        unsup_train_sampler = RandomSampler(
-            data_source=self.unsup_train_set,
-            replacement=True,
-            num_samples=int(self.nb_pass_per_epoch * len(self.unsup_train_set)),
-        )
-        # num_workers should be the number of cpus on the machine.
-        unsup_train_dataloader = DataLoader(
-            dataset=self.unsup_train_set,
-            batch_size=self.batch_size,
-            collate_fn=self.collate_unlabeled,
-            sampler=unsup_train_sampler,
-            num_workers=self.num_workers,
-            pin_memory=True,
-        )
-
-        train_dataloaders = {
-            "sup": sup_train_dataloader,
-            "unsup": unsup_train_dataloader,
-        }
-
-        return train_dataloaders
