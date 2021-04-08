@@ -10,7 +10,7 @@ from transforms import MergeLabels
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
-from datasets import MiniworldParis, MiniworldParisLabeled
+from torch_datasets import MiniworldParis, MiniworldParisLabeled
 from pl_datamodules import BaseSupervisedDatamodule
 
 

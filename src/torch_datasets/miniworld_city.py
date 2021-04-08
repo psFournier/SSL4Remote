@@ -5,7 +5,7 @@ import numpy as np
 import rasterio as rio
 from abc import ABC
 
-from datasets import BaseDataset
+from torch_datasets import BaseDataset
 
 warnings.filterwarnings(
     "ignore", category=rio.errors.NotGeoreferencedWarning

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-from datasets import IsprsVaihingen, IsprsVaihingenLabeled, IsprsVaihingenUnlabeled
+from torch_datasets import IsprsVaihingen, IsprsVaihingenLabeled, IsprsVaihingenUnlabeled
 
 from pl_datamodules import BaseSemisupDatamodule
 

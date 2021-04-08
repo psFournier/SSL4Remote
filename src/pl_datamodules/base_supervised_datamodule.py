@@ -10,10 +10,9 @@ from transforms import MergeLabels
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
-from abc import ABC
 
 
-class BaseSupervisedDatamodule(LightningDataModule, ABC):
+class BaseSupervisedDatamodule(LightningDataModule):
 
     def __init__(self,
                  data_dir,

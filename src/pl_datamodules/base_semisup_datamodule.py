@@ -4,10 +4,9 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
 from pl_datamodules import BaseSupervisedDatamodule
-from abc import ABC
 
 
-class BaseSemisupDatamodule(BaseSupervisedDatamodule, ABC):
+class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
     def __init__(self, nb_im_unsup_train, *args, **kwargs):
 

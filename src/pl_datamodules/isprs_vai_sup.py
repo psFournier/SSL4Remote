@@ -5,7 +5,7 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
-from datasets import IsprsVaihingen, IsprsVaihingenLabeled
+from torch_datasets import IsprsVaihingen, IsprsVaihingenLabeled
 from transforms import MergeLabels
 
 import albumentations as A

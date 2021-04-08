@@ -1,16 +1,6 @@
-from argparse import ArgumentParser
-from functools import partial
 import numpy as np
-from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
-from torch.utils.data._utils.collate import default_collate
+from torch.utils.data import ConcatDataset
 
-from transforms import MergeLabels
-
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from common_utils.augmentations import get_augmentations
-from datasets import MiniworldParis, MiniworldParisLabeled
 from pl_datamodules import BaseSupervisedDatamodule
 
 

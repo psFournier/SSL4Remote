@@ -1,14 +1,9 @@
 import numpy as np
-from datasets import MiniworldParisLabeled, MiniworldArlingtonLabeled
 from torch.utils.data import ConcatDataset, DataLoader
+from torch_datasets import MiniworldParisLabeled
+from torch_datasets import MiniworldArlingtonLabeled
 
-
-city_classes = [
-    getattr('datasets', name) for name in [
-        'MiniworldParisLabeled',
-        'MiniworldArlingtonLabeled'
-    ]
-]
+city_classes = [MiniworldParisLabeled, MiniworldArlingtonLabeled]
 city_directories = [
     '/scratch_ai4geo/miniworld/'+name for name in [
         'paris',
@@ -37,3 +32,6 @@ sup_train_loader = DataLoader(
     num_workers=0,
     batch_size=2
 )
+
+for data in sup_train_loader:
+    print(data)

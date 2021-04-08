@@ -7,7 +7,7 @@ from rasterio.windows import Window
 from torch.utils.data import Dataset
 from abc import ABC
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
-from datasets import BaseDataset, BaseDatasetLabeled, BaseDatasetUnlabeled
+from torch_datasets import BaseDataset, BaseDatasetLabeled, BaseDatasetUnlabeled
 
 
 class IsprsVaihingen(BaseDataset, ABC):

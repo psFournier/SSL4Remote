@@ -33,7 +33,9 @@ class MeanTeacher(pl.LightningModule):
                  learning_rate,
                  unsup_loss_prop,
                  ema,
-                 max_epochs):
+                 max_epochs,
+                 *args,
+                 **kwargs):
 
         super().__init__()
 

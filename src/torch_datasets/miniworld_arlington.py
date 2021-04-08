@@ -1,5 +1,5 @@
-from datasets import MiniworldCity
-from datasets import BaseDatasetLabeled, BaseDatasetUnlabeled
+from torch_datasets import MiniworldCity
+from torch_datasets import BaseDatasetLabeled, BaseDatasetUnlabeled
 
 
 class MiniworldArlington(MiniworldCity):
