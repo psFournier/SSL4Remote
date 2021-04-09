@@ -18,7 +18,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
-        parser.add_argument("--nb_im_unsup_train", type=int, default=0)
+        parser.add_argument("--nb_im_unsup_train", type=int, default=1)
 
         return parser
 

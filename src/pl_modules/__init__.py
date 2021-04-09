@@ -1,2 +1,3 @@
+from pl_modules.supervised_baseline import SupervisedBaseline
 from pl_modules.rot_equivariance import RotEquivariance
 from pl_modules.mean_teacher import MeanTeacher
