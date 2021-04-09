@@ -22,12 +22,11 @@ class MiniworldParisSup(BaseSupervisedDatamodule):
 
     def setup(self, stage=None):
 
-        shuffled_idxs = np.random.permutation(
-            len(MiniworldParis.labeled_image_paths)
-        )
+        idxs = list(range(len(MiniworldParis.labeled_image_paths)))
+        # idxs = np.random.permutation(idxs)
 
-        val_idxs = shuffled_idxs[:self.nb_im_val]
-        train_idxs = shuffled_idxs[-self.nb_im_train:]
+        val_idxs = idxs[:self.nb_im_val]
+        train_idxs = idxs[-self.nb_im_train:]
 
         self.sup_train_set = MiniworldParisLabeled(
             self.data_dir, train_idxs, self.crop_size

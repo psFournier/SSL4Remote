@@ -7,7 +7,7 @@ city_classes = [MiniworldParisLabeled, MiniworldArlingtonLabeled]
 city_directories = [
     '/scratch_ai4geo/miniworld/'+name for name in [
         'paris',
-        'arlington'
+        'Arlington'
     ]
 ]
 
@@ -25,6 +25,7 @@ for city_class, directory in zip(city_classes, city_directories):
     )
 
 dataset = ConcatDataset(datasets)
+print(len(dataset))
 
 sup_train_loader = DataLoader(
     dataset,

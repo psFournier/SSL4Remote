@@ -14,6 +14,7 @@ class BaseDataset(Dataset, ABC):
 
     # The labeled and unlabeled image indices are properties of the class
     # independent of its instanciation.
+    # TODO: if there are several million image paths, bad idea.
     labeled_image_paths = []
     unlabeled_image_paths = []
     label_paths = []
@@ -42,9 +43,8 @@ class BaseDataset(Dataset, ABC):
 
     def get_image(self, idx):
 
-        image_filepath = os.path.join(
-            self.data_path, self.labeled_image_paths[idx]
-        )
+        path = (self.labeled_image_paths + self.unlabeled_image_paths)[idx]
+        image_filepath = os.path.join(self.data_path, path)
 
         with rasterio.open(image_filepath) as image_file:
 
@@ -56,10 +56,8 @@ class BaseDataset(Dataset, ABC):
 
     def get_label(self, idx, window):
 
-        label_filepath = os.path.join(
-            self.data_path,
-            self.label_paths[idx],
-        )
+        path = self.label_paths[idx]
+        label_filepath = os.path.join(self.data_path, path)
 
         with rasterio.open(label_filepath) as label_file:
 
@@ -95,7 +93,8 @@ class BaseDatasetUnlabeled(BaseDataset, ABC):
 
     def __getitem__(self, idx):
 
-        idx = self.idxs[idx % len(self.idxs)]
+        idx = idx % len(self.idxs)
+        idx = self.idxs[idx]
         image, window = self.get_image(idx)
 
         return image
@@ -114,7 +113,8 @@ class BaseDatasetLabeled(BaseDatasetUnlabeled, ABC):
 
     def __getitem__(self, idx):
 
-        idx = self.idxs[idx % len(self.idxs)]
+        idx = idx % len(self.idxs)
+        idx = self.idxs[idx]
         image, window = self.get_image(idx)
         label_colors = self.get_label(idx, window)
         label = self.colors_to_labels(label_colors)

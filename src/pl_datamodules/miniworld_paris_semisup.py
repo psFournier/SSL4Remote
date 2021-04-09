@@ -5,16 +5,16 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
-from torch_datasets import IsprsVaihingen, IsprsVaihingenLabeled
 from transforms import MergeLabels
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
-from pl_datamodules import BaseSupervisedDatamodule
+from torch_datasets import MiniworldParis, MiniworldParisLabeled
+from pl_datamodules import BaseSemisupDatamodule
 
 
-class IsprsVaiSup(BaseSupervisedDatamodule):
+class MiniworldParisSemisup(BaseSemisupDatamodule):
 
     def __init__(self, *args, **kwargs):
 
@@ -22,16 +22,16 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
 
     def setup(self, stage=None):
 
-        idxs = list(range(len(IsprsVaihingen.labeled_image_paths)))
+        idxs = list(range(len(MiniworldParis.labeled_image_paths)))
         # idxs = np.random.permutation(idxs)
 
         val_idxs = idxs[:self.nb_im_val]
         train_idxs = idxs[-self.nb_im_train:]
 
-        self.sup_train_set = IsprsVaihingenLabeled(
+        self.sup_train_set = MiniworldParisLabeled(
             self.data_dir, train_idxs, self.crop_size
         )
 
-        self.val_set = IsprsVaihingenLabeled(
+        self.val_set = MiniworldParisLabeled(
             self.data_dir, val_idxs, self.crop_size
         )
