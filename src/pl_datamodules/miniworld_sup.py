@@ -1,7 +1,12 @@
-import numpy as np
+import random
 from torch.utils.data import ConcatDataset
+import os
 
 from pl_datamodules import BaseSupervisedDatamodule
+from torch_datasets import (
+    MiniworldParisLabeled,
+    MiniworldArlingtonLabeled
+)
 
 
 class MiniworldSup(BaseSupervisedDatamodule):
@@ -12,26 +17,26 @@ class MiniworldSup(BaseSupervisedDatamodule):
 
     def setup(self, stage=None):
 
-        sup_train_datasets = []
-        val_datasets = []
-        city_classes = [
-            getattr('datasets', name) for name in [
-                'MiniworldParisLabeled',
-                'MiniworldArlingtonLabeled'
-            ]
+        city_classes = [MiniworldParisLabeled, MiniworldArlingtonLabeled]
+        dirnames = [
+            'paris',
+            'Arlington'
         ]
 
-        for city_class in city_classes:
+        sup_train_datasets = []
+        val_datasets = []
+        for city_class, dirname in zip(city_classes, dirnames):
 
-            shuffled_idxs = np.random.permutation(
-                len(city_class.labeled_image_paths)
-            )
+            nb_labeled_images = len(city_class.labeled_image_paths)
+            labeled_idxs = list(range(nb_labeled_images))
+            random.shuffle(labeled_idxs)
 
-            val_idxs = shuffled_idxs[:self.nb_im_val]
-            train_idxs = shuffled_idxs[-self.nb_im_train:]
+            val_idxs = labeled_idxs[:self.nb_im_val]
+            train_idxs = labeled_idxs[-self.nb_im_train:]
 
             sup_train_datasets.append(
-                city_class(self.data_dir, train_idxs, self.crop_size)
+                city_class(os.path.join(self.data_dir, dirname), train_idxs,
+                           self.crop_size)
             )
 
             val_datasets.append(
