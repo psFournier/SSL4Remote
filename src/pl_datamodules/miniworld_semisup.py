@@ -43,7 +43,7 @@ class MiniworldSemisup(BaseSemisupDatamodule):
             )
 
             val_datasets.append(
-                city_class[0](self.data_dir, val_idxs, self.crop_size)
+                city_class[0](os.path.join(self.data_dir, dirname), val_idxs, self.crop_size)
             )
 
             nb_unlabeled_images = len(city_class[1].unlabeled_image_paths)
@@ -54,7 +54,7 @@ class MiniworldSemisup(BaseSemisupDatamodule):
             random.shuffle(all_unsup_train_idxs)
             unsup_train_idxs = all_unsup_train_idxs[:self.nb_im_unsup_train]
             unsup_train_datasets.append(
-                city_class[1](self.data_dir,unsup_train_idxs,self.crop_size)
+                city_class[1](os.path.join(self.data_dir, dirname),unsup_train_idxs,self.crop_size)
             )
 
         self.sup_train_set = ConcatDataset(sup_train_datasets)

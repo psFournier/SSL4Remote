@@ -86,7 +86,6 @@ class MeanTeacher(pl.LightningModule):
                             help="Initial learning rate")
         parser.add_argument("--inplaceBN", action='store_true' )
 
-
         return parser
 
     def init_metrics(self, num_classes):

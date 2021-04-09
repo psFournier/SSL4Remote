@@ -61,7 +61,8 @@ class BaseDataset(Dataset, ABC):
 
         with rasterio.open(label_filepath) as label_file:
 
-            label = label_file.read(window=window).transpose(1, 2, 0)
+            label = label_file.read(window=window, out_dtype=np.uint8)
+            label = label.transpose(1, 2, 0)
 
         return label
 

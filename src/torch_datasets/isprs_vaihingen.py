@@ -38,8 +38,8 @@ class IsprsVaihingen(BaseDataset, ABC):
 
     @classmethod
     def colors_to_labels(cls, labels_color):
-        labels = np.zeros(labels_color.shape[:2], dtype=int)
 
+        labels = np.zeros(labels_color.shape[:2], dtype=int)
         colors = [
             [255, 255, 255],
             [0, 0, 255],
