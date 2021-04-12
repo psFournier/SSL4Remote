@@ -31,8 +31,8 @@ class MiniworldSup(BaseSupervisedDatamodule):
             labeled_idxs = list(range(nb_labeled_images))
             random.shuffle(labeled_idxs)
 
-            val_idxs = labeled_idxs[:self.nb_im_val]
-            train_idxs = labeled_idxs[-self.nb_im_train:]
+            val_idxs = labeled_idxs[:self.prop_val]
+            train_idxs = labeled_idxs[-self.prop_train:]
 
             sup_train_datasets.append(
                 city_class(os.path.join(self.data_dir, dirname), train_idxs,

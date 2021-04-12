@@ -14,7 +14,7 @@ from torch_datasets import MiniworldParis, MiniworldParisLabeled
 from pl_datamodules import BaseSupervisedDatamodule
 
 
-class MiniworldParisSup(BaseSupervisedDatamodule):
+class ParisSup(BaseSupervisedDatamodule):
 
     def __init__(self, *args, **kwargs):
 
@@ -25,8 +25,8 @@ class MiniworldParisSup(BaseSupervisedDatamodule):
         idxs = list(range(len(MiniworldParis.labeled_image_paths)))
         # idxs = np.random.permutation(idxs)
 
-        val_idxs = idxs[:self.nb_im_val]
-        train_idxs = idxs[-self.nb_im_train:]
+        val_idxs = idxs[:self.prop_val]
+        train_idxs = idxs[-self.prop_train:]
 
         self.sup_train_set = MiniworldParisLabeled(
             self.data_dir, train_idxs, self.crop_size

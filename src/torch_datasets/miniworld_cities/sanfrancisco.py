@@ -2,13 +2,13 @@ from torch_datasets import MiniworldCity
 from torch_datasets import BaseDatasetLabeled, BaseDatasetUnlabeled
 
 
-class MiniworldArlington(MiniworldCity):
+class SanFrancisco(MiniworldCity):
 
-    labeled_image_paths = ['test/{}_x.png'.format(i) for i in [0]] + \
-                          ['train/{}_x.png'.format(i) for i in [0,1]]
+    labeled_image_paths = ['test/{}_x.png'.format(i) for i in range(1)] + \
+                          ['train/{}_x.png'.format(i) for i in range(2)]
 
-    label_paths = ['test/{}_y.png'.format(i) for i in [0]] + \
-                  ['train/{}_y.png'.format(i) for i in [0,1]]
+    label_paths = ['test/{}_y.png'.format(i) for i in range(1)] + \
+                  ['train/{}_y.png'.format(i) for i in range(2)]
 
     unlabeled_image_paths = []
 
@@ -21,13 +21,13 @@ class MiniworldArlington(MiniworldCity):
 
         return 3000*3000
 
-class MiniworldArlingtonLabeled(MiniworldArlington, BaseDatasetLabeled):
+class SanFranciscoLabeled(SanFrancisco, BaseDatasetLabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
-class MiniworldArlingtonUnlabeled(MiniworldArlington, BaseDatasetUnlabeled):
+class SanFranciscoUnlabeled(SanFrancisco, BaseDatasetUnlabeled):
 
     def __init__(self, *args, **kwargs):
 

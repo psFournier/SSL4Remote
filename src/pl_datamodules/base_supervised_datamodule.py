@@ -21,8 +21,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  batch_size,
                  workers,
                  augmentations,
-                 nb_im_val,
-                 nb_im_train,
+                 prop_val,
+                 prop_train,
                  *args,
                  **kwargs):
 
@@ -33,8 +33,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.nb_pass_per_epoch = nb_pass_per_epoch
         self.batch_size = batch_size
         self.num_workers = workers
-        self.nb_im_val = nb_im_val
-        self.nb_im_train = nb_im_train
+        self.prop_val = prop_val
+        self.prop_train = prop_train
 
         self.train_augment = A.Compose(
             get_augmentations(augmentations) + [
@@ -65,8 +65,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--data_dir", type=str)
         parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
-        parser.add_argument("--nb_im_train", type=int, default=2)
-        parser.add_argument("--nb_im_val", type=int, default=7)
+        parser.add_argument("--prop_train", type=int, default=2)
+        parser.add_argument("--prop_val", type=int, default=7)
         parser.add_argument("-w", "--workers", default=8, type=int,
                             help="Num workers")
         parser.add_argument('--augmentations', type=str, default='safe')

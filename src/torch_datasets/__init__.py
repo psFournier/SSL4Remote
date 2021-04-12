@@ -7,9 +7,9 @@ from torch_datasets.isprs_vaihingen import \
 from torch_datasets.miniworld_cities.miniworld_city import \
     MiniworldCity
 from torch_datasets.miniworld_cities.miniworld_paris import \
-    MiniworldParis, \
-    MiniworldParisLabeled, \
-    MiniworldParisUnlabeled
+    Paris, \
+    ParisLabeled, \
+    ParisUnlabeled
 from torch_datasets.miniworld_cities.miniworld_arlington import \
     MiniworldArlington, \
     MiniworldArlingtonLabeled, \

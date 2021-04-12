@@ -8,17 +8,17 @@ from pl_datamodules import BaseSupervisedDatamodule
 
 class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
-    def __init__(self, nb_im_unsup_train, *args, **kwargs):
+    def __init__(self, prop_unsup_train, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.nb_im_unsup_train = nb_im_unsup_train
+        self.prop_unsup_train = prop_unsup_train
         self.unsup_train_set = None
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
-        parser.add_argument("--nb_im_unsup_train", type=int, default=1)
+        parser.add_argument("--prop_unsup_train", type=int, default=1)
 
         return parser
 
