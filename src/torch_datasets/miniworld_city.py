@@ -55,14 +55,16 @@ class MiniworldCity(BaseDataset, ABC):
                  unlabeled_image_paths,
                  image_size,
                  *args, **kwargs):
-        super().__init__(
-            *args,
-            **kwargs
-        )
+        
         self.labeled_image_paths = labeled_image_paths
         self.label_paths=label_paths
         self.unlabeled_image_paths = unlabeled_image_paths
         self.image_size = image_size
+        super().__init__(
+            *args,
+            **kwargs
+        )
+
 
 class MiniworldCityLabeled(MiniworldCity, BaseDatasetUnlabeled):
 
