@@ -16,7 +16,7 @@ warnings.filterwarnings(
 class MiniworldCity(BaseDataset, ABC):
 
     city_info_list = [
-        ('Arlington', 15, 20, (3000,3000)),
+        ('Arlington', 1, 2, (3000,3000)),
         ('Atlanta', 1, 2, (1800,1200)),
         ('austin', 15, 20, (3000,3000)),
         ('Austin', 1, 2, (3063,3501)),
@@ -45,7 +45,7 @@ class MiniworldCity(BaseDataset, ABC):
     def colors_to_labels(cls, labels_color):
 
         labels = np.zeros(labels_color.shape[:2], dtype=int)
-        labels[np.where(np.all(labels_color != [0, 0, 0], axis=2))] = 1
+        labels[np.where(np.any(labels_color != [0, 0, 0], axis=2))] = 1
 
         return labels
 
@@ -55,7 +55,7 @@ class MiniworldCity(BaseDataset, ABC):
                  unlabeled_image_paths,
                  image_size,
                  *args, **kwargs):
-        
+
         self.labeled_image_paths = labeled_image_paths
         self.label_paths=label_paths
         self.unlabeled_image_paths = unlabeled_image_paths
@@ -66,14 +66,14 @@ class MiniworldCity(BaseDataset, ABC):
         )
 
 
-class MiniworldCityLabeled(MiniworldCity, BaseDatasetUnlabeled):
+class MiniworldCityLabeled(MiniworldCity, BaseDatasetLabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
 
-class MiniworldCityUnlabeled(MiniworldCity, BaseDatasetLabeled):
+class MiniworldCityUnlabeled(MiniworldCity, BaseDatasetUnlabeled):
 
     def __init__(self, *args, **kwargs):
 
