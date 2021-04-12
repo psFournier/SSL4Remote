@@ -4,13 +4,4 @@ from torch_datasets.isprs_vaihingen import \
     IsprsVaihingenUnlabeled, \
     IsprsVaihingenLabeled, \
     IsprsVaihingen
-from torch_datasets.miniworld_cities.miniworld_city import \
-    MiniworldCity
-from torch_datasets.miniworld_cities.miniworld_paris import \
-    Paris, \
-    ParisLabeled, \
-    ParisUnlabeled
-from torch_datasets.miniworld_cities.miniworld_arlington import \
-    MiniworldArlington, \
-    MiniworldArlingtonLabeled, \
-    MiniworldArlingtonUnlabeled
+from torch_datasets.miniworld_cities.miniworld_city import MiniworldCity
