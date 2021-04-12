@@ -12,12 +12,13 @@ warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarni
 
 class BaseDataset(Dataset, ABC):
 
+    labeled_image_paths = []
+    unlabeled_image_paths = []
+    label_paths = []
+    image_size = ()
+
     def __init__(self,
                  data_path,
-                 labeled_image_paths,
-                 label_paths,
-                 unlabeled_image_paths,
-                 image_size,
                  idxs,
                  crop,
                  *args,
@@ -26,9 +27,6 @@ class BaseDataset(Dataset, ABC):
 
         super().__init__()
         self.data_path = data_path
-        self.labeled_image_paths = labeled_image_paths
-        self.label_paths = label_paths
-        self.unlabeled_image_paths = unlabeled_image_paths
         self.idxs = idxs
         self.crop = crop
         self.mean_labeled_pixels = []
@@ -39,9 +37,8 @@ class BaseDataset(Dataset, ABC):
         # On the contrary, here get_item only gives a cropped tile from the image. Given the
         # crop parameter of the class and the average image size, provided they are all
         # close, we can say approx how many get_item calls are needed.
-        self.image_size = image_size
         self.approx_crop_per_image = int(
-            self.image_size / (crop**2)
+            self.image_size[0] * self.image_size[1] / (crop**2)
         )
 
     def get_crop_window(self, image_file):

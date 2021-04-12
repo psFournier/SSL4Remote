@@ -65,8 +65,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--data_dir", type=str)
         parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
-        parser.add_argument("--prop_train", type=int, default=2)
-        parser.add_argument("--prop_val", type=int, default=7)
+        parser.add_argument("--prop_train", type=float, default=0.7)
+        parser.add_argument("--prop_val", type=float, default=0.3)
         parser.add_argument("-w", "--workers", default=8, type=int,
                             help="Num workers")
         parser.add_argument('--augmentations', type=str, default='safe')

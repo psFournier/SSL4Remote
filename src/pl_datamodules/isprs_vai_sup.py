@@ -32,9 +32,13 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
         train_idxs = labeled_idxs[-nb_train_img:]
 
         self.sup_train_set = IsprsVaihingenLabeled(
-            self.data_dir, train_idxs, self.crop_size
+            data_path=self.data_dir,
+            idxs=train_idxs,
+            crop=self.crop_size
         )
 
         self.val_set = IsprsVaihingenLabeled(
-            self.data_dir, val_idxs, self.crop_size
+            data_path=self.data_dir,
+            idxs=val_idxs,
+            crop=self.crop_size
         )
