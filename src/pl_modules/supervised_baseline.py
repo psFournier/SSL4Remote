@@ -31,13 +31,12 @@ class SupervisedBaseline(pl.LightningModule):
                  num_classes,
                  inplaceBN,
                  learning_rate,
-                 max_epochs,
                  *args,
                  **kwargs):
 
         super().__init__()
 
-        network = smp.UnetPlusPlus(
+        network = smp.Unet(
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
@@ -49,13 +48,12 @@ class SupervisedBaseline(pl.LightningModule):
         self.save_hyperparameters()
 
         self.learning_rate = learning_rate
-        self.max_epochs = max_epochs
 
         self.train_metrics = None
         self.val_metrics = None
         self.init_metrics(num_classes)
 
-        self.callbacks = None
+        self.callbacks = []
         self.init_callbacks(num_classes)
 
         self.loss = losses.JointLoss(
@@ -110,21 +108,22 @@ class SupervisedBaseline(pl.LightningModule):
     def init_callbacks(self, num_classes):
 
         # Non-scalar metrics are bundled in callbacks that deal with logging them
-        per_class_precision = M.Precision(
-            num_classes=num_classes, mdmc_average="global", average="none"
-        )
-        per_class_precision_logger = ArrayValLogger(
-            array_metric=per_class_precision, name="per_class_precision"
-        )
-        per_class_F1 = M.F1(num_classes=num_classes, average="none")
-        per_class_F1_logger = ArrayValLogger(
-            array_metric=per_class_F1, name="per_class_F1"
-        )
-        cm = ConfMatLogger(num_classes=num_classes)
+        # per_class_precision = M.Precision(
+        #     num_classes=num_classes, mdmc_average="global", average="none"
+        # )
+        # per_class_precision_logger = ArrayValLogger(
+        #     array_metric=per_class_precision, name="per_class_precision"
+        # )
+        # self.callbacks.append(per_class_precision_logger)
+        #
+        # per_class_F1 = M.F1(num_classes=num_classes, average="none")
+        # per_class_F1_logger = ArrayValLogger(
+        #     array_metric=per_class_F1, name="per_class_F1"
+        # )
+        # self.callbacks.append(per_class_F1_logger)
 
-        self.callbacks = [
-            cm, per_class_F1_logger, per_class_precision_logger
-        ]
+        cm = ConfMatLogger(num_classes=num_classes)
+        self.callbacks.append(cm)
 
     def forward(self, x):
 
@@ -136,9 +135,9 @@ class SupervisedBaseline(pl.LightningModule):
         scheduler = MultiStepLR(
             optimizer,
             milestones=[
-                int(self.max_epochs * 0.5),
-                int(self.max_epochs * 0.7),
-                int(self.max_epochs * 0.9)],
+                int(self.trainer.max_epochs * 0.5),
+                int(self.trainer.max_epochs * 0.7),
+                int(self.trainer.max_epochs * 0.9)],
             gamma=0.3
         )
 

@@ -10,7 +10,8 @@ from transforms import MergeLabels
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
-
+import torch
+import numpy as np
 
 class BaseSupervisedDatamodule(LightningDataModule):
 
@@ -60,7 +61,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--nb_pass_per_epoch", type=float, default=1.,
+        parser.add_argument("--nb_pass_per_epoch", type=float, default=0.01,
                             help='how many times per epoch the dataset should be spanned')
         parser.add_argument("--data_dir", type=str)
         parser.add_argument("--batch_size", type=int, default=16)
@@ -94,6 +95,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         return default_collate(batch)
 
+    def wif(self, id):
+        uint64_seed = torch.initial_seed()
+        np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
+
     def train_dataloader(self):
 
         """
@@ -123,6 +128,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
+            worker_init_fn=self.wif
         )
 
         return sup_train_dataloader
@@ -145,6 +151,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
             sampler=val_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
+            worker_init_fn=self.wif
         )
 
         return val_dataloader

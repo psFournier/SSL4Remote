@@ -1,7 +1,7 @@
 # https://github.com/phborba/pytorch_segmentation_models_trainer/blob/main/pytorch_segmentation_models_trainer/main.py
 import datetime
 from argparse import ArgumentParser
-
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer, loggers
 
 from pl_datamodules import IsprsVaiSemisup, IsprsVaiSup, MiniworldSup, \
@@ -52,6 +52,11 @@ def main():
     # The lightning module is where the training schema is implemented.
     pl_module = modules[args.module](**args_dict)
 
+    checkpoint_callback = ModelCheckpoint(
+        monitor='val_sup_loss',
+        mode='min',
+        save_weights_only=True
+    )
     # Using from_argparse_args enables to use any standard parameter of thea
     # lightning Trainer class without having to manually add them to the parser.
     # In particular, a parameter that does not explicitly appears here but is
@@ -62,7 +67,16 @@ def main():
     trainer = Trainer.from_argparse_args(
         args,
         logger=tensorboard,
-        callbacks=pl_module.callbacks,
+        callbacks=pl_module.callbacks + [
+            checkpoint_callback
+        ],
+        benchmark=True,
+        min_epochs=500,
+        max_epochs=1000,
+        num_sanity_val_steps=0,
+        progress_bar_refresh_rate=100,
+        val_check_interval=1.0,
+        check_val_every_n_epoch=1
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

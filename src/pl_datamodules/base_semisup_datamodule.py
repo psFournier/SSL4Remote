@@ -57,6 +57,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
+            worker_init_fn=self.wif
         )
 
         unsup_train_sampler = RandomSampler(
@@ -75,6 +76,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
             sampler=unsup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
+            worker_init_fn=self.wif
         )
 
         train_dataloaders = {
