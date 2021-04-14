@@ -59,8 +59,8 @@ class BaseDataset(Dataset, ABC):
         with rasterio.open(image_filepath) as image_file:
 
             window = self.get_crop_window(image_file)
-            image = image_file.read(window=window, out_dtype=np.float32)
-            image = image.transpose(1, 2, 0) / 255
+            image = image_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
+            # image = image / 255
 
         return image, window
 
@@ -71,8 +71,7 @@ class BaseDataset(Dataset, ABC):
 
         with rasterio.open(label_filepath) as label_file:
 
-            label = label_file.read(window=window, out_dtype=np.uint8)
-            label = label.transpose(1, 2, 0)
+            label = label_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
 
         return label
 

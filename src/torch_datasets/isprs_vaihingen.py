@@ -47,6 +47,8 @@ class IsprsVaihingen(BaseDataset, ABC):
     ]
     image_size = (1900,2600)
     pixels_per_class = [21815349, 20417332]
+    mean_labeled_pixels = (0.4727, 0.3205, 0.3159)
+    std_labeled_pixels = (0.2100, 0.1496, 0.1426)
 
     def __init__(self, *args, **kwargs):
 
@@ -54,8 +56,6 @@ class IsprsVaihingen(BaseDataset, ABC):
             *args,
             **kwargs
         )
-        # self.mean_labeled_pixels = [0.4727, 0.3205, 0.3159]
-        # self.std_labeled_pixels = [0.2100, 0.1496, 0.1426]
 
     @staticmethod
     def colors_to_labels(labels_color):

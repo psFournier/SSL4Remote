@@ -39,7 +39,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         self.train_augment = A.Compose(
             get_augmentations(augmentations) + [
-                A.NoOp(),
+                A.Normalize(),
                 ToTensorV2(transpose_mask=False)]
         )
         self.val_augment = ToTensorV2(transpose_mask=False)
