@@ -41,8 +41,8 @@ class MiniworldCities(BaseDataset, ABC):
         ('vienna', 15,20,(3000,3000))
     ]
 
-    @classmethod
-    def colors_to_labels(cls, labels_color):
+    @staticmethod
+    def colors_to_labels(labels_color):
 
         labels = np.zeros(labels_color.shape[:2], dtype=int)
         labels[np.where(np.any(labels_color != [0, 0, 0], axis=2))] = 1

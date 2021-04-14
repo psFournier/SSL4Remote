@@ -59,9 +59,8 @@ class SupervisedBaseline(pl.LightningModule):
         self.callbacks = []
         self.init_callbacks(num_classes)
 
-        self.loss1, self.loss1name = get_loss(loss1)
-        self.loss2, self.loss2name = get_loss(loss2)
-        self.loss2weight = 1.
+        self.loss1name = loss1
+        self.loss2name = loss2
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -128,6 +127,13 @@ class SupervisedBaseline(pl.LightningModule):
 
         cm = ConfMatLogger(num_classes=num_classes)
         self.callbacks.append(cm)
+
+    def on_fit_start(self) -> None:
+
+        class_weights = self.trainer.datamodule.class_weights
+        self.loss1 = get_loss(self.loss1name, weight=class_weights)
+        self.loss2 = get_loss(self.loss2name, weight=class_weights)
+        self.loss2weight = 1.
 
     def forward(self, x):
 

@@ -125,47 +125,54 @@ class KLDivLossWithLogits(KLDivLoss):
         return loss
 
 
-def get_loss(loss_name: str, ignore_index=None):
-    if loss_name.lower() == "kl":
-        return KLDivLossWithLogits()
-
-    if loss_name.lower() == "bce":
-        return SoftBCEWithLogitsLoss(ignore_index=ignore_index)
+def get_loss(loss_name: str, ignore_index=None, weight=None):
+    # if loss_name.lower() == "kl":
+    #     return KLDivLossWithLogits()
+    #
+    # if loss_name.lower() == "bce":
+    #     return SoftBCEWithLogitsLoss(ignore_index=ignore_index)
 
     if loss_name.lower() == "ce":
         l = nn.CrossEntropyLoss()
-        return l, "Cross entropy loss"
+        return l
 
-    if loss_name.lower() == "wbce":
-        return WeightedBCEWithLogits(
-            mask_key=INPUT_MASK_KEY, weight_key=INPUT_MASK_WEIGHT_KEY, ignore_index=ignore_index
+    if loss_name.lower() == 'wce':
+        assert weight is not None
+        l = nn.CrossEntropyLoss(
+            weight=weight
         )
+        return l
 
-    if loss_name.lower() == "soft_bce":
-        return SoftBCEWithLogitsLoss(smooth_factor=0.1, ignore_index=ignore_index)
+    # if loss_name.lower() == "wbce":
+    #     return WeightedBCEWithLogits(
+    #         mask_key=INPUT_MASK_KEY, weight_key=INPUT_MASK_WEIGHT_KEY, ignore_index=ignore_index
+    #     )
 
-    if loss_name.lower() == "focal":
-        return BinaryFocalLoss(alpha=None, gamma=1.5, ignore_index=ignore_index)
-
-    if loss_name.lower() == "jaccard":
-        assert ignore_index is None
-        return JaccardLoss(mode="binary")
-
-    if loss_name.lower() == "lovasz":
-        assert ignore_index is None
-        return BinaryLovaszLoss()
-
-    if loss_name.lower() == "log_jaccard":
-        assert ignore_index is None
-        return JaccardLoss(mode="binary", log_loss=True)
+    # if loss_name.lower() == "soft_bce":
+    #     return SoftBCEWithLogitsLoss(smooth_factor=0.1, ignore_index=ignore_index)
+    #
+    # if loss_name.lower() == "focal":
+    #     return BinaryFocalLoss(alpha=None, gamma=1.5, ignore_index=ignore_index)
+    #
+    # if loss_name.lower() == "jaccard":
+    #     assert ignore_index is None
+    #     return JaccardLoss(mode="binary")
+    #
+    # if loss_name.lower() == "lovasz":
+    #     assert ignore_index is None
+    #     return BinaryLovaszLoss()
+    #
+    # if loss_name.lower() == "log_jaccard":
+    #     assert ignore_index is None
+    #     return JaccardLoss(mode="binary", log_loss=True)
 
     if loss_name.lower() == "dice":
         assert ignore_index is None
         l = DiceLoss(mode="multiclass", log_loss=False)
-        return l, "Dice loss"
+        return l
 
-    if loss_name.lower() == "log_dice":
-        assert ignore_index is None
-        return DiceLoss(mode="binary", log_loss=True)
+    # if loss_name.lower() == "log_dice":
+    #     assert ignore_index is None
+    #     return DiceLoss(mode="binary", log_loss=True)
 
     raise KeyError(loss_name)

@@ -13,12 +13,21 @@ from albumentations.pytorch import ToTensorV2
 from common_utils.augmentations import get_augmentations
 from pl_datamodules import BaseSupervisedDatamodule
 import random
+from torch import tensor
 
 class IsprsVaiSup(BaseSupervisedDatamodule):
+
+    class_weights = tensor(
+        [
+            IsprsVaihingen.pixels_per_class[0] / ppc for ppc in
+            IsprsVaihingen.pixels_per_class
+        ]
+    )
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+
 
     def setup(self, stage=None):
 

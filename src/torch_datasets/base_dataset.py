@@ -102,8 +102,8 @@ class BaseDatasetUnlabeled(BaseDataset, ABC):
 
 class BaseDatasetLabeled(BaseDatasetUnlabeled, ABC):
 
-    @classmethod
-    def colors_to_labels(cls, labels_color):
+    @staticmethod
+    def colors_to_labels(labels_color):
 
         raise NotImplementedError
 
