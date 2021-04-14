@@ -13,7 +13,7 @@ warnings.filterwarnings(
 )
 
 
-class MiniworldCity(BaseDataset, ABC):
+class MiniworldCities(BaseDataset, ABC):
 
     city_info_list = [
         ('Arlington', 1, 2, (3000,3000)),
@@ -66,14 +66,14 @@ class MiniworldCity(BaseDataset, ABC):
         )
 
 
-class MiniworldCityLabeled(MiniworldCity, BaseDatasetLabeled):
+class MiniworldCitiesLabeled(MiniworldCities, BaseDatasetLabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
 
-class MiniworldCityUnlabeled(MiniworldCity, BaseDatasetUnlabeled):
+class MiniworldCitiesUnlabeled(MiniworldCities, BaseDatasetUnlabeled):
 
     def __init__(self, *args, **kwargs):
 

@@ -74,7 +74,6 @@ def main():
         min_epochs=500,
         max_epochs=1000,
         num_sanity_val_steps=0,
-        progress_bar_refresh_rate=100,
         val_check_interval=1.0,
         check_val_every_n_epoch=1
     )

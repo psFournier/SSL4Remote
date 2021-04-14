@@ -6,7 +6,7 @@ from pytorch_toolbelt.losses import *
 from torch import nn
 from torch.nn import KLDivLoss
 
-from inria.dataset import INPUT_MASK_KEY, INPUT_MASK_WEIGHT_KEY
+# from inria.dataset import INPUT_MASK_KEY, INPUT_MASK_WEIGHT_KEY
 
 __all__ = ["get_loss", "WeightedBCEWithLogits", "KLDivLossWithLogits"]
 
@@ -133,7 +133,8 @@ def get_loss(loss_name: str, ignore_index=None):
         return SoftBCEWithLogitsLoss(ignore_index=ignore_index)
 
     if loss_name.lower() == "ce":
-        return nn.CrossEntropyLoss()
+        l = nn.CrossEntropyLoss()
+        return l, "Cross entropy loss"
 
     if loss_name.lower() == "wbce":
         return WeightedBCEWithLogits(
@@ -160,7 +161,8 @@ def get_loss(loss_name: str, ignore_index=None):
 
     if loss_name.lower() == "dice":
         assert ignore_index is None
-        return DiceLoss(mode="binary", log_loss=False)
+        l = DiceLoss(mode="multiclass", log_loss=False)
+        return l, "Dice loss"
 
     if loss_name.lower() == "log_dice":
         assert ignore_index is None

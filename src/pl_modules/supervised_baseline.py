@@ -18,8 +18,9 @@ import copy
 import pytorch_lightning.metrics as M
 from metrics import MyMetricCollection
 from callbacks import ArrayValLogger, ConfMatLogger
-from pytorch_toolbelt import losses
 from common_utils.scheduler import get_scheduler
+from common_utils.losses import get_loss
+
 
 
 class SupervisedBaseline(pl.LightningModule):
@@ -31,6 +32,8 @@ class SupervisedBaseline(pl.LightningModule):
                  num_classes,
                  inplaceBN,
                  learning_rate,
+                 loss1,
+                 loss2,
                  *args,
                  **kwargs):
 
@@ -56,10 +59,9 @@ class SupervisedBaseline(pl.LightningModule):
         self.callbacks = []
         self.init_callbacks(num_classes)
 
-        self.loss = losses.JointLoss(
-            nn.CrossEntropyLoss(),
-            losses.DiceLoss(mode='multiclass', ignore_index=0)
-        )
+        self.loss1, self.loss1name = get_loss(loss1)
+        self.loss2, self.loss2name = get_loss(loss2)
+        self.loss2weight = 1.
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -72,6 +74,8 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("-lr", "--learning-rate", type=float, default=1e-3,
                             help="Initial learning rate")
         parser.add_argument("--inplaceBN", action='store_true' )
+        parser.add_argument("--loss1", type=str, default="ce")
+        parser.add_argument("--loss2", type=str, default="dice")
 
         return parser
 
@@ -108,13 +112,13 @@ class SupervisedBaseline(pl.LightningModule):
     def init_callbacks(self, num_classes):
 
         # Non-scalar metrics are bundled in callbacks that deal with logging them
-        # per_class_precision = M.Precision(
-        #     num_classes=num_classes, mdmc_average="global", average="none"
-        # )
-        # per_class_precision_logger = ArrayValLogger(
-        #     array_metric=per_class_precision, name="per_class_precision"
-        # )
-        # self.callbacks.append(per_class_precision_logger)
+        per_class_precision = M.Precision(
+            num_classes=num_classes, mdmc_average="global", average="none"
+        )
+        per_class_precision_logger = ArrayValLogger(
+            array_metric=per_class_precision, name="per_class_precision"
+        )
+        self.callbacks.append(per_class_precision_logger)
         #
         # per_class_F1 = M.F1(num_classes=num_classes, average="none")
         # per_class_F1_logger = ArrayValLogger(
@@ -147,10 +151,15 @@ class SupervisedBaseline(pl.LightningModule):
 
         train_inputs, train_labels = batch
         outputs = self.network(train_inputs)
-        train_loss = self.loss(outputs, train_labels)
+
+        train_loss1 = self.loss1(outputs, train_labels)
+        train_loss2 = self.loss2(outputs, train_labels)
+        train_loss = train_loss1 + self.loss2weight * train_loss2
+
+        self.log(self.loss1name, train_loss1)
+        self.log(self.loss2name, train_loss2)
 
         self.train_metrics(outputs.softmax(dim=1), train_labels)
-        self.log("supervised_loss", train_loss)
         self.log_dict(self.train_metrics)
 
         return {"loss": train_loss}
@@ -159,7 +168,9 @@ class SupervisedBaseline(pl.LightningModule):
 
         val_inputs, val_labels = batch
         outputs = self.network(val_inputs)
-        val_loss = self.loss(outputs, val_labels)
+        val_loss1 = self.loss1(outputs, val_labels)
+        val_loss2 = self.loss2(outputs, val_labels)
+        val_loss = val_loss1 + self.loss2weight * val_loss2
 
         self.val_metrics(outputs.softmax(dim=1), val_labels)
         self.log("val_sup_loss", val_loss)
