@@ -15,8 +15,8 @@ from torch.optim.lr_scheduler import (
     CosineAnnealingWarmRestarts,
 )
 import copy
-import pytorch_lightning.metrics as M
-from metrics import MyMetricCollection
+import torchmetrics as M
+from metrics import MetricCollection
 from callbacks import ArrayValLogger, ConfMatLogger
 from common_utils.scheduler import get_scheduler
 from common_utils.losses import get_loss
@@ -99,13 +99,13 @@ class SupervisedBaseline(pl.LightningModule):
         # included in future versions of lightning
         # 2. The metric objects keep statistics during runs, and deepcopy should be
         # necessary to ensure these stats do not overlap
-        self.train_metrics = MyMetricCollection(
+        self.train_metrics = MetricCollection(
             scalar_metrics_dict,
-            "train_"
+            prefix="train_"
         )
-        self.val_metrics = MyMetricCollection(
+        self.val_metrics = MetricCollection(
             copy.deepcopy(scalar_metrics_dict),
-            "val_"
+            prefix="val_"
         )
 
     def init_callbacks(self, num_classes):

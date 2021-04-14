@@ -40,6 +40,7 @@ class MiniworldCities(BaseDataset, ABC):
         ('vegas', 1310,2541,(390,390)),
         ('vienna', 15,20,(3000,3000))
     ]
+    pixels_per_class = [560767075, 3985625189]
 
     @staticmethod
     def colors_to_labels(labels_color):

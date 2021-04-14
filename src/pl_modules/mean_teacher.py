@@ -16,7 +16,7 @@ from torch.optim.lr_scheduler import (
 )
 import copy
 import pytorch_lightning.metrics as M
-from metrics import MyMetricCollection
+from metrics import MetricCollection
 from callbacks import ArrayValLogger, ConfMatLogger
 from pytorch_toolbelt import losses
 from common_utils.scheduler import get_scheduler

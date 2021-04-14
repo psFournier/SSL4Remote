@@ -10,7 +10,20 @@ warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarni
 from torch_datasets import BaseDataset, BaseDatasetLabeled, BaseDatasetUnlabeled
 
 
-
+# nb_bat, nb_non_bat = 0, 0
+# for path in IsprsVaihingen.label_paths:
+#     with rasterio.open(
+#             os.path.join(
+#                 '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN', path
+#             )
+#     ) as label_file:
+#         label = label_file.read(out_dtype=np.uint8)
+#         label = label.transpose(1, 2, 0)
+#         label = IsprsVaihingen.colors_to_labels(label)
+#         nb_bat += np.sum((label == 1).astype(int))
+#         nb_non_bat += np.sum((label == 0).astype(int))
+#
+# print(nb_bat, nb_non_bat)
 
 class IsprsVaihingen(BaseDataset, ABC):
 
