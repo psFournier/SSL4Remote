@@ -159,7 +159,6 @@ class SupervisedBaseline(pl.LightningModule):
 
         train_inputs, train_labels = batch
         outputs = self.network(train_inputs)
-        print(train_labels.dtype)
         # train_labels = self.ToLong(train_labels)
         train_loss1 = self.loss1(outputs, train_labels)
         train_loss2 = self.loss2(outputs, train_labels)

@@ -8,7 +8,7 @@ class RandomDataset(Dataset):
 
     def __getitem__(self, index):
         image = np.random.randint(0,255, size=(128,128,3), dtype=np.uint8)
-        label = np.random.randint(0, 255, size=(128,128,3), dtype=np.int64)
+        label = np.random.randint(0, 255, size=(128,128,3), dtype=np.uint8)
         res = aug(image=image, mask=label)
         return res['image'], res['mask']
 

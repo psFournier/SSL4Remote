@@ -26,12 +26,13 @@ def visualize(image, mask, original_image=None, original_mask=None):
         ax[1, 1].imshow(mask)
         ax[1, 1].set_title('Transformed mask', fontsize=fontsize)
 
-aug = A.MaskDropout(p=1, max_objects=5)
+aug = A.MaskDropout(p=1, max_objects=1)
 
 ds = IsprsVaihingenLabeled(
     data_path='/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN',
     idxs=list(range(2)),
-    crop=128
+    crop=128,
+    augmentations=A.NoOp()
 )
 
 dl = DataLoader(
@@ -40,7 +41,10 @@ dl = DataLoader(
 )
 
 image, mask = next(iter(dl))
-augmented = aug(image=image[0,...], mask=mask[0,...])
+image = image[0,...].numpy()
+mask = mask[0,...].numpy()
+augmented = aug(image=image, mask=mask)
 image_elastic = augmented['image']
 mask_elastic = augmented['mask']
 visualize(image_elastic, mask_elastic, original_image=image, original_mask=mask)
+plt.show()
