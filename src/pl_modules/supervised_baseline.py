@@ -62,7 +62,6 @@ class SupervisedBaseline(pl.LightningModule):
 
         self.loss1name = loss1
         self.loss2name = loss2
-        self.ToLong = ConvertImageDtype(dtype=torch.int64)
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -92,7 +91,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         scalar_metrics_dict = {
             "acc": accuracy,
-            "global_precision": global_precision,
+            # "global_precision": global_precision,
             "IoU": iou,
         }
 
@@ -159,7 +158,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         train_inputs, train_labels = batch
         outputs = self.network(train_inputs)
-        # train_labels = self.ToLong(train_labels)
+        train_labels = train_labels.long()
         train_loss1 = self.loss1(outputs, train_labels)
         train_loss2 = self.loss2(outputs, train_labels)
         train_loss = train_loss1 + self.loss2weight * train_loss2
@@ -176,6 +175,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         val_inputs, val_labels = batch
         outputs = self.network(val_inputs)
+        val_labels = val_labels.long()
         val_loss1 = self.loss1(outputs, val_labels)
         val_loss2 = self.loss2(outputs, val_labels)
         val_loss = val_loss1 + self.loss2weight * val_loss2

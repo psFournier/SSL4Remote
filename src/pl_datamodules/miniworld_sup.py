@@ -4,11 +4,19 @@ import os
 
 from pl_datamodules import BaseSupervisedDatamodule
 from torch_datasets import MiniworldCities, MiniworldCitiesLabeled
+from torch import tensor
 
 
 
 
 class MiniworldSup(BaseSupervisedDatamodule):
+
+    class_weights = tensor(
+        [
+            MiniworldCities.pixels_per_class[0] / ppc for ppc in
+            MiniworldCities.pixels_per_class
+        ]
+    )
 
     def __init__(self, *args, **kwargs):
 

@@ -32,29 +32,32 @@ def D4_augmentations() -> List[A.DualTransform]:
         A.Transpose(p=0.5),
     ]
 
+def dropout():
+    return [A.OneOf(
+        [
+            A.CoarseDropout(),
+            A.MaskDropout(max_objects=2, mask_fill_value=0)
+        ]
+    )]
 
-def light_augmentations(mask_dropout=True) -> List[A.DualTransform]:
+
+def medium_augmentations(mask_dropout=True):
     return [
-        # D4 Augmentations
         A.RandomRotate90(p=1),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
         A.Transpose(p=0.5),
-        A.RandomBrightnessContrast(),
-        A.ShiftScaleRotate(scale_limit=0.05, rotate_limit=15),
-    ]
-
-
-def medium_augmentations(mask_dropout=True) -> List[A.DualTransform]:
-    return [
-        A.HorizontalFlip(),
         # A.ShiftScaleRotate(scale_limit=0.1, rotate_limit=15),
         # Add occasion blur/sharpening
         A.OneOf([A.GaussianBlur(), A.IAASharpen(), A.NoOp()]),
         # Spatial-preserving augmentations:
-        A.OneOf([A.CoarseDropout(), A.MaskDropout(max_objects=5) if mask_dropout else A.NoOp(), A.NoOp()]),
-        A.GaussNoise(),
-        A.OneOf([A.RandomBrightnessContrast(), A.CLAHE(), A.HueSaturationValue(), A.RGBShift(), A.RandomGamma()]),
+        # A.OneOf([A.CoarseDropout(), A.MaskDropout(max_objects=5) if
+        # mask_dropout  else A.NoOp(), A.NoOp()]),
+        # A.GaussNoise(),
+        A.OneOf([A.RandomBrightnessContrast(), A.CLAHE(),
+                 A.HueSaturationValue(), A.RGBShift(), A.RandomGamma()]),
         # Weather effects
-        A.RandomFog(fog_coef_lower=0.01, fog_coef_upper=0.3, p=0.1),
+        # A.RandomFog(fog_coef_lower=0.01, fog_coef_upper=0.3, p=0.1),
     ]
 
 
@@ -62,6 +65,8 @@ def hard_augmentations(mask_dropout=True) -> List[A.DualTransform]:
     return [
         # D4 Augmentations
         A.RandomRotate90(p=1),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
         A.Transpose(p=0.5),
         # Spatial augmentations
         # A.OneOf(
@@ -84,7 +89,7 @@ def hard_augmentations(mask_dropout=True) -> List[A.DualTransform]:
         # Dropout & Shuffle
         A.OneOf(
             [
-                A.RandomGridShuffle(),
+                # A.RandomGridShuffle(),
                 A.CoarseDropout(),
                 A.MaskDropout(max_objects=2, mask_fill_value=0) if mask_dropout else A.NoOp(),
             ]
@@ -92,7 +97,7 @@ def hard_augmentations(mask_dropout=True) -> List[A.DualTransform]:
         # Add occasion blur
         A.OneOf([A.GaussianBlur(), A.GaussNoise(), A.IAAAdditiveGaussianNoise()]),
         # Weather effects
-        A.RandomFog(fog_coef_lower=0.01, fog_coef_upper=0.3, p=0.1),
+        # A.RandomFog(fog_coef_lower=0.01, fog_coef_upper=0.3, p=0.1),
     ]
 
 
@@ -101,10 +106,10 @@ def get_augmentations(augmentation):
         aug_transform = hard_augmentations()
     elif augmentation == "medium":
         aug_transform = medium_augmentations()
-    elif augmentation == "light":
-        aug_transform = light_augmentations()
     elif augmentation == "d4":
         aug_transform = D4_augmentations()
+    elif augmentation == "dropout":
+        aug_transform = dropout()
     else:
         aug_transform = []
 

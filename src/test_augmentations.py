@@ -2,6 +2,7 @@ from torch_datasets import IsprsVaihingenLabeled
 from torch.utils.data import DataLoader
 import albumentations as A
 from matplotlib import pyplot as plt
+import numpy as np
 
 def visualize(image, mask, original_image=None, original_mask=None):
     fontsize = 18
@@ -26,7 +27,7 @@ def visualize(image, mask, original_image=None, original_mask=None):
         ax[1, 1].imshow(mask)
         ax[1, 1].set_title('Transformed mask', fontsize=fontsize)
 
-aug = A.MaskDropout(p=1, max_objects=1)
+aug = A.CLAHE(p=1)
 
 ds = IsprsVaihingenLabeled(
     data_path='/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN',
@@ -44,7 +45,6 @@ image, mask = next(iter(dl))
 image = image[0,...].numpy()
 mask = mask[0,...].numpy()
 augmented = aug(image=image, mask=mask)
-image_elastic = augmented['image']
-mask_elastic = augmented['mask']
-visualize(image_elastic, mask_elastic, original_image=image, original_mask=mask)
+visualize(augmented['image'], augmented['mask'], original_image=image,
+          original_mask=mask)
 plt.show()

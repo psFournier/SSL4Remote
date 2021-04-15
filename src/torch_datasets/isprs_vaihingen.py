@@ -60,7 +60,7 @@ class IsprsVaihingen(BaseDataset, ABC):
     @staticmethod
     def colors_to_labels(labels_color):
 
-        labels = np.zeros(labels_color.shape[:2], dtype=np.int64)
+        labels = np.zeros(labels_color.shape[:2], dtype=np.uint8)
         colors = [
             [255, 255, 255],
             [0, 0, 255],
