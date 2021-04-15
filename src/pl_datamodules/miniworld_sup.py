@@ -44,7 +44,8 @@ class MiniworldSup(BaseSupervisedDatamodule):
                     unlabeled_image_paths=unlabeled_image_paths,
                     image_size=city_info[3],
                     idxs=labeled_idxs[city_info[1]:],
-                    crop=self.crop_size
+                    crop=self.crop_size,
+                    augmentations=self.train_augment
                 )
             )
             val_datasets.append(
@@ -55,7 +56,8 @@ class MiniworldSup(BaseSupervisedDatamodule):
                     unlabeled_image_paths=unlabeled_image_paths,
                     image_size=city_info[3],
                     idxs=labeled_idxs[:city_info[1]],
-                    crop=self.crop_size
+                    crop=self.crop_size,
+                    augmentations=self.val_augment
                 )
             )
 

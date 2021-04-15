@@ -2,15 +2,18 @@ import numpy as np
 import random
 
 from torch_datasets import IsprsVaihingen, IsprsVaihingenLabeled, IsprsVaihingenUnlabeled
+from transforms import MergeLabels
 
 from pl_datamodules import BaseSemisupDatamodule
-
+import albumentations as A
 
 class IsprsVaiSemisup(BaseSemisupDatamodule):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.label_merger = MergeLabels([[0], [1]])
+        self.unsup_train_augment = A.NoOp()
 
     def setup(self, stage=None):
 
@@ -24,11 +27,19 @@ class IsprsVaiSemisup(BaseSemisupDatamodule):
         train_idxs = labeled_idxs[-nb_train_img:]
 
         self.sup_train_set = IsprsVaihingenLabeled(
-            self.data_dir, train_idxs, self.crop_size
+            data_path=self.data_dir,
+            idxs=train_idxs,
+            crop=self.crop_size,
+            label_merger=self.label_merger,
+            augmentations=self.train_augment
         )
 
         self.val_set = IsprsVaihingenLabeled(
-            self.data_dir, val_idxs, self.crop_size
+            data_path=self.data_dir,
+            idxs=val_idxs,
+            crop=self.crop_size,
+            label_merger=self.label_merger,
+            augmentations=self.val_augment
         )
 
         # ...but each non validation labeled image can be used without its
@@ -40,5 +51,6 @@ class IsprsVaiSemisup(BaseSemisupDatamodule):
         self.unsup_train_set = IsprsVaihingenUnlabeled(
             data_path=self.data_dir,
             idxs=unsup_train_idxs,
-            crop=self.crop_size
+            crop=self.crop_size,
+            augmentations=self.unsup_train_augment
         )

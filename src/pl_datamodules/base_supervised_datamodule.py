@@ -38,14 +38,18 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.prop_train = prop_train
 
         self.train_augment = A.Compose(
-            get_augmentations(augmentations) + [
+            get_augmentations(augmentations) +
+            [
+                A.ToFloat(),
                 A.Normalize(),
-                ToTensorV2(transpose_mask=False)]
+                ToTensorV2(transpose_mask=False)
+            ]
         )
-        self.val_augment = ToTensorV2(transpose_mask=False)
-
-        # For binary classification, all labels other than that of interest are collapsed
-        self.label_merger = MergeLabels([[0], [1]])
+        self.val_augment = A.Compose([
+            A.ToFloat(),
+            A.Normalize(),
+            ToTensorV2(transpose_mask=False)
+        ])
 
         self.sup_train_set = None
         self.val_set = None
@@ -66,8 +70,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--data_dir", type=str)
         parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
-        parser.add_argument("--prop_train", type=float, default=0.7)
-        parser.add_argument("--prop_val", type=float, default=0.3)
+        parser.add_argument("--prop_train", type=float, default=0.2)
+        parser.add_argument("--prop_val", type=float, default=0.8)
         parser.add_argument("-w", "--workers", default=8, type=int,
                             help="Num workers")
         parser.add_argument('--augmentations', type=str, default='safe')
@@ -80,20 +84,20 @@ class BaseSupervisedDatamodule(LightningDataModule):
     #     for indices in batch_sampler:
     #         yield collate_fn([dataset[i] for i in indices])
 
-    def collate_labeled(self, batch, augment):
-
-        # We apply transforms here because transforms are method-dependent
-        # while the dataset class should be method independent.
-        transformed_batch = [
-            augment(
-                image=image,
-                mask=self.label_merger(ground_truth)
-            )
-            for image,ground_truth in batch
-        ]
-        batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
-
-        return default_collate(batch)
+    # def collate_labeled(self, batch, augment):
+    #
+    #     # We apply transforms here because transforms are method-dependent
+    #     # while the dataset class should be method independent.
+    #     transformed_batch = [
+    #         augment(
+    #             image=image,
+    #             mask=self.label_merger(ground_truth)
+    #         )
+    #         for image,ground_truth in batch
+    #     ]
+    #     batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
+    #
+    #     return default_collate(batch)
 
     def wif(self, id):
         uint64_seed = torch.initial_seed()
@@ -121,10 +125,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            collate_fn=partial(
-                self.collate_labeled,
-                augment=self.train_augment
-            ),
+            # collate_fn=partial(
+            #     self.collate_labeled,
+            #     augment=self.train_augment
+            # ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -144,10 +148,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             batch_size=self.batch_size,
-            collate_fn=partial(
-                self.collate_labeled,
-                augment=self.val_augment
-            ),
+            # collate_fn=partial(
+            #     self.collate_labeled,
+            #     augment=self.val_augment
+            # ),
             sampler=val_sampler,
             num_workers=self.num_workers,
             pin_memory=True,

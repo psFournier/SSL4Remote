@@ -5,12 +5,15 @@ import os
 from pl_datamodules import BaseSemisupDatamodule
 from torch_datasets import MiniworldCities, MiniworldCitiesUnlabeled, \
     MiniworldCitiesLabeled
+import albumentations as A
+
 
 class MiniworldSemisup(BaseSemisupDatamodule):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.unsup_train_augment = A.NoOp()
 
     def setup(self, stage=None):
 
@@ -43,7 +46,8 @@ class MiniworldSemisup(BaseSemisupDatamodule):
                     unlabeled_image_paths=unlabeled_image_paths,
                     image_size=city_info[3],
                     idxs=labeled_idxs[city_info[1]:],
-                    crop=self.crop_size
+                    crop=self.crop_size,
+                    augmentations=self.train_augment
                 )
             )
             val_datasets.append(
@@ -54,7 +58,8 @@ class MiniworldSemisup(BaseSemisupDatamodule):
                     unlabeled_image_paths=unlabeled_image_paths,
                     image_size=city_info[3],
                     idxs=labeled_idxs[:city_info[1]],
-                    crop=self.crop_size
+                    crop=self.crop_size,
+                    augmentations=self.val_augment
                 )
             )
 
@@ -70,7 +75,8 @@ class MiniworldSemisup(BaseSemisupDatamodule):
                     unlabeled_image_paths=unlabeled_image_paths,
                     image_size=city_info[3],
                     idxs=unsup_train_idxs,
-                    crop=self.crop_size
+                    crop=self.crop_size,
+                    augmentations=self.unsup_train_augment
                 )
             )
 

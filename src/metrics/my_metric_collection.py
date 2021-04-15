@@ -17,7 +17,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from torch import nn
 
-from torchmetrics.metric import Metric
+# from torchmetrics.metric import Metric
+from pytorch_lightning.metrics import Metric
 
 
 class MetricCollection(nn.ModuleDict):

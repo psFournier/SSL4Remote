@@ -27,6 +27,8 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        # For binary classification, all labels other than that of interest are collapsed
+        self.label_merger = MergeLabels([[0], [1]])
 
 
     def setup(self, stage=None):
@@ -43,11 +45,15 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
         self.sup_train_set = IsprsVaihingenLabeled(
             data_path=self.data_dir,
             idxs=train_idxs,
-            crop=self.crop_size
+            crop=self.crop_size,
+            label_merger=self.label_merger,
+            augmentations=self.train_augment
         )
 
         self.val_set = IsprsVaihingenLabeled(
             data_path=self.data_dir,
             idxs=val_idxs,
-            crop=self.crop_size
+            crop=self.crop_size,
+            label_merger=self.label_merger,
+            augmentations=self.val_augment
         )

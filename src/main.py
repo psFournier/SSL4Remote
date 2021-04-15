@@ -68,7 +68,7 @@ def main():
         args,
         logger=tensorboard,
         callbacks=pl_module.callbacks + [
-            checkpoint_callback
+            # checkpoint_callback
         ],
         benchmark=True,
         min_epochs=500,

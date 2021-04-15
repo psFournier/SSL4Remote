@@ -15,12 +15,13 @@ from torch.optim.lr_scheduler import (
     CosineAnnealingWarmRestarts,
 )
 import copy
-import torchmetrics as M
+import pytorch_lightning.metrics as M
 from metrics import MetricCollection
 from callbacks import ArrayValLogger, ConfMatLogger
 from common_utils.scheduler import get_scheduler
 from common_utils.losses import get_loss
-
+from torchvision.transforms import ConvertImageDtype
+import torch
 
 
 class SupervisedBaseline(pl.LightningModule):
@@ -61,6 +62,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         self.loss1name = loss1
         self.loss2name = loss2
+        self.ToLong = ConvertImageDtype(dtype=torch.int64)
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -111,13 +113,13 @@ class SupervisedBaseline(pl.LightningModule):
     def init_callbacks(self, num_classes):
 
         # Non-scalar metrics are bundled in callbacks that deal with logging them
-        per_class_precision = M.Precision(
-            num_classes=num_classes, mdmc_average="global", average="none"
-        )
-        per_class_precision_logger = ArrayValLogger(
-            array_metric=per_class_precision, name="per_class_precision"
-        )
-        self.callbacks.append(per_class_precision_logger)
+        # per_class_precision = M.Precision(
+        #     num_classes=num_classes, mdmc_average="global", average="none"
+        # )
+        # per_class_precision_logger = ArrayValLogger(
+        #     array_metric=per_class_precision, name="per_class_precision"
+        # )
+        # self.callbacks.append(per_class_precision_logger)
         #
         # per_class_F1 = M.F1(num_classes=num_classes, average="none")
         # per_class_F1_logger = ArrayValLogger(
@@ -157,7 +159,8 @@ class SupervisedBaseline(pl.LightningModule):
 
         train_inputs, train_labels = batch
         outputs = self.network(train_inputs)
-
+        print(train_labels.dtype)
+        # train_labels = self.ToLong(train_labels)
         train_loss1 = self.loss1(outputs, train_labels)
         train_loss2 = self.loss2(outputs, train_labels)
         train_loss = train_loss1 + self.loss2weight * train_loss2

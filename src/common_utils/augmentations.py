@@ -4,7 +4,7 @@ from typing import Tuple, List
 
 __all__ = [
     "crop_transform",
-    "safe_augmentations",
+    "D4_augmentations",
     "light_augmentations",
     "medium_augmentations",
     "hard_augmentations",
@@ -23,10 +23,12 @@ def crop_transform(image_size: Tuple[int, int], min_scale=0.75, max_scale=1.25, 
     )
 
 
-def safe_augmentations() -> List[A.DualTransform]:
+def D4_augmentations() -> List[A.DualTransform]:
     return [
         # D4 Augmentations
         A.RandomRotate90(p=1),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
         A.Transpose(p=0.5),
     ]
 
@@ -37,14 +39,14 @@ def light_augmentations(mask_dropout=True) -> List[A.DualTransform]:
         A.RandomRotate90(p=1),
         A.Transpose(p=0.5),
         A.RandomBrightnessContrast(),
-        A.ShiftScaleRotate(scale_limit=0.05, rotate_limit=15, border_mode=cv2.BORDER_CONSTANT),
+        A.ShiftScaleRotate(scale_limit=0.05, rotate_limit=15),
     ]
 
 
 def medium_augmentations(mask_dropout=True) -> List[A.DualTransform]:
     return [
         A.HorizontalFlip(),
-        A.ShiftScaleRotate(scale_limit=0.1, rotate_limit=15, border_mode=cv2.BORDER_CONSTANT),
+        # A.ShiftScaleRotate(scale_limit=0.1, rotate_limit=15),
         # Add occasion blur/sharpening
         A.OneOf([A.GaussianBlur(), A.IAASharpen(), A.NoOp()]),
         # Spatial-preserving augmentations:
@@ -62,12 +64,12 @@ def hard_augmentations(mask_dropout=True) -> List[A.DualTransform]:
         A.RandomRotate90(p=1),
         A.Transpose(p=0.5),
         # Spatial augmentations
-        A.OneOf(
-            [
-                A.ShiftScaleRotate(scale_limit=0.2, rotate_limit=45, border_mode=cv2.BORDER_REFLECT101),
-                A.ElasticTransform(border_mode=cv2.BORDER_REFLECT101, alpha_affine=5),
-            ]
-        ),
+        # A.OneOf(
+        #     [
+        #         A.ShiftScaleRotate(scale_limit=0.2, rotate_limit=45, border_mode=cv2.BORDER_REFLECT101),
+        #         A.ElasticTransform(border_mode=cv2.BORDER_REFLECT101, alpha_affine=5),
+        #     ]
+        # ),
         # Color augmentations
         A.OneOf(
             [
@@ -101,8 +103,8 @@ def get_augmentations(augmentation):
         aug_transform = medium_augmentations()
     elif augmentation == "light":
         aug_transform = light_augmentations()
-    elif augmentation == "safe":
-        aug_transform = safe_augmentations()
+    elif augmentation == "d4":
+        aug_transform = D4_augmentations()
     else:
         aug_transform = []
 

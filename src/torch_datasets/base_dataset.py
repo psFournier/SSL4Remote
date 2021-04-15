@@ -21,6 +21,7 @@ class BaseDataset(Dataset, ABC):
                  data_path,
                  idxs,
                  crop,
+                 augmentations,
                  *args,
                  **kwargs
                  ):
@@ -29,6 +30,7 @@ class BaseDataset(Dataset, ABC):
         self.data_path = data_path
         self.idxs = idxs
         self.crop = crop
+        self.augmentations = augmentations
         self.mean_labeled_pixels = []
         self.std_labeled_pixels = []
         # The length of the dataset should be the number of get_item calls needed to
@@ -59,7 +61,8 @@ class BaseDataset(Dataset, ABC):
         with rasterio.open(image_filepath) as image_file:
 
             window = self.get_crop_window(image_file)
-            image = image_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
+            image = image_file.read(window=window,
+                                    out_dtype=np.uint8).transpose(1, 2, 0)
             # image = image / 255
 
         return image, window
@@ -95,8 +98,9 @@ class BaseDatasetUnlabeled(BaseDataset, ABC):
         idx = idx % len(self.idxs)
         idx = self.idxs[idx]
         image, window = self.get_image(idx)
+        augment = self.augmentations(image=image)
 
-        return image
+        return augment['image']
 
 
 class BaseDatasetLabeled(BaseDatasetUnlabeled, ABC):
@@ -106,16 +110,20 @@ class BaseDatasetLabeled(BaseDatasetUnlabeled, ABC):
 
         raise NotImplementedError
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, label_merger=None, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.label_merger = label_merger
 
     def __getitem__(self, idx):
 
         idx = idx % len(self.idxs)
         idx = self.idxs[idx]
         image, window = self.get_image(idx)
-        label_colors = self.get_label(idx, window)
-        label = self.colors_to_labels(label_colors)
+        label = self.get_label(idx, window)
+        mask = self.colors_to_labels(label)
+        if self.label_merger is not None:
+            mask = self.label_merger(mask)
+        augment = self.augmentations(image=image, mask=mask)
 
-        return image, label
+        return augment['image'], augment['mask']

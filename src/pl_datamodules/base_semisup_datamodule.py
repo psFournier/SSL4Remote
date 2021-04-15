@@ -22,15 +22,15 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
         return parser
 
-    def collate_unlabeled(self, batch, augment):
-
-        transformed_batch = [
-            augment(image=image)
-            for image in batch
-        ]
-        batch = [(elem["image"]) for elem in transformed_batch]
-
-        return default_collate(batch)
+    # def collate_unlabeled(self, batch, augment):
+    #
+    #     transformed_batch = [
+    #         augment(image=image)
+    #         for image in batch
+    #     ]
+    #     batch = [(elem["image"]) for elem in transformed_batch]
+    #
+    #     return default_collate(batch)
 
     def train_dataloader(self):
 
@@ -50,10 +50,10 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            collate_fn=partial(
-                self.collate_labeled,
-                augment=self.train_augment
-            ),
+            # collate_fn=partial(
+            #     self.collate_labeled,
+            #     augment=self.train_augment
+            # ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -69,10 +69,10 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
         unsup_train_dataloader = DataLoader(
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
-            collate_fn=partial(
-                self.collate_unlabeled,
-                augment=self.train_augment
-            ),
+            # collate_fn=partial(
+            #     self.collate_unlabeled,
+            #     augment=self.train_augment
+            # ),
             sampler=unsup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
