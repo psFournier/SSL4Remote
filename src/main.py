@@ -73,9 +73,11 @@ def main():
         benchmark=True,
         min_epochs=500,
         max_epochs=1000,
-        num_sanity_val_steps=0,
-        val_check_interval=1.0,
-        check_val_every_n_epoch=1
+        # num_sanity_val_steps=1,
+        # log_every_n_steps=10,
+        # flush_logs_every_n_steps=10
+        # val_check_interval=1.0,
+        # check_val_every_n_epoch=1
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

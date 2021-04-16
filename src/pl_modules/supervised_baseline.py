@@ -92,7 +92,7 @@ class SupervisedBaseline(pl.LightningModule):
         scalar_metrics_dict = {
             "acc": accuracy,
             # "global_precision": global_precision,
-            "IoU": iou,
+            "IoU": iou
         }
 
         # Two things here:

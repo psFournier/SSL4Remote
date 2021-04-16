@@ -1,2 +1,2 @@
 # from .map import MAPMetric
-from metrics.my_metric_collection import MetricCollection
+from metrics.old_metric_collection import MetricCollection
