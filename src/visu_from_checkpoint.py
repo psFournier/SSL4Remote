@@ -3,7 +3,7 @@ import rasterio as rio
 import numpy as np
 from rasterio.windows import Window
 import matplotlib.pyplot as plt
-from torch_datasets import IsprsVaihingen
+from torch_datasets import MiniworldCities
 from transforms import MergeLabels
 import cv2
 import albumentations as A
@@ -33,14 +33,12 @@ ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs' \
     '/baseline_christchurch_noaug_2021-04-16/checkpoints/epoch=96-step=30360.ckpt'
 
 module = SupervisedBaseline.load_from_checkpoint(ckpt_path)
-crop_size = 128
+crop_size = 1400
 
 module.eval()
 
-image_path = '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN/top' \
-             '/top_mosaic_09cm_area1.tif'
-label_path = '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN' \
-             '/gts_for_participants/top_mosaic_09cm_area1.tif'
+image_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_x.png'
+label_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_y.png'
 
 with rio.open(image_path) as image_file:
 
@@ -55,7 +53,7 @@ with rio.open(image_path) as image_file:
 with rio.open(label_path) as label_file:
     label = label_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
 
-gt = IsprsVaihingen.colors_to_labels(label)
+gt = MiniworldCities.colors_to_labels(label)
 
 label_merger = MergeLabels([[0], [1]])
 gt = label_merger(gt).astype(bool)
