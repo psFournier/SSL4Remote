@@ -2,7 +2,6 @@ from typing import Optional, Dict
 
 import torch
 import torch.nn.functional as F
-from pytorch_toolbelt.losses import *
 from torch import nn
 from torch.nn import KLDivLoss
 
