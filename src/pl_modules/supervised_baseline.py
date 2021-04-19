@@ -70,7 +70,7 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("--num_classes", type=int, default=2)
         parser.add_argument("--in_channels", type=int, default=3)
         parser.add_argument("--pretrained", action='store_true')
-        parser.add_argument("--encoder", type=str, default='timm-regnetx_002')
+        parser.add_argument("--encoder", type=str, default='timm-efficientnet-b0')
         parser.add_argument("-lr", "--learning-rate", type=float, default=1e-3,
                             help="Initial learning rate")
         parser.add_argument("--inplaceBN", action='store_true' )

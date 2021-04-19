@@ -32,7 +32,7 @@ aug = A.CLAHE(p=1)
 ds = IsprsVaihingenLabeled(
     data_path='/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN',
     idxs=list(range(2)),
-    crop=128,
+    crop=1024,
     augmentations=A.NoOp()
 )
 

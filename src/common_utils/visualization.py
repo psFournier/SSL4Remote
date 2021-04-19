@@ -1,6 +1,6 @@
 import numpy as np
 import rasterio as rio
-from datasets.isprs_vaihingen import isprs_colors_to_labels
+from torch_datasets import IsprsVaihingen
 from transforms import MergeLabels
 import matplotlib.pyplot as plt
 import cv2
@@ -23,26 +23,26 @@ ncols = x_src.width
 nrows = x_src.height
 top = x_src.read(window=window).transpose(1, 2, 0)
 
-# gt_src = rio.open(gt_path)
-# gt = gt_src.read(window=window, out_dtype=np.float32).transpose(1, 2, 0)
-# gt = isprs_colors_to_labels(gt)
+gt_src = rio.open(gt_path)
+gt = gt_src.read(window=window, out_dtype=np.float32).transpose(1, 2, 0)
+gt = IsprsVaihingen.colors_to_labels(gt)
+
+label_merger = MergeLabels([[0], [1]])
+gt = label_merger(gt).astype(bool)
+
+pred = np.zeros(shape=(size, size), dtype=np.float32)
+pred[10:50:,:] = 1.
+pred = pred.astype(bool)
 #
-# label_merger = MergeLabels([[0], [1]])
-# gt = label_merger(gt).astype(bool)
-#
-# pred = np.zeros(shape=(size, size), dtype=np.float32)
-# pred[10:50:,:] = 1.
-# pred = pred.astype(bool)
-#
-# overlay = top.copy()
-# # Correct predictions (Hits) painted with green
-# overlay[gt & pred] = np.array([0, 250, 0], dtype=overlay.dtype)
-# # Misses painted with red
-# overlay[gt & ~pred] = np.array([0, 0, 250], dtype=overlay.dtype)
-# # False alarm painted with yellow
-# overlay[~gt & pred] = np.array([250, 250, 0], dtype=overlay.dtype)
-#
-# overlay = cv2.addWeighted(top, 0.7, overlay, 0.3, 0)
+overlay = top.copy()
+# Correct predictions (Hits) painted with green
+overlay[gt & pred] = np.array([0, 250, 0], dtype=overlay.dtype)
+# Misses painted with red
+overlay[gt & ~pred] = np.array([0, 0, 250], dtype=overlay.dtype)
+# False alarm painted with yellow
+overlay[~gt & pred] = np.array([250, 250, 0], dtype=overlay.dtype)
+
+overlay = cv2.addWeighted(top, 0.7, overlay, 0.3, 0)
 
 aug = A.RandomFog(fog_coef_lower=0.1, fog_coef_upper=0.3, p=1)
 image_aug = top.copy()
