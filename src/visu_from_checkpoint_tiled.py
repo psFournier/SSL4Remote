@@ -68,14 +68,14 @@ augment = A.Compose([
     ToTensorV2(transpose_mask=False)
 ])
 
-image_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/41_x.png'
-label_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/41_y.png'
+image_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_x.png'
+label_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_y.png'
 
 
 windows = []
 tiles = []
-full_height = 1000
-full_width = 1000
+full_height = 1450
+full_width = 1450
 with rio.open(image_path) as image_file:
 
     image = image_file.read(window=Window(col_off=0,

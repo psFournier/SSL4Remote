@@ -30,10 +30,10 @@ def visualize(image, predictions, truth, overlay):
 
 
 ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs' \
-    '/baseline_christchurch_noaug_2021-04-16/checkpoints/epoch=96-step=30360.ckpt'
+            '/baseline_christchurch_noaug_2021-04-16/checkpoints/epoch=999-step=312999.ckpt'
 
 module = SupervisedBaseline.load_from_checkpoint(ckpt_path)
-crop_size = 1400
+crop_size = 512
 
 module.eval()
 
@@ -62,7 +62,7 @@ augment = A.Compose([
     A.Normalize(),
     ToTensorV2(transpose_mask=False)
 ])
-augmented = augment(image=image)['image'].reshape(1,3,128, 128)
+augmented = augment(image=image)['image'].reshape(1,3,crop_size, crop_size)
 pred = module.network(augmented)
 pred = np.argmax(pred.detach().numpy().squeeze(), axis=0).astype(bool)
 #
