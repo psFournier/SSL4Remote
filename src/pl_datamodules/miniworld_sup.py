@@ -51,7 +51,7 @@ class MiniworldSup(BaseSupervisedDatamodule):
                     label_paths=label_paths,
                     unlabeled_image_paths=unlabeled_image_paths,
                     image_size=city_info[3],
-                    idxs=labeled_idxs[city_info[1]:],
+                    idxs=labeled_idxs[city_info[1]:][::self.prop_train],
                     crop=self.crop_size,
                     augmentations=self.train_augment
                 )

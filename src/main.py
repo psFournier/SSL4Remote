@@ -67,12 +67,13 @@ def main():
     trainer = Trainer.from_argparse_args(
         args,
         logger=tensorboard,
+        profiler='simple',
         callbacks=pl_module.callbacks + [
             # checkpoint_callback
         ],
         benchmark=True,
-        min_epochs=500,
-        max_epochs=1000,
+        min_epochs=100,
+        max_epochs=300,
         # num_sanity_val_steps=1,
         # log_every_n_steps=10,
         # flush_logs_every_n_steps=10
