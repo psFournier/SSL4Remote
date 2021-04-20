@@ -22,7 +22,7 @@ from common_utils.scheduler import get_scheduler
 from common_utils.losses import get_loss
 from torchvision.transforms import ConvertImageDtype
 import torch
-
+from pytorch_toolbelt.losses import DiceLoss
 
 class SupervisedBaseline(pl.LightningModule):
 
@@ -33,8 +33,7 @@ class SupervisedBaseline(pl.LightningModule):
                  num_classes,
                  inplaceBN,
                  learning_rate,
-                 loss1,
-                 loss2,
+                 wce,
                  *args,
                  **kwargs):
 
@@ -60,8 +59,8 @@ class SupervisedBaseline(pl.LightningModule):
         self.callbacks = []
         self.init_callbacks(num_classes)
 
-        self.loss1name = loss1
-        self.loss2name = loss2
+        self.wce = wce
+
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -74,8 +73,7 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("-lr", "--learning-rate", type=float, default=1e-3,
                             help="Initial learning rate")
         parser.add_argument("--inplaceBN", action='store_true' )
-        parser.add_argument("--loss1", type=str, default="ce")
-        parser.add_argument("--loss2", type=str, default="dice")
+        parser.add_argument("--wce", action='store_true')
 
         return parser
 
@@ -132,8 +130,11 @@ class SupervisedBaseline(pl.LightningModule):
     def on_fit_start(self) -> None:
 
         class_weights = self.trainer.datamodule.class_weights
-        self.loss1 = get_loss(self.loss1name, weight=class_weights)
-        self.loss2 = get_loss(self.loss2name, weight=class_weights)
+        if self.wce:
+            self.loss1 = nn.CrossEntropyLoss(weight=class_weights)
+        else:
+            self.loss1 = nn.CrossEntropyLoss()
+        self.loss2 = DiceLoss(mode="multiclass", log_loss=False)
         self.loss2weight = 1.
 
     def forward(self, x):

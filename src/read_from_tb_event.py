@@ -8,9 +8,7 @@ parser.add_argument("--scalar", type=str)
 
 args = parser.parse_args()
 
-event_acc = EventAccumulator(
-    os.path.join('/home/pierre/PycharmProjects/RemoteSensing/outputs', args.path)
-)
+event_acc = EventAccumulator(args.path)
 
 
 event_acc.Reload()
