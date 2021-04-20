@@ -17,19 +17,19 @@ plt.switch_backend("TkAgg")
 
 def visualize(image, predictions, truth, overlay):
     fontsize = 18
-    f, ax = plt.subplots(2, 2, figsize=(8, 8))
+    f, ax = plt.subplots(2, 2, figsize=(16, 16))
 
     ax[0, 0].imshow(image)
-    ax[0, 0].set_title('Original image', fontsize=fontsize)
+    # ax[0, 0].set_title('Original image', fontsize=fontsize)
 
     ax[1, 0].imshow(truth)
-    ax[1, 0].set_title('Ground truth', fontsize=fontsize)
+    # ax[1, 0].set_title('Ground truth', fontsize=fontsize)
 
     ax[0, 1].imshow(predictions)
-    ax[0, 1].set_title('Model predictions', fontsize=fontsize)
+    # ax[0, 1].set_title('Model predictions', fontsize=fontsize)
 
     ax[1, 1].imshow(overlay)
-    ax[1, 1].set_title('Evaluation', fontsize=fontsize)
+    # ax[1, 1].set_title('Evaluation', fontsize=fontsize)
 
 def get_tiles(ds, nols, nrows, width=256, height=256, col_step=128,
               row_step=128):
@@ -59,7 +59,7 @@ def get_tiles(ds, nols, nrows, width=256, height=256, col_step=128,
 
 
 ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs' \
-    '/baseline_christchurch_noaug_2021-04-16/checkpoints/epoch=96-step=30360.ckpt'
+    '/baseline_christchurch_noaug_2021-04-16/checkpoints/epoch=999-step=312999.ckpt'
 
 module = SupervisedBaseline.load_from_checkpoint(ckpt_path)
 module.eval()
@@ -74,16 +74,18 @@ label_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/41_y.png'
 
 windows = []
 tiles = []
+full_height = 1000
+full_width = 1000
 with rio.open(image_path) as image_file:
 
     image = image_file.read(window=Window(col_off=0,
                                                  row_off=0,
-                                                 width=300,
-                                                 height=300),
+                                                 width=full_width,
+                                                 height=full_height),
                             out_dtype=np.uint8).transpose(1, 2, 0)
 
     for window in get_tiles(image_file, width=128, height=128, col_step=64,
-                            row_step=64, nols=300, nrows=300):
+                            row_step=64, nols=full_width, nrows=full_height):
 
         tile = image_file.read(window=window,
                                out_dtype=np.uint8).transpose(1, 2, 0)
@@ -91,26 +93,38 @@ with rio.open(image_path) as image_file:
         tiles.append(augmented)
         windows.append(window)
 
-batch = torch.stack(tiles, dim=0)
+preds = []
+i=0
+while i+16 < len(tiles):
+    batch = torch.stack(tiles[i:i+16], dim=0)
+    pred = module.network(batch)
+    pred = np.argmax(pred.detach().numpy().squeeze(), axis=1).astype(bool)
+    preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0],
+                                                      axis=0)]
+    i += 16
+batch = torch.stack(tiles[i:], dim=0)
 pred = module.network(batch)
 pred = np.argmax(pred.detach().numpy().squeeze(), axis=1).astype(bool)
-preds = [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0], axis=0)]
+preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0],
+                                                  axis=0)]
 
-stitched_pred = np.zeros(shape=(300,300))
-nb_tiles = np.zeros(shape=(300, 300))
+stitched_pred = np.zeros(shape=(full_height,full_width))
+nb_tiles = np.zeros(shape=(full_height, full_width))
 for pred, window in zip(preds, windows):
     stitched_pred[window.row_off:window.row_off+window.width,
     window.col_off:window.col_off+window.height] += pred
     nb_tiles[window.row_off:window.row_off+window.width,
     window.col_off:window.col_off+window.height] += 1
-avg_pred = np.rint(np.divide(stitched_pred, nb_tiles)).astype(bool)
+avg_pred = np.divide(stitched_pred, nb_tiles)
+bool_avg_pred = np.rint(avg_pred).astype(bool)
+bool_uncertain = (avg_pred != avg_pred.round())
 
 
 with rio.open(label_path) as label_file:
     label = label_file.read(window=Window(col_off=0,
                                           row_off=0,
-                                          width=300,
-                                          height=300),
+                                          width=full_width,
+                                          height=full_height),
                             out_dtype=np.uint8).transpose(1, 2, 0)
 
 gt = MiniworldCities.colors_to_labels(label)
@@ -121,13 +135,19 @@ gt = label_merger(gt).astype(bool)
 
 overlay = image.copy()
 # Correct predictions (Hits) painted with green
-overlay[gt & avg_pred] = np.array([0, 250, 0], dtype=overlay.dtype)
+overlay[gt & bool_avg_pred] = np.array([0, 250, 0], dtype=overlay.dtype)
 # Misses painted with red
-overlay[gt & ~avg_pred] = np.array([250, 0, 0], dtype=overlay.dtype)
-# False alarm painted with yellow
-overlay[~gt & avg_pred] = np.array([250, 250, 0], dtype=overlay.dtype)
+overlay[gt & ~bool_avg_pred] = np.array([250, 0, 0], dtype=overlay.dtype)
+# False alarm painted with blue
+overlay[~gt & bool_avg_pred] = np.array([0, 0, 250], dtype=overlay.dtype)
 
-overlay = cv2.addWeighted(image, 0.7, overlay, 0.3, 0)
+overlay = cv2.addWeighted(image, 0.5, overlay, 0.5, 0)
 
-visualize(image, avg_pred, gt, overlay)
+uncertainty = image.copy()
+uncertainty[bool_uncertain] = np.array([250, 0, 0], dtype=overlay.dtype)
+uncertainty = cv2.addWeighted(image, 0.5, uncertainty, 0.5, 0)
+
+visualize(image, uncertainty, gt, overlay)
+
+plt.tight_layout()
 plt.show()
