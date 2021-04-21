@@ -60,8 +60,9 @@ class SupervisedBaseline(pl.LightningModule):
         self.callbacks = []
         self.init_callbacks(num_classes)
 
-        self.class_weights = class_weights if wce else torch.ones(
-            size=num_classes)
+        self.class_weights = class_weights if wce else torch.FloatTensor(
+            [1.] * num_classes
+        )
         self.ce = nn.CrossEntropyLoss(weight=class_weights)
         self.dice = DiceLoss(mode="multiclass", log_loss=False)
 
