@@ -26,6 +26,11 @@ It relies on:
 * The `src/networks` is only used if we need networks that are not in segmentation-models-pytorch.
 * Validation data in the repo should rather be understood as test data; in particular, following [[1]](#1), we should not carry out any hyperparameter search on artificially held out validation samples from the labeled pool.
 
+## To detail
+
+Parameters of the trainer that do not appear (including how to deal with 
+different sup/unsup datasets)
+
 ## Launching experiments
 
 ### In a virtualenv on the Hal cluster 
