@@ -43,7 +43,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
         sup_train_sampler = RandomSampler(
             data_source=self.sup_train_set,
             replacement=True,
-            num_samples=int(self.nb_pass_per_epoch * len(self.sup_train_set)),
+            num_samples=self.epoch_len
         )
 
         # num_workers should be the number of cpus on the machine.
@@ -63,7 +63,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
         unsup_train_sampler = RandomSampler(
             data_source=self.unsup_train_set,
             replacement=True,
-            num_samples=int(self.nb_pass_per_epoch * len(self.unsup_train_set)),
+            num_samples=self.epoch_len
         )
         # num_workers should be the number of cpus on the machine.
         unsup_train_dataloader = DataLoader(

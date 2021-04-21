@@ -18,7 +18,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
     def __init__(self,
                  data_dir,
                  crop_size,
-                 nb_pass_per_epoch,
+                 epoch_len,
                  batch_size,
                  workers,
                  augmentations,
@@ -30,7 +30,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         self.data_dir = data_dir
         self.crop_size = crop_size
-        self.nb_pass_per_epoch = nb_pass_per_epoch
+        self.epoch_len = epoch_len
         self.batch_size = batch_size
         self.num_workers = workers
         self.prop_train = prop_train
@@ -61,8 +61,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--nb_pass_per_epoch", type=float, default=0.01,
-                            help='how many times per epoch the dataset should be spanned')
+        parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--data_dir", type=str)
         parser.add_argument("--batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -113,7 +112,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_sampler = RandomSampler(
             data_source=self.sup_train_set,
             replacement=True,
-            num_samples=int(self.nb_pass_per_epoch * len(self.sup_train_set)),
+            num_samples=self.epoch_len,
         )
 
         # num_workers should be the number of cpus on the machine.
@@ -134,9 +133,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
     def val_dataloader(self):
 
-        num_samples = int(self.nb_pass_per_epoch * len(self.val_set))
         val_sampler = RandomSampler(
-            data_source=self.val_set, replacement=True, num_samples=num_samples
+            data_source=self.val_set, replacement=True, num_samples=self.epoch_len
         )
 
         # num_workers should be the number of cpus on the machine.

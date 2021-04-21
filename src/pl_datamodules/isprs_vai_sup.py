@@ -37,8 +37,8 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
         labeled_idxs = list(range(nb_labeled_images))
         random.shuffle(labeled_idxs)
 
-        nb_val_img = int(nb_labeled_images * self.prop_val)
-        nb_train_img = int(nb_labeled_images * self.prop_train)
+        nb_val_img = int(nb_labeled_images * 0.2)
+        nb_train_img = int(nb_labeled_images * 0.8)
         val_idxs = labeled_idxs[:nb_val_img]
         train_idxs = labeled_idxs[-nb_train_img:]
 

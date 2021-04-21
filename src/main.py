@@ -38,6 +38,7 @@ def main():
 
     args = parser.parse_args()
     args_dict = vars(args)
+    args_dict['class_weights'] = datamodules[args.datamodule].class_weights
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     tensorboard = loggers.TensorBoardLogger(
@@ -72,8 +73,7 @@ def main():
             # checkpoint_callback
         ],
         benchmark=True,
-        min_epochs=100,
-        max_epochs=300,
+        max_epochs=100,
         # num_sanity_val_steps=1,
         # log_every_n_steps=10,
         # flush_logs_every_n_steps=10

@@ -33,6 +33,7 @@ class SupervisedBaseline(pl.LightningModule):
                  num_classes,
                  inplaceBN,
                  learning_rate,
+                 class_weights,
                  wce,
                  *args,
                  **kwargs):
@@ -59,7 +60,10 @@ class SupervisedBaseline(pl.LightningModule):
         self.callbacks = []
         self.init_callbacks(num_classes)
 
-        self.wce = wce
+        self.class_weights = class_weights if wce else torch.ones(
+            size=num_classes)
+        self.ce = nn.CrossEntropyLoss(weight=class_weights)
+        self.dice = DiceLoss(mode="multiclass", log_loss=False)
 
 
     @classmethod
@@ -127,16 +131,6 @@ class SupervisedBaseline(pl.LightningModule):
         cm = ConfMatLogger(num_classes=num_classes)
         self.callbacks.append(cm)
 
-    def on_fit_start(self) -> None:
-
-        class_weights = self.trainer.datamodule.class_weights
-        if self.wce:
-            self.loss1 = nn.CrossEntropyLoss(weight=class_weights)
-        else:
-            self.loss1 = nn.CrossEntropyLoss()
-        self.loss2 = DiceLoss(mode="multiclass", log_loss=False)
-        self.loss2weight = 1.
-
     def forward(self, x):
 
         return self.network(x)
@@ -160,12 +154,12 @@ class SupervisedBaseline(pl.LightningModule):
         train_inputs, train_labels = batch
         outputs = self.network(train_inputs)
         train_labels = train_labels.long()
-        train_loss1 = self.loss1(outputs, train_labels)
-        train_loss2 = self.loss2(outputs, train_labels)
-        train_loss = train_loss1 + self.loss2weight * train_loss2
+        train_loss1 = self.ce(outputs, train_labels)
+        train_loss2 = self.dice(outputs, train_labels)
+        train_loss = train_loss1 + train_loss2
 
-        self.log(self.loss1name, train_loss1)
-        self.log(self.loss2name, train_loss2)
+        self.log('Cross entropy loss', train_loss1)
+        self.log('Dice loss', train_loss2)
 
         self.train_metrics(outputs.softmax(dim=1), train_labels)
         self.log_dict(self.train_metrics)
@@ -177,9 +171,9 @@ class SupervisedBaseline(pl.LightningModule):
         val_inputs, val_labels = batch
         outputs = self.network(val_inputs)
         val_labels = val_labels.long()
-        val_loss1 = self.loss1(outputs, val_labels)
-        val_loss2 = self.loss2(outputs, val_labels)
-        val_loss = val_loss1 + self.loss2weight * val_loss2
+        val_loss1 = self.ce(outputs, val_labels)
+        val_loss2 = self.dice(outputs, val_labels)
+        val_loss = val_loss1 + val_loss2
 
         self.val_metrics(outputs.softmax(dim=1), val_labels)
         self.log("val_sup_loss", val_loss)
