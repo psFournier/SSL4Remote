@@ -2,6 +2,7 @@ import datetime
 from argparse import ArgumentParser
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 from pytorch_lightning import Trainer, loggers
+from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
 from pl_datamodules import *
 
@@ -69,12 +70,16 @@ def main():
         lr_monitor
     ]
 
+    profiler = AdvancedProfiler(
+        output_filename='profile'
+    )
+
     # Using from_argparse_args enables to use any standard parameter of the
     # lightning Trainer class without having to manually add them to the parser.
     trainer = Trainer.from_argparse_args(
         args,
         logger=tensorboard,
-        profiler='simple',
+        profiler=profiler,
         callbacks=callbacks,
         benchmark=True
     )
