@@ -55,7 +55,7 @@ def main():
     # Callback to save the weights (not the full state) of the
     # model with maximum validation IoU.
     checkpoint_callback = ModelCheckpoint(
-        monitor='val_IoU',
+        monitor='Train IoU class 1',
         mode='max',
         save_weights_only=True
     )
@@ -65,7 +65,7 @@ def main():
 
     # The learning module can also define its own specific callbacks
     callbacks = pl_module.callbacks + [
-        checkpoint_callback,
+        # checkpoint_callback,
         lr_monitor
     ]
 
@@ -76,8 +76,7 @@ def main():
         logger=tensorboard,
         profiler='simple',
         callbacks=callbacks,
-        benchmark=True,
-        max_epochs=100
+        benchmark=True
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)
