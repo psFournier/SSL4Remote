@@ -5,6 +5,7 @@ from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
 from pl_datamodules import *
+import os
 
 modules = {
     'supervised_baseline': SupervisedBaseline,
@@ -53,14 +54,6 @@ def main():
     args_dict['class_weights'] = datamodules[args.datamodule].class_weights
     pl_module = modules[args.module](**args_dict)
 
-    # Callback to save the weights (not the full state) of the
-    # model with maximum validation IoU.
-    checkpoint_callback = ModelCheckpoint(
-        monitor='Train IoU class 1',
-        mode='max',
-        save_weights_only=True
-    )
-
     # Callback to log the learning rate
     lr_monitor = LearningRateMonitor()
 
@@ -70,8 +63,10 @@ def main():
         lr_monitor
     ]
 
+    # Montoring time spent in each call. Difficult to understand the data
+    # loading part when multiple workers are at use.
     profiler = AdvancedProfiler(
-        output_filename='profile'
+        output_filename=os.path.join(args.output_dir, 'profile')
     )
 
     # Using from_argparse_args enables to use any standard parameter of the
@@ -81,7 +76,6 @@ def main():
         logger=tensorboard,
         profiler=profiler,
         callbacks=callbacks,
-        benchmark=True
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

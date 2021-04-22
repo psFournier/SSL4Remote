@@ -82,7 +82,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         train_inputs, train_labels = batch
         outputs = self.network(train_inputs)
-        preds = outputs.softmax(dim=1)
+        probas = outputs.softmax(dim=1)
         train_labels = train_labels.long()
 
         train_loss1 = self.ce(outputs, train_labels)
@@ -91,16 +91,16 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Cross entropy loss', train_loss1)
         self.log('Dice loss', train_loss2)
 
-        accuracy = metrics.accuracy(preds, train_labels)
+        accuracy = metrics.accuracy(probas, train_labels)
         self.log('Train acc', accuracy)
 
         # Could all these be made faster by making sure they rely on the same
         # computation for fp, fn, etc ?
-        IoU = metrics.iou(preds, train_labels, reduction='none')
+        IoU = metrics.iou(probas, train_labels, reduction='none')
         self.log('Train IoU class 0', IoU[0])
         self.log('Train IoU class 1', IoU[1])
 
-        precision, recall = metrics.precision_recall(preds,
+        precision, recall = metrics.precision_recall(probas,
                                                      train_labels,
                                                      mdmc_average='global',
                                                      average='none',
@@ -116,23 +116,23 @@ class SupervisedBaseline(pl.LightningModule):
         val_labels = val_labels.long()
 
         outputs = self.network(val_inputs)
-        preds = outputs.softmax(dim=1)
+        probas = outputs.softmax(dim=1)
 
         val_loss1 = self.ce(outputs, val_labels)
         val_loss2 = self.dice(outputs, val_labels)
         val_loss = val_loss1 + val_loss2
         self.log("val_sup_loss", val_loss)
 
-        accuracy = metrics.accuracy(preds, val_labels)
+        accuracy = metrics.accuracy(probas, val_labels)
         self.log('Train acc', accuracy)
 
         # Could all these be made faster by making sure they rely on the same
         # computation for fp, fn, etc ?
-        IoU = metrics.iou(preds, val_labels, reduction='none')
+        IoU = metrics.iou(probas, val_labels, reduction='none')
         self.log('Train IoU class 0', IoU[0])
         self.log('Train IoU class 1', IoU[1])
 
-        precision, recall = metrics.precision_recall(preds,
+        precision, recall = metrics.precision_recall(probas,
                                                      val_labels,
                                                      mdmc_average='global',
                                                      average='none',
