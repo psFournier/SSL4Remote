@@ -65,7 +65,7 @@ def main():
 
     # Montoring time spent in each call. Difficult to understand the data
     # loading part when multiple workers are at use.
-    profiler = AdvancedProfiler()
+    profiler = SimpleProfiler()
 
     # Using from_argparse_args enables to use any standard parameter of the
     # lightning Trainer class without having to manually add them to the parser.

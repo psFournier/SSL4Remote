@@ -21,18 +21,17 @@ class AirsSup(BaseSupervisedDatamodule):
 
         nb_labeled_images = Airs.nb_labeled_images
         labeled_idxs = list(range(nb_labeled_images))
-        random.shuffle(labeled_idxs)
 
         self.sup_train_set = AirsLabeled(
             data_path=self.data_dir,
-            idxs=labeled_idxs[:857][::self.prop_train],
+            idxs=labeled_idxs[:7][::self.prop_train],
             crop=self.crop_size,
             augmentations=self.train_augment
         )
 
         self.val_set = AirsLabeled(
             data_path=self.data_dir,
-            idxs=labeled_idxs[857:],
+            idxs=labeled_idxs[7:],
             crop=self.crop_size,
             augmentations=self.val_augment
         )

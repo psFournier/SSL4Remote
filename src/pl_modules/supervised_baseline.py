@@ -96,7 +96,10 @@ class SupervisedBaseline(pl.LightningModule):
 
         # Could all these be made faster by making sure they rely on the same
         # computation for fp, fn, etc ?
-        IoU = metrics.iou(probas, train_labels, reduction='none')
+        IoU = metrics.iou(probas,
+                          train_labels,
+                          reduction='none',
+                          num_classes=self.num_classes)
         self.log('Train IoU class 0', IoU[0])
         self.log('Train IoU class 1', IoU[1])
 
@@ -128,7 +131,10 @@ class SupervisedBaseline(pl.LightningModule):
 
         # Could all these be made faster by making sure they rely on the same
         # computation for fp, fn, etc ?
-        IoU = metrics.iou(probas, val_labels, reduction='none')
+        IoU = metrics.iou(probas,
+                          val_labels,
+                          reduction='none',
+                          num_classes=self.num_classes)
         self.log('Train IoU class 0', IoU[0])
         self.log('Train IoU class 1', IoU[1])
 
