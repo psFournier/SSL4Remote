@@ -2,69 +2,97 @@ import random
 from torch.utils.data import ConcatDataset
 import os
 from pl_datamodules import BaseSupervisedDatamodule
-from torch_datasets import Miniworld, MiniworldLabeled
+from torch_datasets.miniworld import *
 from torch import tensor
 
+cities = {
+    'christchurch': (Christchurch, ChristchurchLabeled),
+    'paris': (Paris, ParisLabeled)
+}
 
 class MiniworldSup(BaseSupervisedDatamodule):
 
     class_weights = tensor(
-        [
-            Miniworld.pixels_per_class[0] / ppc for ppc in
-            Miniworld.pixels_per_class
-        ]
+        [1., 1.]
     )
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, city, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.city = city
+
+    @classmethod
+    def add_model_specific_args(cls, parent_parser):
+
+        parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument("--city", type=str, default='christchurch')
+
+        return parser
 
     def setup(self, stage=None):
 
-        sup_train_datasets = []
-        val_datasets = []
-        for city_info in Miniworld.city_info_list:
+        nb_labeled_images = cities[self.city][0].nb_labeled_images
+        labeled_idxs = list(range(nb_labeled_images))
 
-            labeled_image_paths = [
-                'test/{}_x.png'.format(i) for i in range(city_info[1])
-            ] + [
-                'train/{}_x.png'.format(i) for i in range(city_info[2])
-            ]
-            label_paths = [
-                'test/{}_y.png'.format(i) for i in range(city_info[1])
-            ] + [
-                'train/{}_y.png'.format(i) for i in range(city_info[2])
-            ]
-            unlabeled_image_paths = []
+        train, val = cities[self.city][0].default_train_val
+        self.sup_train_set = cities[self.city][1](
+            data_path=self.data_dir,
+            idxs=labeled_idxs[:train][::self.prop_train],
+            crop=self.crop_size,
+            augmentations=self.train_augment
+        )
 
-            nb_labeled_images = len(labeled_image_paths)
-            labeled_idxs = list(range(nb_labeled_images))
-            # random.shuffle(labeled_idxs)
+        self.val_set = cities[self.city][1](
+            data_path=self.data_dir,
+            idxs=labeled_idxs[train:],
+            crop=self.crop_size,
+            augmentations=self.val_augment
+        )
 
-            sup_train_datasets.append(
-                MiniworldLabeled(
-                    data_path=os.path.join(self.data_dir, city_info[0]),
-                    labeled_image_paths=labeled_image_paths,
-                    label_paths=label_paths,
-                    unlabeled_image_paths=unlabeled_image_paths,
-                    image_size=city_info[3],
-                    idxs=labeled_idxs[city_info[1]:][::self.prop_train],
-                    crop=self.crop_size,
-                    augmentations=self.train_augment
-                )
-            )
-            val_datasets.append(
-                MiniworldLabeled(
-                    data_path=os.path.join(self.data_dir, city_info[0]),
-                    labeled_image_paths=labeled_image_paths,
-                    label_paths=label_paths,
-                    unlabeled_image_paths=unlabeled_image_paths,
-                    image_size=city_info[3],
-                    idxs=labeled_idxs[:city_info[1]],
-                    crop=self.crop_size,
-                    augmentations=self.val_augment
-                )
-            )
-
-        self.sup_train_set = ConcatDataset(sup_train_datasets)
-        self.val_set = ConcatDataset(val_datasets)
+        # sup_train_datasets = []
+        # val_datasets = []
+        # for city_info in Miniworld.city_info_list:
+        #
+        #     labeled_image_paths = [
+        #         'test/{}_x.png'.format(i) for i in range(city_info[1])
+        #     ] + [
+        #         'train/{}_x.png'.format(i) for i in range(city_info[2])
+        #     ]
+        #     label_paths = [
+        #         'test/{}_y.png'.format(i) for i in range(city_info[1])
+        #     ] + [
+        #         'train/{}_y.png'.format(i) for i in range(city_info[2])
+        #     ]
+        #     unlabeled_image_paths = []
+        #
+        #     nb_labeled_images = len(labeled_image_paths)
+        #     labeled_idxs = list(range(nb_labeled_images))
+        #     # random.shuffle(labeled_idxs)
+        #
+        #     sup_train_datasets.append(
+        #         MiniworldLabeled(
+        #             data_path=os.path.join(self.data_dir, city_info[0]),
+        #             labeled_image_paths=labeled_image_paths,
+        #             label_paths=label_paths,
+        #             unlabeled_image_paths=unlabeled_image_paths,
+        #             image_size=city_info[3],
+        #             idxs=labeled_idxs[city_info[1]:][::self.prop_train],
+        #             crop=self.crop_size,
+        #             augmentations=self.train_augment
+        #         )
+        #     )
+        #     val_datasets.append(
+        #         MiniworldLabeled(
+        #             data_path=os.path.join(self.data_dir, city_info[0]),
+        #             labeled_image_paths=labeled_image_paths,
+        #             label_paths=label_paths,
+        #             unlabeled_image_paths=unlabeled_image_paths,
+        #             image_size=city_info[3],
+        #             idxs=labeled_idxs[:city_info[1]],
+        #             crop=self.crop_size,
+        #             augmentations=self.val_augment
+        #         )
+        #     )
+        #
+        # self.sup_train_set = ConcatDataset(sup_train_datasets)
+        # self.val_set = ConcatDataset(val_datasets)

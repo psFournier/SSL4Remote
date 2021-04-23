@@ -2,7 +2,7 @@ from torch_datasets import MiniworldCity
 from torch_datasets import BaseLabeled, BaseUnlabeled
 
 
-class Arlington(MiniworldCity):
+class Arlington(Base, ABC):
 
     labeled_image_paths = ['test/{}_x.png'.format(i) for i in [0]] + \
                           ['train/{}_x.png'.format(i) for i in [0,1]]

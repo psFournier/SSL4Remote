@@ -3,8 +3,7 @@ from torch.utils.data import ConcatDataset
 import os
 
 from pl_datamodules import BaseSemisupDatamodule
-from torch_datasets import Miniworld, MiniworldUnlabeled, \
-    MiniworldLabeled
+
 import albumentations as A
 
 
