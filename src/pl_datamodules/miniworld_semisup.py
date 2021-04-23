@@ -3,8 +3,8 @@ from torch.utils.data import ConcatDataset
 import os
 
 from pl_datamodules import BaseSemisupDatamodule
-from torch_datasets import MiniworldCities, MiniworldCitiesUnlabeled, \
-    MiniworldCitiesLabeled
+from torch_datasets import Miniworld, MiniworldUnlabeled, \
+    MiniworldLabeled
 import albumentations as A
 
 
@@ -20,7 +20,7 @@ class MiniworldSemisup(BaseSemisupDatamodule):
         sup_train_datasets = []
         val_datasets = []
         unsup_train_datasets = []
-        for city_info in MiniworldCities.city_info_list:
+        for city_info in Miniworld.city_info_list:
 
             labeled_image_paths = [
                                       'test/{}_x.png'.format(i) for i in range(city_info[1])
@@ -39,7 +39,7 @@ class MiniworldSemisup(BaseSemisupDatamodule):
             # random.shuffle(labeled_idxs)
 
             sup_train_datasets.append(
-                MiniworldCitiesLabeled(
+                MiniworldLabeled(
                     data_path=os.path.join(self.data_dir, city_info[0]),
                     labeled_image_paths=labeled_image_paths,
                     label_paths=label_paths,
@@ -51,7 +51,7 @@ class MiniworldSemisup(BaseSemisupDatamodule):
                 )
             )
             val_datasets.append(
-                MiniworldCitiesLabeled(
+                MiniworldLabeled(
                     data_path=os.path.join(self.data_dir, city_info[0]),
                     labeled_image_paths=labeled_image_paths,
                     label_paths=label_paths,
@@ -68,7 +68,7 @@ class MiniworldSemisup(BaseSemisupDatamodule):
             unsup_train_idxs = list(range(nb_unsup_train_img))
             # random.shuffle(unsup_train_idxs)
             unsup_train_datasets.append(
-                MiniworldCitiesUnlabeled(
+                MiniworldUnlabeled(
                     data_path=os.path.join(self.data_dir, city_info[0]),
                     labeled_image_paths=labeled_image_paths,
                     label_paths=label_paths,

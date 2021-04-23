@@ -4,10 +4,10 @@ import numpy as np
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler
 
-from datasets import IsprsVaihingen, IsprsVaihingenLabeled, IsprsVaihingenUnlabeled
+from datasets import IsprsV, IsprsVLabeled, IsprsVUnlabeled
 
 
-class RotEquivarianceIsprsVaihingen(LightningDataModule):
+class RotEquivarianceIsprsV(LightningDataModule):
     def __init__(
         self,
         data_path,
@@ -50,26 +50,26 @@ class RotEquivarianceIsprsVaihingen(LightningDataModule):
 
     def setup(self, stage=None):
 
-        labeled_idxs = IsprsVaihingen.labeled_idxs
+        labeled_idxs = IsprsV.labeled_idxs
         np.random.shuffle(labeled_idxs)
 
         # Here we use very few labeled images for training (2)...
         val_idxs = labeled_idxs[:7]
         train_idxs = labeled_idxs[14:]
 
-        self.sup_train_set = IsprsVaihingenLabeled(
+        self.sup_train_set = IsprsVLabeled(
             self.data_path, train_idxs, self.crop_size, self.sup_train_transforms
         )
 
-        self.val_set = IsprsVaihingenLabeled(
+        self.val_set = IsprsVLabeled(
             self.data_path, val_idxs, self.crop_size, self.val_transforms
         )
 
         # ...but each non validation labeled image is used without its label for
         # unsupervised training
-        unlabeled_idxs = IsprsVaihingen.unlabeled_idxs
+        unlabeled_idxs = IsprsV.unlabeled_idxs
         unsup_train_idxs = labeled_idxs[7:] + unlabeled_idxs
-        self.unsup_train_set = IsprsVaihingenUnlabeled(
+        self.unsup_train_set = IsprsVUnlabeled(
             self.data_path,
             unsup_train_idxs,
             self.crop_size,

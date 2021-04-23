@@ -5,7 +5,6 @@ from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
 from pl_datamodules import *
-import os
 
 modules = {
     'supervised_baseline': SupervisedBaseline,
@@ -16,7 +15,8 @@ datamodules = {
     'isprs_vai_semisup': IsprsVaiSemisup,
     'isprs_vai_sup': IsprsVaiSup,
     'miniworld_semisup': MiniworldSemisup,
-    'miniworld_sup': MiniworldSup
+    'miniworld_sup': MiniworldSup,
+    'airs_sup': AirsSup
 }
 
 def main():
@@ -65,9 +65,7 @@ def main():
 
     # Montoring time spent in each call. Difficult to understand the data
     # loading part when multiple workers are at use.
-    profiler = AdvancedProfiler(
-        output_filename=os.path.join(args.output_dir, 'profile')
-    )
+    profiler = AdvancedProfiler()
 
     # Using from_argparse_args enables to use any standard parameter of the
     # lightning Trainer class without having to manually add them to the parser.

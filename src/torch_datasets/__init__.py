@@ -1,8 +1,4 @@
-from torch_datasets.base_dataset import BaseDataset, BaseDatasetUnlabeled, \
-    BaseDatasetLabeled
-from torch_datasets.isprs_vaihingen import \
-    IsprsVaihingenUnlabeled, \
-    IsprsVaihingenLabeled, \
-    IsprsVaihingen
-from torch_datasets.miniworld_cities import MiniworldCities, \
-    MiniworldCitiesLabeled, MiniworldCitiesUnlabeled
+from torch_datasets.base import *
+from torch_datasets.isprs_v import *
+from torch_datasets.miniworld import *
+from torch_datasets.airs import *

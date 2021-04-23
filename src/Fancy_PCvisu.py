@@ -1,4 +1,4 @@
-from torch_datasets import IsprsVaihingenLabeled
+from torch_datasets import IsprsVLabeled
 from torch.utils.data import DataLoader
 import albumentations as A
 from matplotlib import pyplot as plt
@@ -175,7 +175,7 @@ aug = CorrectFancyPCA(eigenvalues=ISPRS_EIGENVALS,
                       p=1)
 mistaken = MistakenFancyPCA(p=1)
 
-ds = IsprsVaihingenLabeled(
+ds = IsprsVLabeled(
     data_path='/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN',
     idxs=list(range(2)),
     crop=128,

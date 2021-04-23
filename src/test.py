@@ -1,11 +1,11 @@
 import numpy as np
 from torch import nn
-from torch_datasets import IsprsVaihingen
+from torch_datasets import IsprsV
 import os
 import rasterio
 
 # nb_bat, nb_non_bat = 0, 0
-# for path in IsprsVaihingen.label_paths:
+# for path in IsprsV.label_paths:
 #     with rasterio.open(
 #         os.path.join(
 #             '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN', path
@@ -13,7 +13,7 @@ import rasterio
 #     ) as label_file:
 #         label = label_file.read(out_dtype=np.uint8)
 #         label = label.transpose(1, 2, 0)
-#         label = IsprsVaihingen.colors_to_labels(label)
+#         label = IsprsV.colors_to_labels(label)
 #         nb_bat += np.sum((label == 1).astype(int))
 #         nb_non_bat += np.sum((label == 0).astype(int))
 #

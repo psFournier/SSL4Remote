@@ -3,15 +3,13 @@ import warnings
 
 import numpy as np
 import rasterio
-from rasterio.windows import Window
-from torch.utils.data import Dataset
 from abc import ABC
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
-from torch_datasets import BaseDataset, BaseDatasetLabeled, BaseDatasetUnlabeled
+from torch_datasets import Base, BaseLabeled, BaseUnlabeled
 
 
 # nb_bat, nb_non_bat = 0, 0
-# for path in IsprsVaihingen.label_paths:
+# for path in IsprsV.label_paths:
 #     with rasterio.open(
 #             os.path.join(
 #                 '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN', path
@@ -19,32 +17,16 @@ from torch_datasets import BaseDataset, BaseDatasetLabeled, BaseDatasetUnlabeled
 #     ) as label_file:
 #         label = label_file.read(out_dtype=np.uint8)
 #         label = label.transpose(1, 2, 0)
-#         label = IsprsVaihingen.colors_to_labels(label)
+#         label = IsprsV.colors_to_labels(label)
 #         nb_bat += np.sum((label == 1).astype(int))
 #         nb_non_bat += np.sum((label == 0).astype(int))
 #
 # print(nb_bat, nb_non_bat)
 
-class IsprsVaihingen(BaseDataset, ABC):
+class IsprsV(Base, ABC):
 
-    labeled_image_paths = [
-        'top/top_mosaic_09cm_area{}.tif'.format(i) for i in [
-            1, 3, 5, 7, 11, 13, 15, 17, 21, 23, 26, 28, 30, 32,
-            34, 37
-        ]
-    ]
-    unlabeled_image_paths = [
-        'top/top_mosaic_09cm_area{}.tif'.format(i) for i in [
-            2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 29,
-            31, 33, 35, 38
-        ]
-    ]
-    label_paths = [
-        'gts_for_participants/top_mosaic_09cm_area{}.tif'.format(i) for i in [
-            1, 3, 5, 7, 11, 13, 15, 17, 21, 23, 26, 28, 30, 32,
-            34, 37
-        ]
-    ]
+    nb_labeled_images = 16
+    nb_unlabeled_images = 17
     image_size = (1900,2600)
     pixels_per_class = [21815349, 20417332]
     mean_labeled_pixels = (0.4727, 0.3205, 0.3159)
@@ -56,6 +38,33 @@ class IsprsVaihingen(BaseDataset, ABC):
             *args,
             **kwargs
         )
+        self.labeled_image_paths = [
+            os.path.join(
+                self.data_path,
+                'top/top_mosaic_09cm_area{}.tif'.format(i)
+            ) for i in [
+                1, 3, 5, 7, 11, 13, 15, 17, 21, 23, 26, 28, 30, 32,
+                34, 37
+            ]
+        ]
+        self.unlabeled_image_paths = [
+            os.path.join(
+                self.data_path,
+                'top/top_mosaic_09cm_area{}.tif'.format(i)
+            ) for i in [
+                2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 27, 29,
+                31, 33, 35, 38
+            ]
+        ]
+        self.label_paths = [
+            os.path.join(
+                self.data_path,
+                'gts_for_participants/top_mosaic_09cm_area{}.tif'.format(i)
+            ) for i in [
+                1, 3, 5, 7, 11, 13, 15, 17, 21, 23, 26, 28, 30, 32,
+                34, 37
+            ]
+        ]
 
     @staticmethod
     def colors_to_labels(labels_color):
@@ -79,14 +88,14 @@ class IsprsVaihingen(BaseDataset, ABC):
         return labels
 
 
-class IsprsVaihingenUnlabeled(IsprsVaihingen, BaseDatasetUnlabeled):
+class IsprsVUnlabeled(IsprsV, BaseUnlabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
 
-class IsprsVaihingenLabeled(IsprsVaihingen, BaseDatasetLabeled):
+class IsprsVLabeled(IsprsV, BaseLabeled):
 
     def __init__(self, *args, **kwargs):
 

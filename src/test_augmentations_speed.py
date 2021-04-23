@@ -1,4 +1,4 @@
-from torch_datasets import IsprsVaihingenLabeled
+from torch_datasets import IsprsVLabeled
 from torch.utils.data import DataLoader
 import albumentations as A
 import torch
@@ -41,7 +41,7 @@ def D4_transforms(image, mask):
 
 # aug = A.MaskDropout(p=1, max_objects=1)
 
-ds = IsprsVaihingenLabeled(
+ds = IsprsVLabeled(
     data_path='/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN',
     idxs=list(range(1)),
     crop=128,

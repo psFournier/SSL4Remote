@@ -1,6 +1,6 @@
 import numpy as np
 import rasterio as rio
-from torch_datasets import IsprsVaihingen
+from torch_datasets import IsprsV
 from transforms import MergeLabels
 import matplotlib.pyplot as plt
 import cv2
@@ -25,7 +25,7 @@ top = x_src.read(window=window).transpose(1, 2, 0)
 
 gt_src = rio.open(gt_path)
 gt = gt_src.read(window=window, out_dtype=np.float32).transpose(1, 2, 0)
-gt = IsprsVaihingen.colors_to_labels(gt)
+gt = IsprsV.colors_to_labels(gt)
 
 label_merger = MergeLabels([[0], [1]])
 gt = label_merger(gt).astype(bool)

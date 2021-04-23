@@ -1,5 +1,5 @@
 from torch_datasets import MiniworldCity
-from torch_datasets import BaseDatasetLabeled, BaseDatasetUnlabeled
+from torch_datasets import BaseLabeled, BaseUnlabeled
 
 
 class Vegas(MiniworldCity):
@@ -21,13 +21,13 @@ class Vegas(MiniworldCity):
 
         return 390*390
 
-class VegasLabeled(Vegas, BaseDatasetLabeled):
+class VegasLabeled(Vegas, BaseLabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
-class VegasUnlabeled(Vegas, BaseDatasetUnlabeled):
+class VegasUnlabeled(Vegas, BaseUnlabeled):
 
     def __init__(self, *args, **kwargs):
 

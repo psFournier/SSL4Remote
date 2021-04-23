@@ -2,7 +2,7 @@ import random
 from torch.utils.data import ConcatDataset
 import os
 from pl_datamodules import BaseSupervisedDatamodule
-from torch_datasets import MiniworldCities, MiniworldCitiesLabeled
+from torch_datasets import Miniworld, MiniworldLabeled
 from torch import tensor
 
 
@@ -10,8 +10,8 @@ class MiniworldSup(BaseSupervisedDatamodule):
 
     class_weights = tensor(
         [
-            MiniworldCities.pixels_per_class[0] / ppc for ppc in
-            MiniworldCities.pixels_per_class
+            Miniworld.pixels_per_class[0] / ppc for ppc in
+            Miniworld.pixels_per_class
         ]
     )
 
@@ -23,7 +23,7 @@ class MiniworldSup(BaseSupervisedDatamodule):
 
         sup_train_datasets = []
         val_datasets = []
-        for city_info in MiniworldCities.city_info_list:
+        for city_info in Miniworld.city_info_list:
 
             labeled_image_paths = [
                 'test/{}_x.png'.format(i) for i in range(city_info[1])
@@ -42,7 +42,7 @@ class MiniworldSup(BaseSupervisedDatamodule):
             # random.shuffle(labeled_idxs)
 
             sup_train_datasets.append(
-                MiniworldCitiesLabeled(
+                MiniworldLabeled(
                     data_path=os.path.join(self.data_dir, city_info[0]),
                     labeled_image_paths=labeled_image_paths,
                     label_paths=label_paths,
@@ -54,7 +54,7 @@ class MiniworldSup(BaseSupervisedDatamodule):
                 )
             )
             val_datasets.append(
-                MiniworldCitiesLabeled(
+                MiniworldLabeled(
                     data_path=os.path.join(self.data_dir, city_info[0]),
                     labeled_image_paths=labeled_image_paths,
                     label_paths=label_paths,

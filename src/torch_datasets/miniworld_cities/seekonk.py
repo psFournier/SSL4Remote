@@ -1,5 +1,5 @@
 from torch_datasets import MiniworldCity
-from torch_datasets import BaseDatasetLabeled, BaseDatasetUnlabeled
+from torch_datasets import BaseLabeled, BaseUnlabeled
 
 
 class Seekonk(MiniworldCity):
@@ -21,13 +21,13 @@ class Seekonk(MiniworldCity):
 
         return 3000*3000
 
-class SeekonkLabeled(Seekonk, BaseDatasetLabeled):
+class SeekonkLabeled(Seekonk, BaseLabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
-class SeekonkUnlabeled(Seekonk, BaseDatasetUnlabeled):
+class SeekonkUnlabeled(Seekonk, BaseUnlabeled):
 
     def __init__(self, *args, **kwargs):
 

@@ -10,8 +10,10 @@ from abc import ABC
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 
-class BaseDataset(Dataset, ABC):
+class Base(Dataset, ABC):
 
+    nb_labeled_images = 0
+    nb_unlabeled_images = 0
     labeled_image_paths = []
     unlabeled_image_paths = []
     label_paths = []
@@ -55,8 +57,7 @@ class BaseDataset(Dataset, ABC):
 
     def get_image(self, idx):
 
-        path = (self.labeled_image_paths + self.unlabeled_image_paths)[idx]
-        image_filepath = os.path.join(self.data_path, path)
+        image_filepath = (self.labeled_image_paths + self.unlabeled_image_paths)[idx]
 
         with rasterio.open(image_filepath) as image_file:
 
@@ -69,8 +70,7 @@ class BaseDataset(Dataset, ABC):
 
     def get_label(self, idx, window):
 
-        path = self.label_paths[idx]
-        label_filepath = os.path.join(self.data_path, path)
+        label_filepath = self.label_paths[idx]
 
         with rasterio.open(label_filepath) as label_file:
 
@@ -87,7 +87,7 @@ class BaseDataset(Dataset, ABC):
         raise NotImplementedError
 
 
-class BaseDatasetUnlabeled(BaseDataset, ABC):
+class BaseUnlabeled(Base, ABC):
 
     def __init__(self, *args, **kwargs):
 
@@ -103,7 +103,7 @@ class BaseDatasetUnlabeled(BaseDataset, ABC):
         return augment['image']
 
 
-class BaseDatasetLabeled(BaseDatasetUnlabeled, ABC):
+class BaseLabeled(BaseUnlabeled, ABC):
 
     @staticmethod
     def colors_to_labels(labels_color):

@@ -5,7 +5,7 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
-from torch_datasets import IsprsVaihingen, IsprsVaihingenLabeled
+from torch_datasets import IsprsV, IsprsVLabeled
 from transforms import MergeLabels
 
 import albumentations as A
@@ -19,8 +19,8 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
 
     class_weights = tensor(
         [
-            IsprsVaihingen.pixels_per_class[0] / ppc for ppc in
-            IsprsVaihingen.pixels_per_class
+            IsprsV.pixels_per_class[0] / ppc for ppc in
+            IsprsV.pixels_per_class
         ]
     )
 
@@ -33,16 +33,15 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
 
     def setup(self, stage=None):
 
-        nb_labeled_images = len(IsprsVaihingen.labeled_image_paths)
+        nb_labeled_images = IsprsV.nb_labeled_images
         labeled_idxs = list(range(nb_labeled_images))
-        random.shuffle(labeled_idxs)
 
         nb_val_img = int(nb_labeled_images * 0.2)
         nb_train_img = int(nb_labeled_images * 0.8)
         val_idxs = labeled_idxs[:nb_val_img]
         train_idxs = labeled_idxs[-nb_train_img:]
 
-        self.sup_train_set = IsprsVaihingenLabeled(
+        self.sup_train_set = IsprsVLabeled(
             data_path=self.data_dir,
             idxs=train_idxs,
             crop=self.crop_size,
@@ -50,7 +49,7 @@ class IsprsVaiSup(BaseSupervisedDatamodule):
             augmentations=self.train_augment
         )
 
-        self.val_set = IsprsVaihingenLabeled(
+        self.val_set = IsprsVLabeled(
             data_path=self.data_dir,
             idxs=val_idxs,
             crop=self.crop_size,

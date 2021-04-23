@@ -3,7 +3,7 @@ import rasterio as rio
 import numpy as np
 from rasterio.windows import Window
 import matplotlib.pyplot as plt
-from torch_datasets import MiniworldCities
+from torch_datasets import Miniworld
 from transforms import MergeLabels
 import cv2
 import albumentations as A
@@ -53,7 +53,7 @@ with rio.open(image_path) as image_file:
 with rio.open(label_path) as label_file:
     label = label_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
 
-gt = MiniworldCities.colors_to_labels(label)
+gt = Miniworld.colors_to_labels(label)
 
 label_merger = MergeLabels([[0], [1]])
 gt = label_merger(gt).astype(bool)

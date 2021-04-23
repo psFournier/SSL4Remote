@@ -6,14 +6,14 @@ import rasterio as rio
 from abc import ABC
 import PIL
 from PIL import Image
-from torch_datasets import BaseDataset, BaseDatasetLabeled, BaseDatasetUnlabeled
+from torch_datasets import Base, BaseLabeled, BaseUnlabeled
 
 warnings.filterwarnings(
     "ignore", category=rio.errors.NotGeoreferencedWarning
 )
 
 
-class MiniworldCities(BaseDataset, ABC):
+class Miniworld(Base, ABC):
 
     city_info_list = [
         # ('Arlington', 1, 2, (3000,3000)),
@@ -70,14 +70,14 @@ class MiniworldCities(BaseDataset, ABC):
         )
 
 
-class MiniworldCitiesLabeled(MiniworldCities, BaseDatasetLabeled):
+class MiniworldLabeled(Miniworld, BaseLabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
 
-class MiniworldCitiesUnlabeled(MiniworldCities, BaseDatasetUnlabeled):
+class MiniworldUnlabeled(Miniworld, BaseUnlabeled):
 
     def __init__(self, *args, **kwargs):
 

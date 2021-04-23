@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -q qgpgpu
-#PBS -l select=1:ncpus=4:mem=16G:ngpus=1
+#PBS -l select=1:ncpus=4:mem=92G:ngpus=1
 #PBS -l walltime=1:00:00
 
 ROOT=/home/eh/fournip/SemiSupervised/SSL4Remote
