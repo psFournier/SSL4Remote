@@ -38,7 +38,7 @@ class Christchurch(Base, ABC):
         self.label_paths = sorted(
             glob.glob(f'{self.data_path}/christchurch/train/*_y.png')
         ) + sorted(
-            glob.glob(f'{self.data_path}/christchurch/train/*_y.png')
+            glob.glob(f'{self.data_path}/christchurch/test/*_y.png')
         )
 
 

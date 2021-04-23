@@ -37,7 +37,7 @@ class Paris(Base, ABC):
         self.label_paths = sorted(
             glob.glob(f'{self.data_path}/paris/train/*_y.png')
         ) + sorted(
-            glob.glob(f'{self.data_path}/paris/train/*_y.png')
+            glob.glob(f'{self.data_path}/paris/test/*_y.png')
         )
 
 
