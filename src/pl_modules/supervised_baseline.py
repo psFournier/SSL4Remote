@@ -127,7 +127,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.log("val_sup_loss", val_loss)
 
         accuracy = metrics.accuracy(probas, val_labels)
-        self.log('Train acc', accuracy)
+        self.log('Val acc', accuracy)
 
         # Could all these be made faster by making sure they rely on the same
         # computation for fp, fn, etc ?
@@ -135,15 +135,15 @@ class SupervisedBaseline(pl.LightningModule):
                           val_labels,
                           reduction='none',
                           num_classes=self.num_classes)
-        self.log('Train IoU class 0', IoU[0])
-        self.log('Train IoU class 1', IoU[1])
+        self.log('Val IoU class 0', IoU[0])
+        self.log('Val IoU class 1', IoU[1])
 
         precision, recall = metrics.precision_recall(probas,
                                                      val_labels,
                                                      mdmc_average='global',
                                                      average='none',
                                                      num_classes=self.num_classes)
-        self.log('Train precision class 1', precision[1])
-        self.log('Train recall class 1', recall[1])
+        self.log('Val precision class 1', precision[1])
+        self.log('Val recall class 1', recall[1])
 
 
