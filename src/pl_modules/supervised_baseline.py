@@ -40,9 +40,9 @@ class SupervisedBaseline(pl.LightningModule):
         self.learning_rate = learning_rate # Initial learning rate
 
         self.class_weights = class_weights if wce else torch.FloatTensor(
-            [1.] * num_classes
+            [1.] * self.num_classes
         )
-        self.ce = nn.CrossEntropyLoss(weight=class_weights)
+        self.ce = nn.CrossEntropyLoss(weight=self.class_weights)
         self.dice = DiceLoss(mode="multiclass", log_loss=False)
 
 
