@@ -129,4 +129,9 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_precision_1', precision[1])
         self.log('Val_recall_1', recall[1])
 
+        # figure = plot_confusion_matrix(cm.numpy(), class_names=["0", "1"])
+        # trainer.logger.experiment.add_figure(
+        #     "Confusion matrix", figure, global_step=trainer.global_step
+        # )
+
 
