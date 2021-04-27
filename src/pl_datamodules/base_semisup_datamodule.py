@@ -22,16 +22,6 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
         return parser
 
-    # def collate_unlabeled(self, batch, augment):
-    #
-    #     transformed_batch = [
-    #         augment(image=image)
-    #         for image in batch
-    #     ]
-    #     batch = [(elem["image"]) for elem in transformed_batch]
-    #
-    #     return default_collate(batch)
-
     def train_dataloader(self):
 
         """
@@ -40,39 +30,17 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
         unlabeled data.
         """
 
-        sup_train_sampler = RandomSampler(
-            data_source=self.sup_train_set,
-            replacement=True,
-            num_samples=self.epoch_len
-        )
-
-        # num_workers should be the number of cpus on the machine.
-        sup_train_dataloader = DataLoader(
-            dataset=self.sup_train_set,
-            batch_size=self.batch_size,
-            # collate_fn=partial(
-            #     self.collate_labeled,
-            #     augment=self.train_augment
-            # ),
-            sampler=sup_train_sampler,
-            num_workers=self.num_workers,
-            pin_memory=True,
-            worker_init_fn=self.wif
-        )
+        sup_train_dataloader = super().train_dataloader()
 
         unsup_train_sampler = RandomSampler(
             data_source=self.unsup_train_set,
             replacement=True,
             num_samples=self.epoch_len
         )
-        # num_workers should be the number of cpus on the machine.
+
         unsup_train_dataloader = DataLoader(
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
-            # collate_fn=partial(
-            #     self.collate_unlabeled,
-            #     augment=self.train_augment
-            # ),
             sampler=unsup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -81,7 +49,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
         train_dataloaders = {
             "sup": sup_train_dataloader,
-            "unsup": unsup_train_dataloader,
+            "unsup": unsup_train_dataloader
         }
 
         return train_dataloaders

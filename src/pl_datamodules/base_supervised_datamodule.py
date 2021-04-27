@@ -73,27 +73,6 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         return parser
 
-    # Following pytorch Dataloader doc, loading from a map-style dataset is
-    # roughly equivalent with:
-    #
-    #     for indices in batch_sampler:
-    #         yield collate_fn([dataset[i] for i in indices])
-
-    # def collate_labeled(self, batch, augment):
-    #
-    #     # We apply transforms here because transforms are method-dependent
-    #     # while the dataset class should be method independent.
-    #     transformed_batch = [
-    #         augment(
-    #             image=image,
-    #             mask=self.label_merger(ground_truth)
-    #         )
-    #         for image,ground_truth in batch
-    #     ]
-    #     batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
-    #
-    #     return default_collate(batch)
-
     def wif(self, id):
         uint64_seed = torch.initial_seed()
         np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
@@ -113,17 +92,12 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_sampler = RandomSampler(
             data_source=self.sup_train_set,
             replacement=True,
-            num_samples=self.epoch_len,
+            num_samples=self.epoch_len
         )
 
-        # num_workers should be the number of cpus on the machine.
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            # collate_fn=partial(
-            #     self.collate_labeled,
-            #     augment=self.train_augment
-            # ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -135,17 +109,14 @@ class BaseSupervisedDatamodule(LightningDataModule):
     def val_dataloader(self):
 
         val_sampler = RandomSampler(
-            data_source=self.val_set, replacement=True, num_samples=self.epoch_len
+            data_source=self.val_set,
+            replacement=True,
+            num_samples=self.epoch_len
         )
 
-        # num_workers should be the number of cpus on the machine.
         val_dataloader = DataLoader(
             dataset=self.val_set,
             batch_size=self.batch_size,
-            # collate_fn=partial(
-            #     self.collate_labeled,
-            #     augment=self.val_augment
-            # ),
             sampler=val_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
