@@ -4,9 +4,9 @@ import albumentations as A
 from torch.utils.data import DataLoader
 
 ds = AirsLabeled(
-    data_path='/home/pierre/Documents/ONERA/ai4geo/small_airs',
+    data_path='/home/pierre/Documents/ONERA/ai4geo/small_airs_hal',
     idxs=list(range(9)),
-    crop=512,
+    crop=1024,
     augmentations=A.NoOp()
 )
 

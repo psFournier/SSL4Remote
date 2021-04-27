@@ -3,7 +3,7 @@ import rasterio as rio
 import numpy as np
 from rasterio.windows import Window
 import matplotlib.pyplot as plt
-from torch_datasets import Miniworld
+from torch_datasets import Paris, ChristchurchLabeled
 from transforms import MergeLabels
 import cv2
 import albumentations as A
@@ -58,8 +58,8 @@ def get_tiles(ds, nols, nrows, width=256, height=256, col_step=128,
         yield window
 
 
-ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs' \
-    '/baseline_christchurch_noaug_2021-04-16/checkpoints/epoch=999-step=312999.ckpt'
+# ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/tensorboard/baseline_paris_2021-04-24/checkpoints/epoch=999-step=312999.ckpt'
+ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/tensorboard/baseline_christchurch_2021-04-24/checkpoints/epoch=999-step=312999.ckpt'
 
 module = SupervisedBaseline.load_from_checkpoint(ckpt_path)
 module.eval()
@@ -127,7 +127,7 @@ with rio.open(label_path) as label_file:
                                           height=full_height),
                             out_dtype=np.uint8).transpose(1, 2, 0)
 
-gt = Miniworld.colors_to_labels(label)
+gt = ChristchurchLabeled.colors_to_labels(label)
 
 label_merger = MergeLabels([[0], [1]])
 gt = label_merger(gt).astype(bool)

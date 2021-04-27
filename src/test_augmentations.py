@@ -1,4 +1,4 @@
-from torch_datasets import IsprsVLabeled
+from torch_datasets import ParisLabeled
 from torch.utils.data import DataLoader
 import albumentations as A
 from matplotlib import pyplot as plt
@@ -8,12 +8,12 @@ def visualize(image, mask, original_image=None, original_mask=None):
     fontsize = 18
 
     if original_image is None and original_mask is None:
-        f, ax = plt.subplots(2, 1, figsize=(8, 8))
+        f, ax = plt.subplots(2, 1, figsize=(16, 16))
 
         ax[0].imshow(image)
         ax[1].imshow(mask)
     else:
-        f, ax = plt.subplots(2, 2, figsize=(8, 8))
+        f, ax = plt.subplots(2, 2, figsize=(16, 16))
 
         ax[0, 0].imshow(original_image)
         ax[0, 0].set_title('Original image', fontsize=fontsize)
@@ -29,22 +29,25 @@ def visualize(image, mask, original_image=None, original_mask=None):
 
 aug = A.CLAHE(p=1)
 
-ds = IsprsVLabeled(
-    data_path='/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN',
-    idxs=list(range(2)),
-    crop=1024,
+dataset = ParisLabeled(
+    data_path='/home/pierre/Documents/ONERA/ai4geo/small_paris',
+    idxs=list(range(5)),
+    crop=256,
     augmentations=A.NoOp()
 )
 
-dl = DataLoader(
-    ds,
-    batch_size=1,
+dataloader = DataLoader(
+    dataset,
+    batch_size=1
 )
 
-image, mask = next(iter(dl))
+image, mask = next(iter(dataloader))
+
 image = image[0,...].numpy()
 mask = mask[0,...].numpy()
 augmented = aug(image=image, mask=mask)
 visualize(augmented['image'], augmented['mask'], original_image=image,
           original_mask=mask)
+plt.tight_layout()
+
 plt.show()

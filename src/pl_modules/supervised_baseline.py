@@ -81,35 +81,16 @@ class SupervisedBaseline(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         train_inputs, train_labels = batch
-        outputs = self.network(train_inputs)
-        probas = outputs.softmax(dim=1)
         train_labels = train_labels.long()
 
+        outputs = self.network(train_inputs)
         train_loss1 = self.ce(outputs, train_labels)
         train_loss2 = self.dice(outputs, train_labels)
         train_loss = train_loss1 + train_loss2
-        self.log('Cross entropy loss', train_loss1)
-        self.log('Dice loss', train_loss2)
 
-        accuracy = metrics.accuracy(probas, train_labels)
-        self.log('Train acc', accuracy)
-
-        # Could all these be made faster by making sure they rely on the same
-        # computation for fp, fn, etc ?
-        IoU = metrics.iou(probas,
-                          train_labels,
-                          reduction='none',
-                          num_classes=self.num_classes)
-        self.log('Train IoU class 0', IoU[0])
-        self.log('Train IoU class 1', IoU[1])
-
-        precision, recall = metrics.precision_recall(probas,
-                                                     train_labels,
-                                                     mdmc_average='global',
-                                                     average='none',
-                                                     num_classes=self.num_classes)
-        self.log('Train precision class 1', precision[1])
-        self.log('Train recall class 1', recall[1])
+        self.log('Train_CE', train_loss1)
+        self.log('Train_Dice', train_loss2)
+        self.log('Train_loss', train_loss)
 
         return {"loss": train_loss}
 
@@ -119,15 +100,17 @@ class SupervisedBaseline(pl.LightningModule):
         val_labels = val_labels.long()
 
         outputs = self.network(val_inputs)
-        probas = outputs.softmax(dim=1)
-
         val_loss1 = self.ce(outputs, val_labels)
         val_loss2 = self.dice(outputs, val_labels)
         val_loss = val_loss1 + val_loss2
-        self.log("val_sup_loss", val_loss)
 
+        self.log('Val_CE', val_loss1)
+        self.log('Val_Dice', val_loss2)
+        self.log('Val_loss', val_loss)
+
+        probas = outputs.softmax(dim=1)
         accuracy = metrics.accuracy(probas, val_labels)
-        self.log('Val acc', accuracy)
+        self.log('Val_acc', accuracy)
 
         # Could all these be made faster by making sure they rely on the same
         # computation for fp, fn, etc ?
@@ -135,15 +118,15 @@ class SupervisedBaseline(pl.LightningModule):
                           val_labels,
                           reduction='none',
                           num_classes=self.num_classes)
-        self.log('Val IoU class 0', IoU[0])
-        self.log('Val IoU class 1', IoU[1])
+        self.log('Val_IoU_0', IoU[0])
+        self.log('Val_IoU_1', IoU[1])
 
         precision, recall = metrics.precision_recall(probas,
                                                      val_labels,
                                                      mdmc_average='global',
                                                      average='none',
                                                      num_classes=self.num_classes)
-        self.log('Val precision class 1', precision[1])
-        self.log('Val recall class 1', recall[1])
+        self.log('Val_precision_1', precision[1])
+        self.log('Val_recall_1', recall[1])
 
 

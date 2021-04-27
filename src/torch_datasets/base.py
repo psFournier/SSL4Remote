@@ -123,6 +123,9 @@ class BaseLabeled(BaseUnlabeled, ABC):
         mask = self.colors_to_labels(label)
         if self.label_merger is not None:
             mask = self.label_merger(mask)
-        augment = self.augmentations(image=image, mask=mask)
+        augment = self.augmentations(
+            image=image,
+            mask=mask
+        )
 
         return augment['image'], augment['mask']

@@ -3,7 +3,7 @@ import rasterio as rio
 import numpy as np
 from rasterio.windows import Window
 import matplotlib.pyplot as plt
-from torch_datasets import Miniworld
+from torch_datasets import Paris
 from transforms import MergeLabels
 import cv2
 import albumentations as A
@@ -29,16 +29,15 @@ def visualize(image, predictions, truth, overlay):
     ax[1, 1].set_title('Evaluation', fontsize=fontsize)
 
 
-ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs' \
-            '/baseline_christchurch_noaug_2021-04-16/checkpoints/epoch=999-step=312999.ckpt'
+ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/tensorboard/baseline_paris_2021-04-24/checkpoints/epoch=999-step=312999.ckpt'
 
 module = SupervisedBaseline.load_from_checkpoint(ckpt_path)
-crop_size = 512
+crop_size = 350
 
 module.eval()
 
-image_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_x.png'
-label_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_y.png'
+image_path = '/home/pierre/Documents/ONERA/ai4geo/small_paris/paris/test/100_x.png'
+label_path = '/home/pierre/Documents/ONERA/ai4geo/small_paris/paris/test/100_y.png'
 
 with rio.open(image_path) as image_file:
 
@@ -53,7 +52,7 @@ with rio.open(image_path) as image_file:
 with rio.open(label_path) as label_file:
     label = label_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
 
-gt = Miniworld.colors_to_labels(label)
+gt = Paris.colors_to_labels(label)
 
 label_merger = MergeLabels([[0], [1]])
 gt = label_merger(gt).astype(bool)
