@@ -1,2 +1,0 @@
-from callbacks.array_logger import ArrayValLogger
-from callbacks.confusion_matrix_logger import ConfMatLogger
