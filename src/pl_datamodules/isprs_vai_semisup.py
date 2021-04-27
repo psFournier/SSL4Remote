@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 from torch_datasets import IsprsV, IsprsVLabeled, IsprsVUnlabeled
-from transforms import MergeLabels
+from utils import MergeLabels
 
 from pl_datamodules import BaseSemisupDatamodule
 import albumentations as A

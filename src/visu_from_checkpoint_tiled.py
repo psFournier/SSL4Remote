@@ -4,7 +4,7 @@ import numpy as np
 from rasterio.windows import Window
 import matplotlib.pyplot as plt
 from torch_datasets import Paris, ChristchurchLabeled
-from transforms import MergeLabels
+from utils import MergeLabels
 import cv2
 import albumentations as A
 from albumentations.pytorch import ToTensorV2

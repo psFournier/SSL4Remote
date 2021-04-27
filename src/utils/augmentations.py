@@ -1,16 +1,34 @@
 import albumentations as A
-import cv2
 from typing import Tuple, List
+import numpy as np
 
 __all__ = [
     "crop_transform",
     "D4_augmentations",
-    "light_augmentations",
     "medium_augmentations",
     "hard_augmentations",
     "get_augmentations",
 ]
 
+class MergeLabels:
+    def __init__(self, labels):
+
+        self.labels = labels
+
+    def __call__(self, L):
+        """
+        If self.labels is [[0,1,2],[3,4,5]], then all pixels in classes [0,1,2]
+        will be set to label 0 and all pixels in classes [3,4,5] will be set to
+        label 1.
+        :param L:
+        :return:
+        """
+        ret = np.zeros(L.shape, dtype=L.dtype)
+        for i, lab in enumerate(self.labels):
+            for j in lab:
+                ret[L == j] = i
+
+        return ret
 
 def crop_transform(image_size: Tuple[int, int], min_scale=0.75, max_scale=1.25, input_size=5000):
     return A.OneOrOther(

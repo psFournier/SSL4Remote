@@ -6,11 +6,11 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
 from torch_datasets import IsprsV, IsprsVLabeled
-from transforms import MergeLabels
+from utils import MergeLabels
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-from common_utils.augmentations import get_augmentations
+from utils.augmentations import get_augmentations
 from pl_datamodules import BaseSupervisedDatamodule
 import random
 from torch import tensor
