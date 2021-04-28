@@ -1,3 +1,3 @@
 from utils.augmentations import MergeLabels, get_augmentations
-from confusion_matrix_plot import plot_confusion_matrix
-from tiles import get_tiles
+from utils.confusion_matrix_plot import plot_confusion_matrix
+from utils.tiles import get_tiles

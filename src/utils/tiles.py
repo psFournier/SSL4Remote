@@ -35,18 +35,18 @@ def get_tiles(ds, width=256, height=256, col_step=128, row_step=128):
         yield window, transform
 
 
-with rio.open(os.path.join(in_path, input_filename)) as inds:
-    tile_width, tile_height = 256, 256
-
-    meta = inds.meta.copy()
-
-    for window, transform in get_tiles(inds):
-        print(window)
-        meta['transform'] = transform
-        meta['width'], meta['height'] = window.width, window.height
-        outpath = os.path.join(out_path,output_filename.format(
-            os.path.splitext(input_filename)[0],
-            int(window.col_off),
-            int(window.row_off)))
-        with rio.open(outpath, 'w', **meta) as outds:
-            outds.write(inds.read(window=window))
+# with rio.open(os.path.join(in_path, input_filename)) as inds:
+#     tile_width, tile_height = 256, 256
+#
+#     meta = inds.meta.copy()
+#
+#     for window, transform in get_tiles(inds):
+#         print(window)
+#         meta['transform'] = transform
+#         meta['width'], meta['height'] = window.width, window.height
+#         outpath = os.path.join(out_path,output_filename.format(
+#             os.path.splitext(input_filename)[0],
+#             int(window.col_off),
+#             int(window.row_off)))
+#         with rio.open(outpath, 'w', **meta) as outds:
+#             outds.write(inds.read(window=window))
