@@ -6,7 +6,6 @@ import numpy as np
 
 class Bruges(Base, ABC):
 
-    nb_labeled_images = 6
     # nb_labeled_images = 9
     nb_unlabeled_images = 0
     image_size = (1000,1000)
@@ -14,6 +13,7 @@ class Bruges(Base, ABC):
     # mean_labeled_pixels = (0.4050, 0.4140, 0.3783)
     # std_labeled_pixels = (0.2102, 0.2041, 0.1965)
     default_train_val = (4, 2)
+    nb_labeled_images = default_train_val[0] + default_train_val[1]
 
     @staticmethod
     def colors_to_labels(labels_color):
