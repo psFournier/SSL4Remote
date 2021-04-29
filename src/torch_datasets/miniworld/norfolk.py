@@ -1,31 +1,52 @@
-from torch_datasets import MiniworldCity
-from torch_datasets import BaseLabeled, BaseUnlabeled
+from abc import ABC
+from torch_datasets import Base, BaseLabeled, BaseUnlabeled
+import glob
+import numpy as np
 
 
-class Norfolk(MiniworldCity):
+class Norfolk(Base, ABC):
 
-    labeled_image_paths = ['test/{}_x.png'.format(i) for i in range(1)] + \
-                          ['train/{}_x.png'.format(i) for i in range(1)]
+    nb_labeled_images = 2
+    nb_unlabeled_images = 0
+    image_size = (3000,3000)
+    # pixels_per_class = [3704503, 295497]
+    # mean_labeled_pixels = (0.4050, 0.4140, 0.3783)
+    # std_labeled_pixels = (0.2102, 0.2041, 0.1965)
+    default_train_val = (1, 1)
 
-    label_paths = ['test/{}_y.png'.format(i) for i in range(1)] + \
-                  ['train/{}_y.png'.format(i) for i in range(1)]
+    @staticmethod
+    def colors_to_labels(labels_color):
 
-    unlabeled_image_paths = []
+        labels = np.zeros(labels_color.shape[:2], dtype=int)
+        labels[np.where(np.any(labels_color != [0, 0, 0], axis=2))] = 1
+
+        return labels
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
-    @property
-    def __image_size__(cls):
+        self.labeled_image_paths = sorted(
+            glob.glob(f'{self.data_path}/Norfolk/train/*_x.png')
+        ) + sorted(
+            glob.glob(f'{self.data_path}/Norfolk/test/*_x.png')
+        )
 
-        return 3000*3000
+        self.unlabeled_image_paths = []
+
+        self.label_paths = sorted(
+            glob.glob(f'{self.data_path}/Norfolk/train/*_y.png')
+        ) + sorted(
+            glob.glob(f'{self.data_path}/Norfolk/test/*_y.png')
+        )
+
 
 class NorfolkLabeled(Norfolk, BaseLabeled):
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+
 
 class NorfolkUnlabeled(Norfolk, BaseUnlabeled):
 

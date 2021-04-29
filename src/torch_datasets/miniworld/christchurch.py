@@ -6,8 +6,7 @@ import numpy as np
 
 class Christchurch(Base, ABC):
 
-    nb_labeled_images = 730+73
-    # nb_labeled_images = 9
+    nb_labeled_images = 803
     nb_unlabeled_images = 0
     image_size = (1500,1500)
     pixels_per_class = [1481907417, 148316583]
