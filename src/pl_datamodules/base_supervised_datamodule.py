@@ -61,7 +61,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--data_dir", type=str)
-        parser.add_argument("--batch_size", type=int, default=16)
+        parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("-w", "--workers", default=8, type=int,
                             help="Num workers")
