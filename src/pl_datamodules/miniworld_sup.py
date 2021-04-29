@@ -4,7 +4,10 @@ from torch import tensor
 
 cities = {
     'christchurch': (Christchurch, ChristchurchLabeled),
-    'paris': (Paris, ParisLabeled)
+    'paris': (Paris, ParisLabeled),
+    'austin': (Austin, AustinLabeled),
+    'chicago': (Chicago, ChicagoLabeled),
+    'kitsap': (Kitsap, KitsapLabeled)
 }
 
 class MiniworldSup(BaseSupervisedDatamodule):
