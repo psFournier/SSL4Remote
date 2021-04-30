@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -q qgpgpu
-#PBS -l select=1:ncpus=4:mem=92G:ngpus=1
+#PBS -l select=1:ncpus=8:mem=92G:ngpus=1
 #PBS -l walltime=1:00:00
 
 ROOT=/home/eh/fournip/SemiSupervised/SSL4Remote
@@ -8,7 +8,8 @@ PYTHON=${ROOT}/venv/bin/python
 SCRIPT=${ROOT}/src/train.py
 
 cd "${TMPDIR}"
-cp -r /work/OT/ai4geo/users/plyera/miniworld .
+mkdir miniworld
+cp -r /work/OT/ai4geo/users/plyera/miniworld/austin miniworld/
 LOGDIR=${TMPDIR}/outputs
 
 "${PYTHON}" "${SCRIPT}" \

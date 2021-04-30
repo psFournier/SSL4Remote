@@ -5,7 +5,6 @@ import os
 parser = ArgumentParser()
 parser.add_argument("--path", type=str)
 parser.add_argument("--scalar", type=str)
-
 args = parser.parse_args()
 
 event_acc = EventAccumulator(args.path)

@@ -3,6 +3,7 @@ import warnings
 
 import numpy as np
 import rasterio
+from PIL import Image
 from rasterio.windows import Window
 from torch.utils.data import Dataset
 from abc import ABC
@@ -63,7 +64,6 @@ class Base(Dataset, ABC):
 
             window = self.get_crop_window(image_file)
             image = image_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
-            # image = image / 255
 
         return image, window
 

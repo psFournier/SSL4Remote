@@ -57,9 +57,15 @@ def main():
     # Callback to log the learning rate
     lr_monitor = LearningRateMonitor()
 
+    checkpoint_callback = ModelCheckpoint(
+        monitor='Val_loss',
+        mode='min',
+        save_weights_only=True
+    )
+
     # The learning module can also define its own specific callbacks
     callbacks = pl_module.callbacks + [
-        # checkpoint_callback,
+        checkpoint_callback,
         lr_monitor
     ]
 
@@ -71,6 +77,11 @@ def main():
     # lightning Trainer class without having to manually add them to the parser.
     trainer = Trainer.from_argparse_args(
         args,
+        log_every_n_steps=300,
+        flush_logs_every_n_steps=1000,
+        num_sanity_val_steps=0,
+        check_val_every_n_epoch=1,
+        benchmark=True,
         logger=tensorboard,
         profiler=profiler,
         callbacks=callbacks,
