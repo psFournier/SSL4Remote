@@ -1,4 +1,4 @@
-from torch_datasets import ParisLabeled, AustinLabeled
+from torch_datasets import ParisUnlabeled, AustinUnlabeled, AirsUnlabeled, ChristchurchUnlabeled
 import albumentations as A
 from torch.utils.data import DataLoader, RandomSampler
 import time
@@ -11,11 +11,13 @@ parser.add_argument("--city", type=str)
 args = parser.parse_args()
 
 cities = {
-    'paris': ParisLabeled,
-    'austin': AustinLabeled,
+    'paris': ParisUnlabeled,
+    'austin': AustinUnlabeled,
+    'airs': AirsUnlabeled,
+    'christchurch': ChristchurchUnlabeled
 }
 
-args.city = 'austin'
+args.city = 'christchurch'
 
 before = time.time()
 ds = cities[args.city](
@@ -45,7 +47,7 @@ dl = DataLoader(
 )
 
 i = 0
-for image, label in dl:
+for image in dl:
     i+=1
     if i%10==0: print(i)
 print("time elapsed: ", time.time()-before)
