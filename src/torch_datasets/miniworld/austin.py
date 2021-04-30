@@ -27,17 +27,17 @@ class Austin(Base, ABC):
         super().__init__(*args, **kwargs)
 
         self.labeled_image_paths = sorted(
-            glob.glob(f'{self.data_path}/austin/train/*_x.png')
+            glob.glob(f'{self.data_path}/austin/train/*_x.tif')
         ) + sorted(
-            glob.glob(f'{self.data_path}/austin/test/*_x.png')
+            glob.glob(f'{self.data_path}/austin/test/*_x.tif')
         )
 
         self.unlabeled_image_paths = []
 
         self.label_paths = sorted(
-            glob.glob(f'{self.data_path}/austin/train/*_y.png')
+            glob.glob(f'{self.data_path}/austin/train/*_y.tif')
         ) + sorted(
-            glob.glob(f'{self.data_path}/austin/test/*_y.png')
+            glob.glob(f'{self.data_path}/austin/test/*_y.tif')
         )
 
 

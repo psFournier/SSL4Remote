@@ -27,17 +27,17 @@ class Atlanta(Base, ABC):
         super().__init__(*args, **kwargs)
 
         self.labeled_image_paths = sorted(
-            glob.glob(f'{self.data_path}/Atlanta/train/*_x.png')
+            glob.glob(f'{self.data_path}/Atlanta/train/*_x.tif')
         ) + sorted(
-            glob.glob(f'{self.data_path}/Atlanta/test/*_x.png')
+            glob.glob(f'{self.data_path}/Atlanta/test/*_x.tif')
         )
 
         self.unlabeled_image_paths = []
 
         self.label_paths = sorted(
-            glob.glob(f'{self.data_path}/Atlanta/train/*_y.png')
+            glob.glob(f'{self.data_path}/Atlanta/train/*_y.tif')
         ) + sorted(
-            glob.glob(f'{self.data_path}/Atlanta/test/*_y.png')
+            glob.glob(f'{self.data_path}/Atlanta/test/*_y.tif')
         )
 
 

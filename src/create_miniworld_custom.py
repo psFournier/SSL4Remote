@@ -79,6 +79,7 @@ availabledata = [
     "isprs",
     "airs",
     "inria",
+    "semcity"
 ]
 root = "/scratch_ai4geo/DATASETS/"
 rootminiworld = "/scratch_ai4geo/miniworld_tif/"
