@@ -92,6 +92,15 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Train_Dice', train_loss2)
         self.log('Train_loss', train_loss)
 
+        probas = outputs.softmax(dim=1)
+        IoU = metrics.iou(probas,
+                          train_labels,
+                          reduction='none',
+                          num_classes=self.num_classes)
+        self.log('Train_IoU_0', IoU[0])
+        self.log('Train_IoU_1', IoU[1])
+        self.log('Train_IoU', IoU[0]+IoU[1])
+
         return {"loss": train_loss}
 
     def validation_step(self, batch, batch_idx):
@@ -120,6 +129,7 @@ class SupervisedBaseline(pl.LightningModule):
                           num_classes=self.num_classes)
         self.log('Val_IoU_0', IoU[0])
         self.log('Val_IoU_1', IoU[1])
+        self.log('Val_IoU', IoU[0]+IoU[1])
 
         precision, recall = metrics.precision_recall(probas,
                                                      val_labels,

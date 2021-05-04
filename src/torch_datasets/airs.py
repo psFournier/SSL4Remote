@@ -6,8 +6,8 @@ import numpy as np
 
 class Airs(Base, ABC):
 
-    nb_labeled_images = 857+94
-    # nb_labeled_images = 9
+    # nb_labeled_images = 857+94
+    nb_labeled_images = 9
     nb_unlabeled_images = 0
     image_size = (10000, 10000)
     pixels_per_class = [1, 1] # Default when not computed

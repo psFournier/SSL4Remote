@@ -9,10 +9,10 @@ input_filename = 'top_mosaic_09cm_area10.tif'
 out_path = '/home/pierre/Documents/ONERA/ai4geo/ISPRS_VAIHINGEN/top/tiles'
 output_filename = '{}-tile_{}-{}.tif'
 
-def get_tiles(ds, width=256, height=256, col_step=128, row_step=128):
+def get_tiles(image_size, width=256, height=256, col_step=128, row_step=128):
     assert col_step <= width
     assert row_step <= height
-    nols, nrows = ds.meta['width'], ds.meta['height']
+    nols, nrows = image_size
 
     max_col_offset = int((nols-width)/col_step)+1
     # Remove all offsets such that offset+width > nols and add one offset to
@@ -28,11 +28,11 @@ def get_tiles(ds, width=256, height=256, col_step=128, row_step=128):
 
     offsets = product(col_offsets, row_offsets)
     big_window = windows.Window(col_off=0, row_off=0, width=nols, height=nrows)
-    for col_off, row_off in  offsets:
+    for col_off, row_off in offsets:
         window = windows.Window(col_off=col_off, row_off=row_off, width=width,
                                height=height).intersection(big_window)
-        transform = windows.transform(window, ds.transform)
-        yield window, transform
+        # transform = windows.transform(window, ds.transform)
+        yield window
 
 
 # with rio.open(os.path.join(in_path, input_filename)) as inds:

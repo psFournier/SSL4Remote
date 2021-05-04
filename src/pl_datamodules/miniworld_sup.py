@@ -46,5 +46,6 @@ class MiniworldSup(BaseSupervisedDatamodule):
             data_path=self.data_dir,
             idxs=labeled_idxs[train:],
             crop=self.crop_size,
-            augmentations=self.val_augment
+            augmentations=self.val_augment,
+            fixed_crop=True
         )

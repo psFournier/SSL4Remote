@@ -59,7 +59,7 @@ def get_tiles(ds, nols, nrows, width=256, height=256, col_step=128,
 
 
 # ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/tensorboard/baseline_paris_2021-04-24/checkpoints/epoch=999-step=312999.ckpt'
-ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/tensorboard/baseline_christchurch_2021-04-24/checkpoints/epoch=999-step=312999.ckpt'
+ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/from_onera/austin_2021-04-30/checkpoints/epoch=433-step=135841.ckpt'
 
 module = SupervisedBaseline.load_from_checkpoint(ckpt_path)
 module.eval()
@@ -68,14 +68,14 @@ augment = A.Compose([
     ToTensorV2(transpose_mask=False)
 ])
 
-image_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_x.png'
-label_path = '/home/pierre/Documents/ONERA/ai4geo/airs/test/21_y.png'
+image_path = '/home/pierre/Documents/ONERA/ai4geo/miniminiworld/chicago/test/0_x.png'
+label_path = '/home/pierre/Documents/ONERA/ai4geo/miniminiworld/chicago/test/0_y.png'
 
 
 windows = []
 tiles = []
-full_height = 500
-full_width = 500
+full_height = 1000
+full_width = 1000
 with rio.open(image_path) as image_file:
 
     image = image_file.read(window=Window(col_off=0,

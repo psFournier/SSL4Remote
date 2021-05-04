@@ -21,13 +21,15 @@ def resizefile(root, XY, output, nativeresolution, outputresolution=50.0):
         with rasterio.open(root + "/" + x) as imagefile:
 
             out_profile = imagefile.profile
+            out_height = int(imagefile.height * upscale_factor)
+            out_width = int(imagefile.width * upscale_factor)
 
             # resample data to target shape
             data = imagefile.read(
                 out_shape=(
                     imagefile.count,
-                    int(imagefile.height * upscale_factor),
-                    int(imagefile.width * upscale_factor)
+                    out_height,
+                    out_width
                 ),
                 resampling=Resampling.bilinear
             )
@@ -39,7 +41,9 @@ def resizefile(root, XY, output, nativeresolution, outputresolution=50.0):
             )
 
             out_profile.update(
-                transform=transform
+                transform=transform,
+                height=out_height,
+                width=out_width
             )
 
         with rasterio.open(output + "/" + str(i) + "_x.tif", 'w', **out_profile) as dstimage:
@@ -49,13 +53,15 @@ def resizefile(root, XY, output, nativeresolution, outputresolution=50.0):
         with rasterio.open(root + "/" + y) as labelfile:
 
             out_profile = labelfile.profile
+            out_height = int(labelfile.height * upscale_factor)
+            out_width = int(labelfile.width * upscale_factor)
 
             # resample data to target shape
             data = labelfile.read(
                 out_shape=(
                     labelfile.count,
-                    int(labelfile.height * upscale_factor),
-                    int(labelfile.width * upscale_factor)
+                    out_height,
+                    out_width
                 ),
                 resampling=Resampling.bilinear
             )
@@ -66,7 +72,9 @@ def resizefile(root, XY, output, nativeresolution, outputresolution=50.0):
             )
 
             out_profile.update(
-                transform=transform
+                transform=transform,
+                height=out_height,
+                width=out_width
             )
 
         with rasterio.open(output + "/" + str(i) + "_y.tif", 'w', **out_profile) as dst_label:
@@ -74,6 +82,12 @@ def resizefile(root, XY, output, nativeresolution, outputresolution=50.0):
             dst_label.write(data)
 
         i+=1
+
+
+# XY = {
+#     0: ("austin/train/15_x.tif", "austin/train/15_y.tif")
+# }
+# resizefile('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif', XY, '/home/pierre/Documents/ONERA/ai4geo', 30)
 
 availabledata = [
     "isprs",
@@ -83,6 +97,8 @@ availabledata = [
 ]
 root = "/scratch_ai4geo/DATASETS/"
 rootminiworld = "/scratch_ai4geo/miniworld_tif/"
+
+
 
 def makepath(name):
     os.makedirs(rootminiworld + name)
@@ -109,7 +125,7 @@ if "inria" in availabledata:
             )
 
         XY = {}
-        for i in range(15):
+        for i in range(16):
             XY[i] = (
                 "images/" + town + str(21 + i) + ".tif",
                 "gt/" + town + str(21 + i) + ".tif",

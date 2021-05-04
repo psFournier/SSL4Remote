@@ -105,16 +105,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
     def val_dataloader(self):
 
-        val_sampler = RandomSampler(
-            data_source=self.val_set,
-            replacement=True,
-            num_samples=self.epoch_len
-        )
-
         val_dataloader = DataLoader(
             dataset=self.val_set,
+            shuffle=False,
             batch_size=self.batch_size,
-            sampler=val_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=self.wif
