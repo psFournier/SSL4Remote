@@ -1,14 +1,14 @@
 #!/bin/bash
 
-PYTHON=${ROOTDIR}/venv/bin/python
-SCRIPT=${ROOTDIR}/src/train.py
+PYTHON=/home/pierre/PycharmProjects/RemoteSensing/venv/bin/python
+SCRIPT=/home/pierre/PycharmProjects/RemoteSensing/src/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module supervised_baseline \
 --datamodule airs_sup \
 --exp_name test_airs \
---data_dir "${DATADIR}"/small_airs \
---output_dir "${LOGDIR}" \
+--data_dir /home/pierre/Documents/ONERA/ai4geo/small_airs \
+--output_dir /home/pierre/PycharmProjects/RemoteSensing/outputs \
 --workers 0 \
 --augmentations no \
 --encoder efficientnet-b0 \
@@ -19,5 +19,4 @@ SCRIPT=${ROOTDIR}/src/train.py
 --flush_logs_every_n_steps 1000 \
 --num_sanity_val_steps 0 \
 --check_val_every_n_epoch 1 \
---benchmark True \
---gpus 1
+--benchmark True
