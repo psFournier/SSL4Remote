@@ -63,10 +63,11 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--data_dir", type=str)
         parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=128)
-        parser.add_argument("-w", "--workers", default=8, type=int,
-                            help="Num workers")
-        parser.add_argument('--augmentations', type=str, default='d4')
-        parser.add_argument('--prop_train', type=int, default=1)
+        parser.add_argument("--workers", default=8, type=int)
+        parser.add_argument('--augmentations', type=str, default='d4',
+                            help="Which augmentation strategy to use. See utils.augmentations.py")
+        parser.add_argument('--prop_train', type=int, default=1,
+                            help="The training dataloader uses 1/prop_train of the training dataset.")
 
         return parser
 
@@ -78,12 +79,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         """
         Contrary to many standard image datasets with a lot of small images,
-        remote sensing datasets like ISPRS Vaihingen come with a few big images.
-        Thus dataset classes get_item functions provide only a crop of the image.
-        For an epoch to actually span around the entirety of the dataset, we thus
-        need to sample mutliple times randomly from each big image. Hence the need
-        for RandomSamplers and for the nb_pass_per_epoch parameter, otherwise the
-        agent would see a single crop from each image during an epoch.
+        remote sensing datasets come with a few big images, from which we sample
+        multiple crops randomly at train time.
         """
 
         sup_train_sampler = RandomSampler(

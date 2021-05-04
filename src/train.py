@@ -8,13 +8,11 @@ from pl_datamodules import *
 
 modules = {
     'supervised_baseline': SupervisedBaseline,
-    'mean_teacher': MeanTeacher
+    # 'mean_teacher': MeanTeacher
 }
 
 datamodules = {
-    'isprs_vai_semisup': IsprsVaiSemisup,
     'isprs_vai_sup': IsprsVaiSup,
-    'miniworld_semisup': MiniworldSemisup,
     'miniworld_sup': MiniworldSup,
     'airs_sup': AirsSup
 }
@@ -77,14 +75,9 @@ def main():
     # lightning Trainer class without having to manually add them to the parser.
     trainer = Trainer.from_argparse_args(
         args,
-        log_every_n_steps=300,
-        flush_logs_every_n_steps=1000,
-        num_sanity_val_steps=0,
-        check_val_every_n_epoch=1,
-        benchmark=True,
         logger=tensorboard,
         profiler=profiler,
-        callbacks=callbacks,
+        callbacks=callbacks
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

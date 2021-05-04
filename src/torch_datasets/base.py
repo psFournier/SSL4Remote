@@ -1,9 +1,6 @@
-import os
 import warnings
-
 import numpy as np
 import rasterio
-from PIL import Image
 from rasterio.windows import Window
 from torch.utils.data import Dataset
 from abc import ABC
@@ -19,7 +16,8 @@ class Base(Dataset, ABC):
     labeled_image_paths = []
     unlabeled_image_paths = []
     label_paths = []
-    image_size = ()
+    image_size = (0,0)
+    pixels_per_class = [1, 1]
 
     def __init__(self,
                  data_path,
@@ -34,54 +32,51 @@ class Base(Dataset, ABC):
         super().__init__()
 
         self.data_path = data_path
-        self.idxs = idxs
+        self.path_idxs = idxs
         self.crop = crop
         self.augmentations = augmentations
         self.mean_labeled_pixels = []
         self.std_labeled_pixels = []
+
         self.fixed_crop = fixed_crop
+        # Assumes all image are the same size.
+        self.precomputed_crops = [
+            window for window in get_tiles(
+                image_size=self.image_size,
+                width=self.crop,
+                height=self.crop,
+                col_step=self.crop,
+                row_step=self.crop
+            )
+        ]
 
-        if self.fixed_crop:
-            # Assumes all image are the same size.
-            self.fixed_crops = [
-                window for window in get_tiles(
-                    image_size=self.image_size,
-                    width=self.crop,
-                    height=self.crop,
-                    col_step=self.crop,
-                    row_step=self.crop
-                )
-            ]
+    def get_random_crop(self):
 
-    @staticmethod
-    def get_crop_window(crop, image_file):
-
-        cols = image_file.width
-        rows = image_file.height
-        cx = np.random.randint(0, cols - crop - 1)
-        cy = np.random.randint(0, rows - crop - 1)
-        w = Window(cx, cy, crop, crop)
+        cols, rows = self.image_size
+        cx = np.random.randint(0, cols - self.crop - 1)
+        cy = np.random.randint(0, rows - self.crop - 1)
+        w = Window(cx, cy, self.crop, self.crop)
 
         return w
 
-    def get_image(self, image_idx, crop_idx):
+    def get_image(self, path_idx, crop_idx):
 
-        image_filepath = (self.labeled_image_paths + self.unlabeled_image_paths)[self.idxs[image_idx]]
+        image_filepath = (self.labeled_image_paths + self.unlabeled_image_paths)[path_idx]
 
         with rasterio.open(image_filepath) as image_file:
 
             if self.fixed_crop:
-                window = self.fixed_crops[crop_idx]
+                window = self.precomputed_crops[crop_idx]
             else:
-                window = self.get_crop_window(self.crop, image_file)
+                window = self.get_random_crop()
 
             image = image_file.read(window=window, out_dtype=np.uint8).transpose(1, 2, 0)
 
         return image, window
 
-    def get_label(self, image_idx, window):
+    def get_label(self, path_idx, window):
 
-        label_filepath = self.label_paths[self.idxs[image_idx]]
+        label_filepath = self.label_paths[path_idx]
 
         with rasterio.open(label_filepath) as label_file:
 
@@ -91,10 +86,7 @@ class Base(Dataset, ABC):
 
     def __len__(self):
 
-        if self.fixed_crop:
-            return len(self.fixed_crops) * len(self.idxs)
-        else:
-            return len(self.idxs)
+        return len(self.precomputed_crops) * len(self.path_idxs)
 
     def __getitem__(self, idx):
 
@@ -109,9 +101,9 @@ class BaseUnlabeled(Base, ABC):
 
     def __getitem__(self, idx):
 
-        image_idx = idx % len(self.idxs)
-        crop_idx = idx // len(self.idxs)
-        image, window = self.get_image(image_idx, crop_idx)
+        path_idx = self.path_idxs[idx % len(self.path_idxs)]
+        crop_idx = idx // len(self.path_idxs)
+        image, window = self.get_image(path_idx, crop_idx)
         augment = self.augmentations(image=image)
 
         return augment['image']
@@ -131,10 +123,10 @@ class BaseLabeled(BaseUnlabeled, ABC):
 
     def __getitem__(self, idx):
 
-        image_idx = idx % len(self.idxs)
-        crop_idx = idx // len(self.idxs)
-        image, window = self.get_image(image_idx, crop_idx)
-        label = self.get_label(image_idx, window)
+        path_idx = self.path_idxs[idx % len(self.path_idxs)]
+        crop_idx = idx // len(self.path_idxs)
+        image, window = self.get_image(path_idx, crop_idx)
+        label = self.get_label(path_idx, window)
         mask = self.colors_to_labels(label)
         if self.label_merger is not None:
             mask = self.label_merger(mask)

@@ -1,8 +1,4 @@
-from functools import partial
-
 from torch.utils.data import DataLoader, RandomSampler
-from torch.utils.data._utils.collate import default_collate
-
 from pl_datamodules import BaseSupervisedDatamodule
 
 

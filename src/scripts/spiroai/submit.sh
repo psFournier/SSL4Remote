@@ -12,7 +12,7 @@ DATADIR=${WORKDIR}/data
 cd $ROOT
 
 # mpirun utilise les variables d'environnement inititalisees par Slurm
-mpirun "${PYTHON}" "${SCRIPT}" \
+"${PYTHON}" "${SCRIPT}" \
 --module supervised_baseline \
 --datamodule miniworld_sup \
 --exp_name baseline_christchurch_profiling \

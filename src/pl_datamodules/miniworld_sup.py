@@ -4,10 +4,11 @@ from torch import tensor
 
 cities = {
     'christchurch': (Christchurch, ChristchurchLabeled),
-    'paris': (Paris, ParisLabeled),
     'austin': (Austin, AustinLabeled),
     'chicago': (Chicago, ChicagoLabeled),
-    'kitsap': (Kitsap, KitsapLabeled)
+    'kitsap': (Kitsap, KitsapLabeled),
+    'tyrol-w': (Tyrolw, TyrolwLabeled),
+    'vienna': (Vienna, ViennaLabeled)
 }
 
 class MiniworldSup(BaseSupervisedDatamodule):
@@ -25,7 +26,8 @@ class MiniworldSup(BaseSupervisedDatamodule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
-        parser.add_argument("--city", type=str, default='christchurch')
+        parser.add_argument("--city", type=str, default='christchurch',
+                            help="Which city to train on.")
 
         return parser
 
@@ -35,6 +37,7 @@ class MiniworldSup(BaseSupervisedDatamodule):
         labeled_idxs = list(range(nb_labeled_images))
 
         train, val = cities[self.city][0].default_train_val
+
         self.sup_train_set = cities[self.city][1](
             data_path=self.data_dir,
             idxs=labeled_idxs[:train][::self.prop_train],
@@ -44,7 +47,7 @@ class MiniworldSup(BaseSupervisedDatamodule):
 
         self.val_set = cities[self.city][1](
             data_path=self.data_dir,
-            idxs=labeled_idxs[train:],
+            idxs=labeled_idxs[train:train+val],
             crop=self.crop_size,
             augmentations=self.val_augment,
             fixed_crop=True

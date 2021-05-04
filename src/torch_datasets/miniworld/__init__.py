@@ -12,3 +12,5 @@ from torch_datasets.miniworld.kitsap import *
 from torch_datasets.miniworld.newyork import *
 from torch_datasets.miniworld.newhaven import *
 from torch_datasets.miniworld.norfolk import *
+from torch_datasets.miniworld.tyrol import *
+from torch_datasets.miniworld.vienna import *

@@ -21,17 +21,19 @@ class AirsSup(BaseSupervisedDatamodule):
 
         nb_labeled_images = Airs.nb_labeled_images
         labeled_idxs = list(range(nb_labeled_images))
+        train, val = Airs.default_train_val
 
         self.sup_train_set = AirsLabeled(
             data_path=self.data_dir,
-            idxs=labeled_idxs[:7][::self.prop_train],
+            idxs=labeled_idxs[:train][::self.prop_train],
             crop=self.crop_size,
             augmentations=self.train_augment
         )
 
         self.val_set = AirsLabeled(
             data_path=self.data_dir,
-            idxs=labeled_idxs[7:],
+            idxs=labeled_idxs[train:train+val],
             crop=self.crop_size,
-            augmentations=self.val_augment
+            augmentations=self.val_augment,
+            fixed_crop=True
         )
