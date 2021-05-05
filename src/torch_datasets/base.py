@@ -11,6 +11,8 @@ warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarni
 
 class Base(Dataset, ABC):
 
+    image_size = (0, 0)
+
     def __init__(self,
                  data_path,
                  crop,
@@ -29,6 +31,10 @@ class Base(Dataset, ABC):
         self.augmentations = augmentations
         self.mean_labeled_pixels = []
         self.std_labeled_pixels = []
+
+        self.labeled_image_paths = None
+        self.label_paths = None
+        self.unlabeled_image_paths = None
 
         self.fixed_crop = fixed_crop
         # Assumes all image are the same size.

@@ -3,7 +3,6 @@ from typing import Tuple, List
 import numpy as np
 
 __all__ = [
-    "crop_transform",
     "D4_augmentations",
     "medium_augmentations",
     "hard_augmentations",
@@ -30,16 +29,6 @@ class MergeLabels:
 
         return ret
 
-def crop_transform(image_size: Tuple[int, int], min_scale=0.75, max_scale=1.25, input_size=5000):
-    return A.OneOrOther(
-        A.RandomSizedCrop(
-            (int(image_size[0] * min_scale), int(min(input_size, image_size[0] * max_scale))),
-            image_size[0],
-            image_size[1],
-        ),
-        A.CropNonEmptyMaskIfExists(image_size[0], image_size[1]),
-    )
-
 
 def D4_augmentations() -> List[A.DualTransform]:
     return [
@@ -49,6 +38,7 @@ def D4_augmentations() -> List[A.DualTransform]:
         A.VerticalFlip(p=0.5),
         A.Transpose(p=0.5),
     ]
+
 
 def dropout():
     return [A.OneOf(

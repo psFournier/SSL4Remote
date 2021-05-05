@@ -39,10 +39,20 @@ augment = A.Compose([
 dataset = datasets[args.dataset](
     data_path=args.data_dir,
     idxs=[2,3],
-    crop=128,
+    crop=1000,
     augmentations=augment,
     fixed_crop=True
 )
+
+image, mask = dataset[0]
+for window in get_tiles(image, width=128, height=128, col_step=64,
+                        row_step=64, nols=1000, nrows=1000):
+
+    tile = image_file.read(window=window,
+                           out_dtype=np.uint8).transpose(1, 2, 0)
+    augmented = augment(image=tile)['image']
+    tiles.append(augmented)
+    windows.append(window)
 
 
 def wif(id):

@@ -52,7 +52,7 @@ def get_tiles(ds, nols, nrows, width=256, height=256, col_step=128,
 
     offsets = product(col_offsets, row_offsets)
     big_window = Window(col_off=0, row_off=0, width=nols, height=nrows)
-    for col_off, row_off in  offsets:
+    for col_off, row_off in offsets:
         window = Window(col_off=col_off, row_off=row_off, width=width,
                                 height=height).intersection(big_window)
         yield window

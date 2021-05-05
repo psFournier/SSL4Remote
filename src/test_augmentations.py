@@ -1,8 +1,9 @@
-from torch_datasets import ParisLabeled
+from torch_datasets import ChristchurchLabeled
 from torch.utils.data import DataLoader
 import albumentations as A
 from matplotlib import pyplot as plt
-import numpy as np
+
+plt.switch_backend("TkAgg")
 
 def visualize(image, mask, original_image=None, original_mask=None):
     fontsize = 18
@@ -27,10 +28,10 @@ def visualize(image, mask, original_image=None, original_mask=None):
         ax[1, 1].imshow(mask)
         ax[1, 1].set_title('Transformed mask', fontsize=fontsize)
 
-aug = A.CLAHE(p=1)
+aug = A.MaskDropout(p=1, max_objects=5)
 
-dataset = ParisLabeled(
-    data_path='/home/pierre/Documents/ONERA/ai4geo/small_paris',
+dataset = ChristchurchLabeled(
+    data_path='/home/pierre/Documents/ONERA/ai4geo/miniworld_tif',
     idxs=list(range(5)),
     crop=256,
     augmentations=A.NoOp()
@@ -43,8 +44,8 @@ dataloader = DataLoader(
 
 image, mask = next(iter(dataloader))
 
-image = image[0,...].numpy()
-mask = mask[0,...].numpy()
+image = image[0, ...].numpy()
+mask = mask[0, ...].numpy()
 augmented = aug(image=image, mask=mask)
 visualize(augmented['image'], augmented['mask'], original_image=image,
           original_mask=mask)
