@@ -2,7 +2,7 @@ import torch.nn as nn
 import copy
 from pl_modules import SupervisedBaseline
 import random
-from torch import rot90, no_grad
+import torch
 import torchmetrics.functional as metrics
 
 class MeanTeacher(SupervisedBaseline):
@@ -43,11 +43,11 @@ class MeanTeacher(SupervisedBaseline):
         sup_train_loss = sup_train_loss1 + sup_train_loss2
 
         augmentation = random.randint(0,4)
-        augmented_inputs = rot90(unsup_data, k=augmentation, dims=[2, 3])
+        augmented_inputs = torch.rot90(unsup_data, k=augmentation, dims=[2, 3])
         student_outputs = self.network(augmented_inputs)
-        with no_grad():
+        with torch.no_grad():
             teacher_outputs = self.teacher_network(unsup_data)
-        teacher_outputs = rot90(teacher_outputs, k=augmentation, dims=[2, 3])
+        teacher_outputs = torch.rot90(teacher_outputs, k=augmentation, dims=[2, 3])
         unsup_train_loss = self.mse(student_outputs, teacher_outputs)
 
         train_loss = sup_train_loss + unsup_train_loss
@@ -63,7 +63,7 @@ class MeanTeacher(SupervisedBaseline):
                           num_classes=self.num_classes)
         self.log('Train_IoU_0', IoU[0])
         self.log('Train_IoU_1', IoU[1])
-        self.log('Train_IoU', IoU[0]+IoU[1])
+        self.log('Train_IoU', torch.mean(IoU))
 
         # Update teacher model in place AFTER EACH BATCH?
         ema = min(1.0 - 1.0 / float(self.global_step + 1), self.ema)

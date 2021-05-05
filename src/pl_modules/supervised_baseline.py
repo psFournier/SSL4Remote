@@ -99,7 +99,7 @@ class SupervisedBaseline(pl.LightningModule):
                           num_classes=self.num_classes)
         self.log('Train_IoU_0', IoU[0])
         self.log('Train_IoU_1', IoU[1])
-        self.log('Train_IoU', IoU[0]+IoU[1])
+        self.log('Train_IoU', torch.mean(IoU))
 
         return {"loss": train_loss}
 
@@ -129,7 +129,7 @@ class SupervisedBaseline(pl.LightningModule):
                           num_classes=self.num_classes)
         self.log('Val_IoU_0', IoU[0])
         self.log('Val_IoU_1', IoU[1])
-        self.log('Val_IoU', IoU[0]+IoU[1])
+        self.log('Val_IoU', torch.mean(IoU))
 
         precision, recall = metrics.precision_recall(probas,
                                                      val_labels,

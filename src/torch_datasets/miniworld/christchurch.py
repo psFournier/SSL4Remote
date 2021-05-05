@@ -11,8 +11,8 @@ class Christchurch(Base, ABC):
     # pixels_per_class = [1481907417, 148316583]
     # mean_labeled_pixels = (0.4050, 0.4140, 0.3783)
     # std_labeled_pixels = (0.2102, 0.2041, 0.1965)
-    # default_train_val = (857, 94)
-    default_train_val = (2, 2)
+    default_train_val = (857, 94)
+    # default_train_val = (2, 2)
     nb_labeled_images = default_train_val[0] + default_train_val[1]
 
     @staticmethod
