@@ -20,7 +20,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  batch_size,
                  workers,
                  augmentations,
-                 prop_train,
+                 train_val,
                  *args,
                  **kwargs):
 
@@ -31,7 +31,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.epoch_len = epoch_len
         self.batch_size = batch_size
         self.num_workers = workers
-        self.prop_train = prop_train
+        self.train_val = tuple(train_val)
 
         self.train_augment = A.Compose(
             get_augmentations(augmentations) +
@@ -66,8 +66,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--workers", default=8, type=int)
         parser.add_argument('--augmentations', type=str, default='no',
                             help="Which augmentation strategy to use. See utils.augmentations.py")
-        parser.add_argument('--prop_train', type=int, default=1,
-                            help="The training dataloader uses 1/prop_train of the training dataset.")
+        parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
 
         return parser
 

@@ -11,19 +11,11 @@ warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarni
 
 class Base(Dataset, ABC):
 
-    nb_labeled_images = 0
-    nb_unlabeled_images = 0
-    labeled_image_paths = []
-    unlabeled_image_paths = []
-    label_paths = []
-    image_size = (0,0)
-    pixels_per_class = [1, 1]
-
     def __init__(self,
                  data_path,
-                 idxs,
                  crop,
                  augmentations,
+                 idxs=None,
                  fixed_crop=False,
                  *args,
                  **kwargs
