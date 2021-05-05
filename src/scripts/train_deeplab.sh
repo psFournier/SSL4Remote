@@ -9,12 +9,10 @@ SCRIPT=/d/pfournie/semi-supervised-learning/src/train.py
 --exp_name austin \
 --data_dir /scratch_ai4geo/miniworld_tif \
 --output_dir /d/pfournie/semi-supervised-learning/outputs \
---workers 20 \
+--workers 10 \
 --augmentations no \
 --encoder efficientnet-b0 \
---max_epochs 2 \
---limit_train_batches 5 \
---limit_val_batches 2 \
+--max_epochs 500 \
 --log_every_n_steps 300 \
 --flush_logs_every_n_steps 1000 \
 --num_sanity_val_steps 0 \
