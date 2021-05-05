@@ -64,7 +64,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--workers", default=8, type=int)
-        parser.add_argument('--augmentations', type=str, default='d4',
+        parser.add_argument('--augmentations', type=str, default='no',
                             help="Which augmentation strategy to use. See utils.augmentations.py")
         parser.add_argument('--prop_train', type=int, default=1,
                             help="The training dataloader uses 1/prop_train of the training dataset.")

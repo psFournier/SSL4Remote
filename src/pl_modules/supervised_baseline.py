@@ -144,4 +144,7 @@ class SupervisedBaseline(pl.LightningModule):
         #     "Confusion matrix", figure, global_step=trainer.global_step
         # )
 
+    def test_step(self, batch, batch_idx):
+
+        self.validation_step(batch, batch_idx)
 
