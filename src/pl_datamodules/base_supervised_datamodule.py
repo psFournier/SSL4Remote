@@ -10,6 +10,7 @@ from utils.augmentations import get_augmentations
 import torch
 import numpy as np
 from torch.utils.data._utils.collate import default_collate
+from utils import mixup_data
 
 
 class BaseSupervisedDatamodule(LightningDataModule):
@@ -22,6 +23,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  workers,
                  augmentations,
                  train_val,
+                 mixup_alpha,
                  *args,
                  **kwargs):
 
@@ -33,6 +35,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = workers
         self.train_val = tuple(train_val)
+        self.mixup_alpha = mixup_alpha
 
         self.train_augment = A.Compose(
             get_augmentations(augmentations) +
@@ -68,6 +71,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument('--augmentations', type=str, default='no',
                             help="Which augmentation strategy to use. See utils.augmentations.py")
         parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
+        parser.add_argument('--mixup_alpha', type=float, default=0.4)
 
         return parser
 
@@ -90,7 +94,11 @@ class BaseSupervisedDatamodule(LightningDataModule):
         # ]
         # batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
 
-        return default_collate(batch)
+        mixed_batch = mixup_data(batch=batch, alpha=self.mixup_alpha)
+        idx = np.random.choice(2*self.batch_size, size=self.batch_size, replace=False)
+        rand_mixed_batch = [(batch+mixed_batch)[i] for i in idx]
+
+        return default_collate(rand_mixed_batch)
 
     def wif(self, id):
         uint64_seed = torch.initial_seed()
@@ -113,10 +121,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            # collate_fn=partial(
-            #     self.collate_labeled,
-            #     augment=self.train_augment
-            # ),
+            collate_fn=partial(
+                self.collate_labeled,
+                augment=self.train_augment
+            ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
