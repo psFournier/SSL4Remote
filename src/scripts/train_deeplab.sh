@@ -18,4 +18,5 @@ SCRIPT=/d/pfournie/semi-supervised-learning/src/train.py
 --check_val_every_n_epoch 1 \
 --benchmark True \
 --gpus 1 \
---city austin
+--city austin \
+--augment d4 allcolor

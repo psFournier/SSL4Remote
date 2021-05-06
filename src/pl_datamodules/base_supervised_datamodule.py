@@ -97,7 +97,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         # batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
 
         mixed_batch = self.mixup(batch=batch)
-        idx = np.random.choice(2*self.batch_size, size=self.batch_size, replace=False)
+        idx = np.random.choice(2*len(batch), size=len(batch), replace=False)
         rand_mixed_batch = [(batch+mixed_batch)[i] for i in idx]
 
         return default_collate(rand_mixed_batch)
