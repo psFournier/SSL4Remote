@@ -7,6 +7,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 import torch
 from pytorch_toolbelt.losses import DiceLoss
 import torchmetrics.functional as metrics
+# import torch.functional as F
 
 class SupervisedBaseline(pl.LightningModule):
 
@@ -43,6 +44,7 @@ class SupervisedBaseline(pl.LightningModule):
             [1.] * self.num_classes
         )
         self.ce = nn.CrossEntropyLoss(weight=self.class_weights)
+        self.bce = nn.BCEWithLogitsLoss()
         self.dice = DiceLoss(mode="multiclass", log_loss=False)
 
 
@@ -106,13 +108,13 @@ class SupervisedBaseline(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        val_inputs, val_labels = batch
-        val_labels_one_hot = val_labels.long()
-        val_labels = torch.argmax(val_labels_one_hot, dim=1)
+        val_inputs, val_labels_one_hot = batch
+        val_labels = torch.argmax(val_labels_one_hot, dim=1).long()
 
         outputs = self.network(val_inputs)
         val_loss1 = self.ce(outputs, val_labels)
         val_loss2 = self.dice(outputs, val_labels)
+        val_loss3 = self.bce(outputs, val_labels_one_hot.float())
         val_loss = val_loss1 + val_loss2
 
         self.log('Val_CE', val_loss1)
