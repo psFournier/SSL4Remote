@@ -12,7 +12,15 @@ import numpy as np
 
 augments = {
     "d4": [A.RandomRotate90(p=1), A.HorizontalFlip(p=0.5), A.VerticalFlip(p=0.5), A.Transpose(p=0.5)],
-    "clahe": [A.CLAHE()]
+    "clahe": [A.CLAHE()],
+    "sharpen": [A.IAASharpen()],
+    "blur": [A.GaussianBlur()],
+    "gamma": [A.RandomGamma()],
+    "hsv": [A.HueSaturationValue()],
+    "contrast": [A.RandomBrightnessContrast(brightness_by_max=True)],
+    "allcolor": [A.CLAHE(), A.RandomGamma(), A.HueSaturationValue(), A.RandomBrightnessContrast(brightness_by_max=True)],
+    "allgeometric":[A.IAASharpen(), A.GaussianBlur()],
+    "maskdrop": [A.MaskDropout(max_objects=2, mask_fill_value=0)]
 }
 
 def get_augment(names):
