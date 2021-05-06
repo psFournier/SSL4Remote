@@ -81,7 +81,8 @@ class SupervisedBaseline(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         train_inputs, train_labels = batch
-        train_labels = train_labels.long()
+        train_labels_one_hot = train_labels.long()
+        train_labels = torch.argmax(train_labels_one_hot, dim=1)
 
         outputs = self.network(train_inputs)
         train_loss1 = self.ce(outputs, train_labels)
@@ -106,7 +107,8 @@ class SupervisedBaseline(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
 
         val_inputs, val_labels = batch
-        val_labels = val_labels.long()
+        val_labels_one_hot = val_labels.long()
+        val_labels = torch.argmax(val_labels_one_hot, dim=1)
 
         outputs = self.network(val_inputs)
         val_loss1 = self.ce(outputs, val_labels)

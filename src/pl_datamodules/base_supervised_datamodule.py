@@ -9,6 +9,7 @@ from albumentations.pytorch import ToTensorV2
 from utils.augmentations import get_augmentations
 import torch
 import numpy as np
+from torch.utils.data._utils.collate import default_collate
 
 
 class BaseSupervisedDatamodule(LightningDataModule):
@@ -37,12 +38,12 @@ class BaseSupervisedDatamodule(LightningDataModule):
             get_augmentations(augmentations) +
             [
                 A.Normalize(),
-                ToTensorV2(transpose_mask=False)
+                ToTensorV2(transpose_mask=True)
             ]
         )
         self.val_augment = A.Compose([
             A.Normalize(),
-            ToTensorV2(transpose_mask=False)
+            ToTensorV2(transpose_mask=True)
         ])
 
         self.sup_train_set = None
@@ -70,6 +71,27 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         return parser
 
+    # Following pytorch Dataloader doc, loading from a map-style dataset is
+    # roughly equivalent with:
+    #
+    #     for indices in batch_sampler:
+    #         yield collate_fn([dataset[i] for i in indices])
+
+    def collate_labeled(self, batch, augment):
+
+        # We apply transforms here because transforms are method-dependent
+        # while the dataset class should be method independent.
+        # transformed_batch = [
+        #     augment(
+        #         image=image,
+        #         mask=self.label_merger(ground_truth)
+        #     )
+        #     for image,ground_truth in batch
+        # ]
+        # batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
+
+        return default_collate(batch)
+
     def wif(self, id):
         uint64_seed = torch.initial_seed()
         np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
@@ -91,6 +113,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
+            # collate_fn=partial(
+            #     self.collate_labeled,
+            #     augment=self.train_augment
+            # ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
