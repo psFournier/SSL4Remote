@@ -10,7 +10,7 @@ from utils.augmentations import get_augmentations
 import torch
 import numpy as np
 from torch.utils.data._utils.collate import default_collate
-from utils import mixup_data
+from utils import Mixup
 
 
 class BaseSupervisedDatamodule(LightningDataModule):
@@ -48,6 +48,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
             A.Normalize(),
             ToTensorV2(transpose_mask=True)
         ])
+        self.mixup = Mixup(alpha=0.4)
 
         self.sup_train_set = None
         self.val_set = None
@@ -81,7 +82,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
     #     for indices in batch_sampler:
     #         yield collate_fn([dataset[i] for i in indices])
 
-    def collate_labeled(self, batch, augment):
+    def collate_labeled(self, batch):
 
         # We apply transforms here because transforms are method-dependent
         # while the dataset class should be method independent.
@@ -94,7 +95,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         # ]
         # batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
 
-        mixed_batch = mixup_data(batch=batch, alpha=self.mixup_alpha)
+        mixed_batch = self.mixup(batch=batch)
         idx = np.random.choice(2*self.batch_size, size=self.batch_size, replace=False)
         rand_mixed_batch = [(batch+mixed_batch)[i] for i in idx]
 
@@ -122,8 +123,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
             collate_fn=partial(
-                self.collate_labeled,
-                augment=self.train_augment
+                self.collate_labeled
+                # augment=self.train_augment
             ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
