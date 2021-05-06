@@ -2,12 +2,41 @@ import albumentations as A
 from typing import Tuple, List
 import numpy as np
 
-__all__ = [
-    "D4_augmentations",
-    "medium_augmentations",
-    "hard_augmentations",
-    "get_augmentations",
-]
+# __all__ = [
+#     "D4_augmentations",
+#     "medium_augmentations",
+#     "hard_augmentations",
+#     "get_augmentations",
+# ]
+
+
+augments = {
+    "d4": [A.RandomRotate90(p=1), A.HorizontalFlip(p=0.5), A.VerticalFlip(p=0.5), A.Transpose(p=0.5)],
+    "clahe": [A.CLAHE()]
+}
+
+def get_augment(names):
+
+    l = sum([augments[name] for name in names], [])
+
+    return l
+
+
+# def get_augmentations(augmentation):
+#     if augmentation == "hard":
+#         aug_transform = hard_augmentations()
+#     elif augmentation == "medium":
+#         aug_transform = medium_augmentations()
+#     elif augmentation == "d4":
+#         aug_transform = D4_augmentations()
+#     # elif augmentation == "mixup":
+#     #     aug_transform =
+#     elif augmentation == "dropout":
+#         aug_transform = dropout()
+#     else:
+#         aug_transform = []
+#
+#     return aug_transform
 
 class MergeLabels:
     def __init__(self, labels):
@@ -30,14 +59,7 @@ class MergeLabels:
         return ret
 
 
-def D4_augmentations() -> List[A.DualTransform]:
-    return [
-        # D4 Augmentations
-        A.RandomRotate90(p=1),
-        A.HorizontalFlip(p=0.5),
-        A.VerticalFlip(p=0.5),
-        A.Transpose(p=0.5),
-    ]
+
 
 
 def dropout():
@@ -109,16 +131,3 @@ def hard_augmentations(mask_dropout=True) -> List[A.DualTransform]:
     ]
 
 
-def get_augmentations(augmentation):
-    if augmentation == "hard":
-        aug_transform = hard_augmentations()
-    elif augmentation == "medium":
-        aug_transform = medium_augmentations()
-    elif augmentation == "d4":
-        aug_transform = D4_augmentations()
-    elif augmentation == "dropout":
-        aug_transform = dropout()
-    else:
-        aug_transform = []
-
-    return aug_transform

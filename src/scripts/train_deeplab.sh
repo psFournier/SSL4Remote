@@ -10,7 +10,6 @@ SCRIPT=/d/pfournie/semi-supervised-learning/src/train.py
 --data_dir /scratch_ai4geo/miniworld_tif \
 --output_dir /d/pfournie/semi-supervised-learning/outputs \
 --workers 10 \
---augmentations no \
 --encoder efficientnet-b0 \
 --max_epochs 500 \
 --log_every_n_steps 300 \

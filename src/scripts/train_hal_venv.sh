@@ -17,7 +17,6 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 --data_dir "${TMPDIR}"/miniworld_tif \
 --output_dir ${TMPDIR}/outputs \
 --workers 0 \
---augmentations no \
 --encoder efficientnet-b0 \
 --max_epochs 2 \
 --limit_train_batches 5 \

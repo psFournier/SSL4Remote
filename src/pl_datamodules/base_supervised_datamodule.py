@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, RandomSampler
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-from utils.augmentations import get_augmentations
+from utils.augmentations import get_augment
 import torch
 import numpy as np
 from torch.utils.data._utils.collate import default_collate
@@ -21,7 +21,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  epoch_len,
                  batch_size,
                  workers,
-                 augmentations,
+                 augment,
                  train_val,
                  mixup_alpha,
                  *args,
@@ -38,7 +38,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.mixup_alpha = mixup_alpha
 
         self.train_augment = A.Compose(
-            get_augmentations(augmentations) +
+            get_augment(augment) +
             [
                 A.Normalize(),
                 ToTensorV2(transpose_mask=True)
@@ -69,10 +69,11 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--workers", default=8, type=int)
-        parser.add_argument('--augmentations', type=str, default='no',
-                            help="Which augmentation strategy to use. See utils.augmentations.py")
+        # parser.add_argument('--augmentations', type=str, default='no',
+        #                     help="Which augmentation strategy to use. See utils.augmentations.py")
         parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
         parser.add_argument('--mixup_alpha', type=float, default=0.4)
+        parser.add_argument('--augment', nargs='+', type=str, default=[])
 
         return parser
 

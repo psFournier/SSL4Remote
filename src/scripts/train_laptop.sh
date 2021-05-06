@@ -10,7 +10,6 @@ SCRIPT=/home/pierre/PycharmProjects/RemoteSensing/src/train.py
 --data_dir /home/pierre/Documents/ONERA/ai4geo/small_airs \
 --output_dir /home/pierre/PycharmProjects/RemoteSensing/outputs \
 --workers 0 \
---augmentations no \
 --encoder efficientnet-b0 \
 --max_epochs 2 \
 --limit_train_batches 5 \

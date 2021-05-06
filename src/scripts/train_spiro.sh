@@ -16,7 +16,6 @@ cd ${WORKDIR}/semi-supervised-learning
 --data_dir ${WORKDIR}/data \
 --output_dir ${WORKDIR}/semi-supervised-learning/outputs \
 --workers 0 \
---augmentations no \
 --encoder efficientnet-b0 \
 --max_epochs 2 \
 --limit_train_batches 5 \
