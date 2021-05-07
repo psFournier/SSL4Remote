@@ -3,14 +3,15 @@ from functools import partial
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data._utils.collate import default_collate
+
+from utils import MergeLabels
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 from utils import get_augment, get_batch_augment
 import torch
 import numpy as np
-from torch.utils.data._utils.collate import default_collate
-
 
 class BaseSupervisedDatamodule(LightningDataModule):
 
@@ -22,6 +23,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  workers,
                  augment,
                  batch_augment,
+                 tta_augment,
                  train_val,
                  mixup_alpha,
                  *args,
@@ -37,18 +39,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.train_val = tuple(train_val)
         self.mixup_alpha = mixup_alpha
 
-        train_augment = get_augment(augment)
-        self.tta_augment = train_augment
-        self.train_augment = A.Compose(
-            train_augment +
-            [
-                A.Normalize(),
-                ToTensorV2(transpose_mask=True)
-            ]
-        )
+        self.tta_augment = get_augment(tta_augment, always_apply=True)
+        self.train_augment = A.Compose(get_augment(augment))
         self.batch_augment = get_batch_augment(batch_augment)
-
-        self.val_augment = A.Compose([
+        self.end_augment = A.Compose([
             A.Normalize(),
             ToTensorV2(transpose_mask=True)
         ])
@@ -76,47 +70,54 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument('--mixup_alpha', type=float, default=0.4)
         parser.add_argument('--augment', nargs='+', type=str, default=[])
         parser.add_argument('--batch_augment', nargs='+', type=str, default=[])
+        parser.add_argument('--tta_augment', nargs='+', type=str, default=[])
 
         return parser
 
-    # Following pytorch Dataloader doc, loading from a map-style dataset is
-    # roughly equivalent with:
-    #
-    #     for indices in batch_sampler:
-    #         yield collate_fn([dataset[i] for i in indices])
+    def tta_and_collate(self, batch, tta_augment):
 
-    # def collate_labeled(self, batch, augment):
-    #
-    #     # We apply transforms here because transforms are method-dependent
-    #     # while the dataset class should be method independent.
-    #     transformed_batch = [
-    #         augment(
-    #             image=image,
-    #             mask=self.label_merger(ground_truth)
-    #         )
-    #         for image,ground_truth in batch
-    #     ]
-    #     batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
-    #
-    #     return default_collate(batch)
+        tta_batches = batch.copy()
+        for aug in tta_augment:
+            for image, mask in batch:
+                tta = aug(image=image, mask=mask)
+                tta_batches.append((tta['image'], tta['mask']))
 
-    def collate_labeled(self, batch, batch_augment):
+        end_batch = [self.end_augment(
+            image=image,
+            mask=mask
+        ) for image, mask in tta_batches]
+
+        end_batch = default_collate(
+            [(elem["image"], elem["mask"]) for elem in end_batch]
+        )
+
+        return end_batch
+
+    def augment_and_collate(self, batch, image_augment, batch_augment):
+
+        image_augment_batch = [
+            image_augment(
+                image=image,
+                mask=mask
+            )
+            for image, mask in batch
+        ]
+        batch = [(elem["image"], elem["mask"]) for elem in image_augment_batch]
 
         for aug in batch_augment:
-            aug_batch = aug(batch=batch)
+            batch_augment_batch = aug(batch=batch)
             # not necessarily self.batch_size if drop_last=False in dataloader
             batch_size = len(batch)
             idx = np.random.choice(2*batch_size, size=batch_size, replace=False)
-            batch = [(batch+aug_batch)[i] for i in idx]
+            batch = [(batch+batch_augment_batch)[i] for i in idx]
 
-        return default_collate(batch)
+        end_batch = [self.end_augment(
+            image=image,
+            mask=mask
+        ) for image, mask in batch]
+        end_batch = [(elem["image"], elem["mask"]) for elem in end_batch]
 
-    # def collate_tta(self, batch):
-    #
-    #
-    #     l = [default_collate(batch) for batch in batches]
-    #
-    #     return batches
+        return default_collate(end_batch)
 
     def wif(self, id):
         uint64_seed = torch.initial_seed()
@@ -140,7 +141,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
             collate_fn=partial(
-                self.collate_labeled,
+                self.augment_and_collate,
+                image_augment=self.train_augment,
                 batch_augment=self.batch_augment
             ),
             sampler=sup_train_sampler,
@@ -157,6 +159,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
             dataset=self.val_set,
             shuffle=False,
             batch_size=self.batch_size,
+            collate_fn=partial(
+                self.tta_and_collate,
+                tta_augment=self.tta_augment
+            ),
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=self.wif

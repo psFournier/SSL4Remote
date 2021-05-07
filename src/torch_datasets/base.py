@@ -16,7 +16,6 @@ class Base(Dataset, ABC):
     def __init__(self,
                  data_path,
                  crop,
-                 augmentations,
                  idxs=None,
                  fixed_crop=False,
                  *args,
@@ -28,7 +27,6 @@ class Base(Dataset, ABC):
         self.data_path = data_path
         self.path_idxs = idxs
         self.crop = crop
-        self.augmentations = augmentations
         self.mean_labeled_pixels = []
         self.std_labeled_pixels = []
 
@@ -102,9 +100,8 @@ class BaseUnlabeled(Base, ABC):
         path_idx = self.path_idxs[idx % len(self.path_idxs)]
         crop_idx = idx // len(self.path_idxs)
         image, window = self.get_image(path_idx, crop_idx)
-        augment = self.augmentations(image=image)
 
-        return augment['image']
+        return image
 
 
 class BaseLabeled(BaseUnlabeled, ABC):
@@ -114,10 +111,9 @@ class BaseLabeled(BaseUnlabeled, ABC):
 
         raise NotImplementedError
 
-    def __init__(self, label_merger=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.label_merger = label_merger
 
     def __getitem__(self, idx):
 
@@ -126,11 +122,5 @@ class BaseLabeled(BaseUnlabeled, ABC):
         image, window = self.get_image(path_idx, crop_idx)
         label = self.get_label(path_idx, window)
         mask = self.colors_to_labels(label)
-        if self.label_merger is not None:
-            mask = self.label_merger(mask)
-        augment = self.augmentations(
-            image=image,
-            mask=mask
-        )
 
-        return augment['image'], augment['mask']
+        return image, mask

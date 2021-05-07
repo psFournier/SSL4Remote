@@ -102,7 +102,11 @@ class SupervisedBaseline(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        val_inputs, val_labels_one_hot = batch
+        inputs, labels = batch
+        input_chunks = torch.chunk(inputs, chunks=3, dim=0)
+        label_chunks = torch.chunk(labels, chunks=3, dim=0)
+        val_labels_one_hot = label_chunks[0]
+        val_inputs = input_chunks[0]
         val_labels = torch.argmax(val_labels_one_hot, dim=1).long()
 
         outputs = self.network(val_inputs)
@@ -149,22 +153,16 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Swa_Val_IoU_0', swa_IoU[0])
         self.log('Swa_Val_IoU_1', swa_IoU[1])
         self.log('Swa_Val_IoU', torch.mean(swa_IoU))
-        #
-        # tta_batches = []
-        # for aug in self.tta:
-        #     tta = []
-        #     for input in val_inputs:
-        #         tta.append(aug(image=input)['image'])
-        #     tta_batches.append(torch.stack(tta, dim=0))
 
-
-
-        # figure = plot_confusion_matrix(cm.numpy(), class_names=["0", "1"])
-        # trainer.logger.experiment.add_figure(
-        #     "Confusion matrix", figure, global_step=trainer.global_step
-        # )
-
-    # def test_step(self, batch, batch_idx):
-    #
-    #     self.validation_step(batch, batch_idx)
-
+        output_chunks = torch.stack(
+            [outputs]+[self.network(chunk) for chunk in input_chunks[1:]]
+        )
+        tta_outputs = torch.mean(output_chunks, dim=0)
+        tta_probas = tta_outputs.softmax(dim=1)
+        tta_IoU = metrics.iou(tta_probas,
+                          val_labels,
+                          reduction='none',
+                          num_classes=self.num_classes)
+        self.log('TTA_Val_IoU_0', tta_IoU[0])
+        self.log('TTA_Val_IoU_1', tta_IoU[1])
+        self.log('TTA_Val_IoU', torch.mean(tta_IoU))
