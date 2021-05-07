@@ -114,20 +114,6 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_Dice', val_loss2)
         self.log('Val_loss', val_loss)
 
-        swa_callback = self.trainer.callbacks[1]
-        if self.trainer.current_epoch < swa_callback._swa_epoch_start:
-            swa_IoU = torch.zeros(size=(self.num_classes,))
-        else:
-            swa_outputs = swa_callback._average_model.network(val_inputs)
-            swa_probas = swa_outputs.softmax(dim=1)
-            swa_IoU = metrics.iou(swa_probas,
-                                  val_labels,
-                                  reduction='none',
-                                  num_classes=self.num_classes)
-        self.log('Swa_Val_IoU_0', swa_IoU[0])
-        self.log('Swa_Val_IoU_1', swa_IoU[1])
-        self.log('Swa_Val_IoU', torch.mean(swa_IoU))
-
         probas = outputs.softmax(dim=1)
         accuracy = metrics.accuracy(probas, val_labels)
         self.log('Val_acc', accuracy)
@@ -149,6 +135,29 @@ class SupervisedBaseline(pl.LightningModule):
                                                      num_classes=self.num_classes)
         self.log('Val_precision_1', precision[1])
         self.log('Val_recall_1', recall[1])
+
+        swa_callback = self.trainer.callbacks[1]
+        if self.trainer.current_epoch < swa_callback._swa_epoch_start:
+            swa_IoU = torch.zeros(size=(self.num_classes,))
+        else:
+            swa_outputs = swa_callback._average_model.network(val_inputs)
+            swa_probas = swa_outputs.softmax(dim=1)
+            swa_IoU = metrics.iou(swa_probas,
+                                  val_labels,
+                                  reduction='none',
+                                  num_classes=self.num_classes)
+        self.log('Swa_Val_IoU_0', swa_IoU[0])
+        self.log('Swa_Val_IoU_1', swa_IoU[1])
+        self.log('Swa_Val_IoU', torch.mean(swa_IoU))
+        #
+        # tta_batches = []
+        # for aug in self.tta:
+        #     tta = []
+        #     for input in val_inputs:
+        #         tta.append(aug(image=input)['image'])
+        #     tta_batches.append(torch.stack(tta, dim=0))
+
+
 
         # figure = plot_confusion_matrix(cm.numpy(), class_names=["0", "1"])
         # trainer.logger.experiment.add_figure(

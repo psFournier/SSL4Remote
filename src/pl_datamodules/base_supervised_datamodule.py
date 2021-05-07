@@ -37,8 +37,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.train_val = tuple(train_val)
         self.mixup_alpha = mixup_alpha
 
+        train_augment = get_augment(augment)
+        self.tta_augment = train_augment
         self.train_augment = A.Compose(
-            get_augment(augment) +
+            train_augment +
             [
                 A.Normalize(),
                 ToTensorV2(transpose_mask=True)
@@ -83,6 +85,21 @@ class BaseSupervisedDatamodule(LightningDataModule):
     #     for indices in batch_sampler:
     #         yield collate_fn([dataset[i] for i in indices])
 
+    # def collate_labeled(self, batch, augment):
+    #
+    #     # We apply transforms here because transforms are method-dependent
+    #     # while the dataset class should be method independent.
+    #     transformed_batch = [
+    #         augment(
+    #             image=image,
+    #             mask=self.label_merger(ground_truth)
+    #         )
+    #         for image,ground_truth in batch
+    #     ]
+    #     batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
+    #
+    #     return default_collate(batch)
+
     def collate_labeled(self, batch, batch_augment):
 
         for aug in batch_augment:
@@ -93,6 +110,13 @@ class BaseSupervisedDatamodule(LightningDataModule):
             batch = [(batch+aug_batch)[i] for i in idx]
 
         return default_collate(batch)
+
+    # def collate_tta(self, batch):
+    #
+    #
+    #     l = [default_collate(batch) for batch in batches]
+    #
+    #     return batches
 
     def wif(self, id):
         uint64_seed = torch.initial_seed()

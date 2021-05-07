@@ -12,20 +12,31 @@ from utils import Mixup
 # ]
 
 
-augments = {
-    "d4": [A.RandomRotate90(p=1), A.HorizontalFlip(p=0.5), A.VerticalFlip(p=0.5), A.Transpose(p=0.5)],
-    "clahe": [A.CLAHE()],
-    "sharpen": [A.IAASharpen()],
-    "blur": [A.GaussianBlur()],
-    "gamma": [A.RandomGamma()],
-    "hsv": [A.HueSaturationValue()],
-    "contrast": [A.RandomBrightnessContrast(brightness_by_max=True)],
-    "allcolor": [A.CLAHE(), A.RandomGamma(), A.HueSaturationValue(), A.RandomBrightnessContrast(brightness_by_max=True)],
-    "allgeometric":[A.IAASharpen(), A.GaussianBlur()],
-    "maskdrop": [A.MaskDropout(max_objects=2, mask_fill_value=0)]
-}
 
-def get_augment(names):
+
+def get_augment(names, always_apply=False):
+
+    d = {'always_apply': always_apply}
+
+    augments = {
+        "d4": [A.RandomRotate90(p=1, **d),
+               A.HorizontalFlip(p=0.5, **d),
+               A.VerticalFlip(p=0.5, **d),
+               A.Transpose(p=0.5, **d)],
+        "clahe": [A.CLAHE(**d)],
+        "sharpen": [A.IAASharpen(**d)],
+        "blur": [A.GaussianBlur(**d)],
+        "gamma": [A.RandomGamma(**d)],
+        "hsv": [A.HueSaturationValue(**d)],
+        "contrast": [A.RandomBrightnessContrast(brightness_by_max=True, **d)],
+        "allcolor": [A.CLAHE(**d),
+                     A.RandomGamma(**d),
+                     A.HueSaturationValue(**d),
+                     A.RandomBrightnessContrast(brightness_by_max=True,**d)],
+        "allgeometric":[A.IAASharpen(**d),
+                        A.GaussianBlur(**d)],
+        "maskdrop": [A.MaskDropout(max_objects=2, mask_fill_value=0, **d)]
+    }
 
     l = sum([augments[name] for name in names], [])
 
