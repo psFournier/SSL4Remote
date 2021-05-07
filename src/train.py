@@ -41,7 +41,8 @@ def main():
     tensorboard = loggers.TensorBoardLogger(
         save_dir=args.output_dir,
         name="tensorboard",
-        version="%s_%s" % (args.exp_name, current_date)
+        default_hp_metric=False
+        # version="%s_%s" % (args.exp_name, current_date)
     )
 
     # Callback to log the learning rate
@@ -76,8 +77,8 @@ def main():
         logger=tensorboard,
         profiler=profiler,
         callbacks=callbacks,
-        log_every_n_steps=300,
-        flush_logs_every_n_steps=1000,
+        log_every_n_steps=10,
+        flush_logs_every_n_steps=10,
         num_sanity_val_steps=0,
         check_val_every_n_epoch=1,
         benchmark=True

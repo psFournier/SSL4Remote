@@ -42,6 +42,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.bce = nn.BCEWithLogitsLoss()
         self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
 
+        self.save_hyperparameters()
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -75,6 +76,11 @@ class SupervisedBaseline(pl.LightningModule):
 
         return [optimizer], [scheduler]
 
+    def on_train_start(self):
+        self.logger.log_hyperparams(self.hparams, {"hp/Val_IoU": 0,
+                                                   "hp/Swa_Val_IoU": 0,
+                                                   "hp/TTA_Val_IoU":0})
+
     def training_step(self, batch, batch_idx):
 
         train_inputs, train_labels_one_hot = batch
@@ -103,8 +109,9 @@ class SupervisedBaseline(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
 
         inputs, labels = batch
-        input_chunks = torch.chunk(inputs, chunks=3, dim=0)
-        label_chunks = torch.chunk(labels, chunks=3, dim=0)
+        tta_factor = len(self.trainer.datamodule.tta_augment) + 1
+        input_chunks = torch.chunk(inputs, chunks=tta_factor, dim=0)
+        label_chunks = torch.chunk(labels, chunks=tta_factor, dim=0)
         val_labels_one_hot = label_chunks[0]
         val_inputs = input_chunks[0]
         val_labels = torch.argmax(val_labels_one_hot, dim=1).long()
@@ -130,7 +137,7 @@ class SupervisedBaseline(pl.LightningModule):
                           num_classes=self.num_classes)
         self.log('Val_IoU_0', IoU[0])
         self.log('Val_IoU_1', IoU[1])
-        self.log('Val_IoU', torch.mean(IoU))
+        self.log('hp/Val_IoU', torch.mean(IoU))
 
         precision, recall = metrics.precision_recall(probas,
                                                      val_labels,
@@ -152,7 +159,7 @@ class SupervisedBaseline(pl.LightningModule):
                                   num_classes=self.num_classes)
         self.log('Swa_Val_IoU_0', swa_IoU[0])
         self.log('Swa_Val_IoU_1', swa_IoU[1])
-        self.log('Swa_Val_IoU', torch.mean(swa_IoU))
+        self.log('hp/Swa_Val_IoU', torch.mean(swa_IoU))
 
         output_chunks = torch.stack(
             [outputs]+[self.network(chunk) for chunk in input_chunks[1:]]
@@ -165,4 +172,4 @@ class SupervisedBaseline(pl.LightningModule):
                           num_classes=self.num_classes)
         self.log('TTA_Val_IoU_0', tta_IoU[0])
         self.log('TTA_Val_IoU_1', tta_IoU[1])
-        self.log('TTA_Val_IoU', torch.mean(tta_IoU))
+        self.log('hp/TTA_Val_IoU', torch.mean(tta_IoU))

@@ -12,7 +12,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module supervised_baseline \
---datamodule airs_sup \
+--datamodule miniworld_sup \
 --exp_name test_airs \
 --data_dir "${TMPDIR}"/miniworld_tif \
 --output_dir ${TMPDIR}/outputs \
