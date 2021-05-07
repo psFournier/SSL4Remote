@@ -44,14 +44,6 @@ def main():
         version="%s_%s" % (args.exp_name, current_date)
     )
 
-    # The lightning datamodule deals with instantiating the proper dataloaders.
-    pl_datamodule = datamodules[args.datamodule](**args_dict)
-
-    # The lightning module is where the training schema is implemented. Class
-    # weights are a property of the dataset being processed, given by its class.
-    args_dict['class_weights'] = datamodules[args.datamodule].class_weights
-    pl_module = modules[args.module](**args_dict)
-
     # Callback to log the learning rate
     lr_monitor = LearningRateMonitor()
 
@@ -62,7 +54,7 @@ def main():
     )
 
     # The learning module can also define its own specific callbacks
-    callbacks = pl_module.callbacks + [
+    callbacks = [
         checkpoint_callback,
         lr_monitor
     ]
@@ -77,8 +69,21 @@ def main():
         args,
         logger=tensorboard,
         profiler=profiler,
-        callbacks=callbacks
+        callbacks=callbacks,
+        log_every_n_steps=300,
+        flush_logs_every_n_steps=1000,
+        num_sanity_val_steps=0,
+        check_val_every_n_epoch=1,
+        benchmark=True
     )
+
+    # The lightning datamodule deals with instantiating the proper dataloaders.
+    pl_datamodule = datamodules[args.datamodule](**args_dict)
+
+    # The lightning module is where the training schema is implemented. Class
+    # weights are a property of the dataset being processed, given by its class.
+    args_dict['class_weights'] = datamodules[args.datamodule].class_weights
+    pl_module = modules[args.module](**args_dict)
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)
 

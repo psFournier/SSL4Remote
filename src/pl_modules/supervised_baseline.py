@@ -33,13 +33,8 @@ class SupervisedBaseline(pl.LightningModule):
             decoder_use_batchnorm='inplace' if inplaceBN else True
         )
         self.num_classes = num_classes
-
         self.network = network
-        self.save_hyperparameters()
-        self.callbacks = []
-
         self.learning_rate = learning_rate # Initial learning rate
-
         self.class_weights = class_weights if wce else torch.FloatTensor(
             [1.] * self.num_classes
         )
