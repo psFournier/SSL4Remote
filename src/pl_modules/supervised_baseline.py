@@ -114,6 +114,16 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_Dice', val_loss2)
         self.log('Val_loss', val_loss)
 
+        swa_outputs = self.trainer.callbacks[1]._average_model.network(val_inputs)
+        swa_probas = swa_outputs.softmax(dim=1)
+        swa_IoU = metrics.iou(swa_probas,
+                              val_labels,
+                              reduction='none',
+                              num_classes=self.num_classes)
+        self.log('Swa_Val_IoU_0', swa_IoU[0])
+        self.log('Swa_Val_IoU_1', swa_IoU[1])
+        self.log('Swa_Val_IoU', torch.mean(swa_IoU))
+
         probas = outputs.softmax(dim=1)
         accuracy = metrics.accuracy(probas, val_labels)
         self.log('Val_acc', accuracy)
@@ -141,7 +151,7 @@ class SupervisedBaseline(pl.LightningModule):
         #     "Confusion matrix", figure, global_step=trainer.global_step
         # )
 
-    def test_step(self, batch, batch_idx):
-
-        self.validation_step(batch, batch_idx)
+    # def test_step(self, batch, batch_idx):
+    #
+    #     self.validation_step(batch, batch_idx)
 

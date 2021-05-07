@@ -1,6 +1,6 @@
 import datetime
 from argparse import ArgumentParser
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, StochasticWeightAveraging
 from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
@@ -53,10 +53,16 @@ def main():
         save_weights_only=True
     )
 
+    swa = StochasticWeightAveraging(
+        swa_epoch_start=2,
+        annealing_epochs=2
+    )
+
     # The learning module can also define its own specific callbacks
     callbacks = [
         checkpoint_callback,
-        lr_monitor
+        lr_monitor,
+        swa
     ]
 
     # Montoring time spent in each call. Difficult to understand the data
@@ -75,7 +81,7 @@ def main():
         num_sanity_val_steps=0,
         check_val_every_n_epoch=1,
         benchmark=True
-    )
+   )
 
     # The lightning datamodule deals with instantiating the proper dataloaders.
     pl_datamodule = datamodules[args.datamodule](**args_dict)
