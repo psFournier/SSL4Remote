@@ -1,6 +1,8 @@
 import albumentations as A
 from typing import Tuple, List
 import numpy as np
+from utils import Mixup
+
 
 # __all__ = [
 #     "D4_augmentations",
@@ -26,6 +28,16 @@ augments = {
 def get_augment(names):
 
     l = sum([augments[name] for name in names], [])
+
+    return l
+
+batch_augments = {
+    "mixup": [Mixup(alpha=0.4)],
+}
+
+def get_batch_augment(names):
+
+    l = sum([batch_augments[name] for name in names], [])
 
     return l
 

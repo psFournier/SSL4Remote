@@ -6,11 +6,10 @@ from torch.utils.data import DataLoader, RandomSampler
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
-from utils.augmentations import get_augment
+from utils import get_augment, get_batch_augment
 import torch
 import numpy as np
 from torch.utils.data._utils.collate import default_collate
-from utils import Mixup
 
 
 class BaseSupervisedDatamodule(LightningDataModule):
@@ -22,6 +21,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  batch_size,
                  workers,
                  augment,
+                 batch_augment,
                  train_val,
                  mixup_alpha,
                  *args,
@@ -44,11 +44,12 @@ class BaseSupervisedDatamodule(LightningDataModule):
                 ToTensorV2(transpose_mask=True)
             ]
         )
+        self.batch_augment = get_batch_augment(batch_augment)
+
         self.val_augment = A.Compose([
             A.Normalize(),
             ToTensorV2(transpose_mask=True)
         ])
-        self.mixup = Mixup(alpha=0.4)
 
         self.sup_train_set = None
         self.val_set = None
@@ -69,11 +70,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--workers", default=8, type=int)
-        # parser.add_argument('--augmentations', type=str, default='no',
-        #                     help="Which augmentation strategy to use. See utils.augmentations.py")
         parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
         parser.add_argument('--mixup_alpha', type=float, default=0.4)
         parser.add_argument('--augment', nargs='+', type=str, default=[])
+        parser.add_argument('--batch_augment', nargs='+', type=str, default=[])
 
         return parser
 
@@ -83,24 +83,16 @@ class BaseSupervisedDatamodule(LightningDataModule):
     #     for indices in batch_sampler:
     #         yield collate_fn([dataset[i] for i in indices])
 
-    def collate_labeled(self, batch):
+    def collate_labeled(self, batch, batch_augment):
 
-        # We apply transforms here because transforms are method-dependent
-        # while the dataset class should be method independent.
-        # transformed_batch = [
-        #     augment(
-        #         image=image,
-        #         mask=self.label_merger(ground_truth)
-        #     )
-        #     for image,ground_truth in batch
-        # ]
-        # batch = [(elem["image"], elem["mask"]) for elem in transformed_batch]
+        for aug in batch_augment:
+            aug_batch = aug(batch=batch)
+            # not necessarily self.batch_size if drop_last=False in dataloader
+            batch_size = len(batch)
+            idx = np.random.choice(2*batch_size, size=batch_size, replace=False)
+            batch = [(batch+aug_batch)[i] for i in idx]
 
-        mixed_batch = self.mixup(batch=batch)
-        idx = np.random.choice(2*len(batch), size=len(batch), replace=False)
-        rand_mixed_batch = [(batch+mixed_batch)[i] for i in idx]
-
-        return default_collate(rand_mixed_batch)
+        return default_collate(batch)
 
     def wif(self, id):
         uint64_seed = torch.initial_seed()
@@ -124,8 +116,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
             collate_fn=partial(
-                self.collate_labeled
-                # augment=self.train_augment
+                self.collate_labeled,
+                batch_augment=self.batch_augment
             ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,

@@ -45,7 +45,7 @@ class SupervisedBaseline(pl.LightningModule):
         )
         self.ce = nn.CrossEntropyLoss(weight=self.class_weights)
         self.bce = nn.BCEWithLogitsLoss()
-        self.dice = DiceLoss(mode="multiclass", log_loss=False)
+        self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
 
 
     @classmethod
@@ -83,25 +83,25 @@ class SupervisedBaseline(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         train_inputs, train_labels_one_hot = batch
-        train_labels = torch.argmax(train_labels_one_hot, dim=1).long()
+        # train_labels = torch.argmax(train_labels_one_hot, dim=1).long()
 
         outputs = self.network(train_inputs)
-        train_loss1 = self.ce(outputs, train_labels)
-        train_loss2 = self.dice(outputs, train_labels)
+        train_loss1 = self.bce(outputs, train_labels_one_hot)
+        train_loss2 = self.dice(outputs, train_labels_one_hot)
         train_loss = train_loss1 + train_loss2
 
-        self.log('Train_CE', train_loss1)
+        self.log('Train_BCE', train_loss1)
         self.log('Train_Dice', train_loss2)
         self.log('Train_loss', train_loss)
 
-        probas = outputs.softmax(dim=1)
-        IoU = metrics.iou(probas,
-                          train_labels,
-                          reduction='none',
-                          num_classes=self.num_classes)
-        self.log('Train_IoU_0', IoU[0])
-        self.log('Train_IoU_1', IoU[1])
-        self.log('Train_IoU', torch.mean(IoU))
+        # probas = outputs.softmax(dim=1)
+        # IoU = metrics.iou(probas,
+        #                   train_labels,
+        #                   reduction='none',
+        #                   num_classes=self.num_classes)
+        # self.log('Train_IoU_0', IoU[0])
+        # self.log('Train_IoU_1', IoU[1])
+        # self.log('Train_IoU', torch.mean(IoU))
 
         return {"loss": train_loss}
 
@@ -111,12 +111,11 @@ class SupervisedBaseline(pl.LightningModule):
         val_labels = torch.argmax(val_labels_one_hot, dim=1).long()
 
         outputs = self.network(val_inputs)
-        val_loss1 = self.ce(outputs, val_labels)
-        val_loss2 = self.dice(outputs, val_labels)
-        val_loss3 = self.bce(outputs, val_labels_one_hot)
+        val_loss1 = self.bce(outputs, val_labels_one_hot)
+        val_loss2 = self.dice(outputs, val_labels_one_hot)
         val_loss = val_loss1 + val_loss2
 
-        self.log('Val_CE', val_loss1)
+        self.log('Val_BCE', val_loss1)
         self.log('Val_Dice', val_loss2)
         self.log('Val_loss', val_loss)
 
