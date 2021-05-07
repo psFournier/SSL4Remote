@@ -114,12 +114,16 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_Dice', val_loss2)
         self.log('Val_loss', val_loss)
 
-        swa_outputs = self.trainer.callbacks[1]._average_model.network(val_inputs)
-        swa_probas = swa_outputs.softmax(dim=1)
-        swa_IoU = metrics.iou(swa_probas,
-                              val_labels,
-                              reduction='none',
-                              num_classes=self.num_classes)
+        swa_callback = self.trainer.callbacks[1]
+        if self.trainer.current_epoch < swa_callback._swa_epoch_start:
+            swa_IoU = torch.zeros(size=(self.num_classes,))
+        else:
+            swa_outputs = swa_callback._average_model.network(val_inputs)
+            swa_probas = swa_outputs.softmax(dim=1)
+            swa_IoU = metrics.iou(swa_probas,
+                                  val_labels,
+                                  reduction='none',
+                                  num_classes=self.num_classes)
         self.log('Swa_Val_IoU_0', swa_IoU[0])
         self.log('Swa_Val_IoU_1', swa_IoU[1])
         self.log('Swa_Val_IoU', torch.mean(swa_IoU))
