@@ -3,7 +3,8 @@ from typing import Tuple, List
 import numpy as np
 from utils import Mixup
 import random
-import torchvision.transforms.functional as TF
+import torchvision.transforms as T
+import torchvision.transforms.functional
 import torch
 
 # __all__ = [
@@ -13,26 +14,34 @@ import torch
 #     "get_augmentations",
 # ]
 
+class Compose:
+
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, img, label):
+        for t in self.transforms:
+            img, label = t(img, label)
+        return img, label
 
 class D4:
 
     def __init__(self):
-
         pass
 
     def __call__(self, x, y):
 
         angle = random.choice([0, 90, 270])
-        x = TF.rotate(x, angle)
-        y = TF.rotate(y, angle)
+        x = T.functional.rotate(x, angle)
+        y = T.functional.rotate(y, angle)
 
         if random.random() < 0.5:
-            x = TF.hflip(x)
-            y = TF.hflip(y)
+            x = T.functional.hflip(x)
+            y = T.functional.hflip(y)
 
         if random.random() < 0.5:
-            x = TF.vflip(x)
-            y = TF.vflip(y)
+            x = T.functional.vflip(x)
+            y = T.functional.vflip(y)
 
         if random.random() < 0.5:
             x = torch.transpose(x, 2, 3)
@@ -41,7 +50,11 @@ class D4:
         return x, y
 
 
+class ColorJitter(T.ColorJitter):
 
+    def __call__(self, img, label):
+
+        return super().__call__(img), label
 
 
 def get_augment(names, always_apply=False):

@@ -7,7 +7,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 import torch
 from pytorch_toolbelt.losses import DiceLoss
 import torchmetrics.functional as metrics
-# import torch.functional as F
+import torchvision.transforms as T
 import utils
 
 class SupervisedBaseline(pl.LightningModule):
@@ -41,7 +41,7 @@ class SupervisedBaseline(pl.LightningModule):
         )
         self.ce = nn.CrossEntropyLoss(weight=self.class_weights)
         self.bce = nn.BCEWithLogitsLoss()
-        self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
+        self.dice = utils.DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
         # self.mixup_alpha = mixup_alpha
         # self.tta_augment = get_augment(tta_augment, always_apply=True)
         # self.train_augment = A.Compose(get_augment(augment))
@@ -51,7 +51,10 @@ class SupervisedBaseline(pl.LightningModule):
         #     ToTensorV2(transpose_mask=True)
         # ])
 
-        self.im_aug = utils.D4()
+        self.im_aug = utils.Compose([
+            utils.D4(),
+            utils.ColorJitter(brightness=0.2)
+        ])
         self.save_hyperparameters()
 
     @classmethod
@@ -105,7 +108,6 @@ class SupervisedBaseline(pl.LightningModule):
         outputs = self.network(inputs)
         loss1 = self.bce(outputs, labels_onehot)
         loss2 = self.dice(outputs, labels_onehot)
-
 
         loss = loss1 + loss2
 
