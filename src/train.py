@@ -37,12 +37,11 @@ def main():
     args = parser.parse_args()
     args_dict = vars(args)
 
-    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    # current_date = datetime.datetime.now().strftime("%Y-%m-%d")
     tensorboard = loggers.TensorBoardLogger(
         save_dir=args.output_dir,
         name="tensorboard",
         default_hp_metric=False
-        # version="%s_%s" % (args.exp_name, current_date)
     )
 
     # Callback to log the learning rate
