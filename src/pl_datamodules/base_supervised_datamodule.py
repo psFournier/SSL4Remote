@@ -37,16 +37,6 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = workers
         self.train_val = tuple(train_val)
-        self.mixup_alpha = mixup_alpha
-
-        self.tta_augment = get_augment(tta_augment, always_apply=True)
-        self.train_augment = A.Compose(get_augment(augment))
-        self.batch_augment = get_batch_augment(batch_augment)
-        self.end_augment = A.Compose([
-            A.Normalize(),
-            ToTensorV2(transpose_mask=True)
-        ])
-
         self.sup_train_set = None
         self.val_set = None
 
@@ -67,74 +57,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--workers", default=8, type=int)
         parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
-        parser.add_argument('--mixup_alpha', type=float, default=0.4)
-        parser.add_argument('--augment', nargs='+', type=str, default=[])
-        parser.add_argument('--batch_augment', nargs='+', type=str, default=[])
-        parser.add_argument('--tta_augment', nargs='+', type=str, default=[])
 
         return parser
-
-    def tta_and_collate(self, batch, tta_augment):
-
-        tta_batches = batch.copy()
-        for aug in tta_augment:
-            for image, mask in batch:
-                tta = aug(image=image, mask=mask)
-                tta_batches.append((tta['image'], tta['mask']))
-
-        end_batch = [self.end_augment(
-            image=image,
-            mask=mask
-        ) for image, mask in tta_batches]
-
-        end_batch = default_collate(
-            [(elem["image"], elem["mask"]) for elem in end_batch]
-        )
-
-        return end_batch
-
-    # def apply_im_aug(self, batch, aug):
-    #
-    #     aug_batch = [
-    #         aug(
-    #             image=image,
-    #             mask=label
-    #         )
-    #         for image, label in batch
-    #     ]
-    #     batch = [(elem["image"], elem["mask"], torch.ones_like(elem["image"])) for elem in aug_batch]
-    #
-    #     return batch
-    #
-    # def apply_batch_aug(self, batch, aug):
-    #
-    #
-
-    def augment_and_collate(self, batch, image_augment, batch_augment):
-
-        image_augment_batch = [
-            image_augment(
-                image=image,
-                mask=mask
-            )
-            for image, mask in batch
-        ]
-        batch = [(elem["image"], elem["mask"]) for elem in image_augment_batch]
-
-        for aug in batch_augment:
-            batch_augment_batch = aug(batch=batch)
-            # not necessarily self.batch_size if drop_last=False in dataloader
-            batch_size = len(batch)
-            idx = np.random.choice(2*batch_size, size=batch_size, replace=False)
-            batch = [(batch+batch_augment_batch)[i] for i in idx]
-
-        end_batch = [self.end_augment(
-            image=image,
-            mask=mask
-        ) for image, mask in batch]
-        end_batch = [(elem["image"], elem["mask"]) for elem in end_batch]
-
-        return default_collate(end_batch)
 
     def wif(self, id):
         uint64_seed = torch.initial_seed()
@@ -157,11 +81,11 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            collate_fn=partial(
-                self.augment_and_collate,
-                image_augment=self.train_augment,
-                batch_augment=self.batch_augment
-            ),
+            # collate_fn=partial(
+            #     self.augment_and_collate,
+            #     image_augment=self.train_augment,
+            #     batch_augment=self.batch_augment
+            # ),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -176,10 +100,10 @@ class BaseSupervisedDatamodule(LightningDataModule):
             dataset=self.val_set,
             shuffle=False,
             batch_size=self.batch_size,
-            collate_fn=partial(
-                self.tta_and_collate,
-                tta_augment=self.tta_augment
-            ),
+            # collate_fn=partial(
+            #     self.tta_and_collate,
+            #     tta_augment=self.tta_augment
+            # ),
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=self.wif

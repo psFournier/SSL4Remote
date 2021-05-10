@@ -2,7 +2,9 @@ import albumentations as A
 from typing import Tuple, List
 import numpy as np
 from utils import Mixup
-
+import random
+import torchvision.transforms.functional as TF
+import torch
 
 # __all__ = [
 #     "D4_augmentations",
@@ -10,6 +12,34 @@ from utils import Mixup
 #     "hard_augmentations",
 #     "get_augmentations",
 # ]
+
+
+class D4:
+
+    def __init__(self):
+
+        pass
+
+    def __call__(self, x, y):
+
+        angle = random.choice([0, 90, 270])
+        x = TF.rotate(x, angle)
+        y = TF.rotate(y, angle)
+
+        if random.random() < 0.5:
+            x = TF.hflip(x)
+            y = TF.hflip(y)
+
+        if random.random() < 0.5:
+            x = TF.vflip(x)
+            y = TF.vflip(y)
+
+        if random.random() < 0.5:
+            x = torch.transpose(x, 2, 3)
+            y = torch.transpose(y, 2, 3)
+
+        return x, y
+
 
 
 

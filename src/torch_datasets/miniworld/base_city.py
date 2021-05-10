@@ -9,12 +9,12 @@ class BaseCity(Base, ABC):
     @staticmethod
     def colors_to_labels(labels_color):
 
-        labels0 = np.zeros(shape=labels_color.shape[:2], dtype=float)
-        labels1 = np.zeros(shape=labels_color.shape[:2], dtype=float)
-        mask = np.any(labels_color != [0], axis=2)
+        labels0 = np.zeros(shape=labels_color.shape[1:], dtype=float)
+        labels1 = np.zeros(shape=labels_color.shape[1:], dtype=float)
+        mask = np.any(labels_color != [0], axis=0)
         np.putmask(labels0, ~mask, 1.)
         np.putmask(labels1, mask, 1.)
-        labels = np.stack([labels0, labels1], axis=2)
+        labels = np.stack([labels0, labels1], axis=0)
 
         return labels
 
