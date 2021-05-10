@@ -93,6 +93,23 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         return end_batch
 
+    # def apply_im_aug(self, batch, aug):
+    #
+    #     aug_batch = [
+    #         aug(
+    #             image=image,
+    #             mask=label
+    #         )
+    #         for image, label in batch
+    #     ]
+    #     batch = [(elem["image"], elem["mask"], torch.ones_like(elem["image"])) for elem in aug_batch]
+    #
+    #     return batch
+    #
+    # def apply_batch_aug(self, batch, aug):
+    #
+    #
+
     def augment_and_collate(self, batch, image_augment, batch_augment):
 
         image_augment_batch = [

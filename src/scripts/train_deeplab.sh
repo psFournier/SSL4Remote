@@ -6,8 +6,8 @@ SCRIPT=/d/pfournie/semi-supervised-learning/src/train.py
 "${PYTHON}" "${SCRIPT}" \
 --module supervised_baseline \
 --datamodule miniworld_sup \
---data_dir "${TMPDIR}"/miniworld_tif \
---output_dir ${TMPDIR}/outputs \
+--data_dir /scratch_ai4geo/miniworld_tif \
+--output_dir /d/pfournie/semi-supervised-learning/outputs \
 --workers 12 \
 --max_epochs 500 \
 --gpus 1 \

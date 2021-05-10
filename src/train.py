@@ -55,7 +55,8 @@ def main():
 
     swa = StochasticWeightAveraging(
         # swa_epoch_start=2,
-        # annealing_epochs=2
+        # annealing_epochs=2,
+        device=None
     )
 
     # The learning module can also define its own specific callbacks

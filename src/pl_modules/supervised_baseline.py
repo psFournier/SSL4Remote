@@ -83,12 +83,22 @@ class SupervisedBaseline(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
+        # train_inputs, train_labels_one_hot, train_masks = batch
+        # # train_labels = torch.argmax(train_labels_one_hot, dim=1).long()
+        # train_masks = train_masks.unsqueeze(1).expand_as(train_inputs)
+        #
+        # outputs = self.network(train_inputs)
+        # train_loss1 = self.bce(outputs*train_masks, train_labels_one_hot*train_masks)
+        # train_loss2 = self.dice(outputs*train_masks, train_labels_one_hot*train_masks)
+
         train_inputs, train_labels_one_hot = batch
         # train_labels = torch.argmax(train_labels_one_hot, dim=1).long()
 
         outputs = self.network(train_inputs)
         train_loss1 = self.bce(outputs, train_labels_one_hot)
         train_loss2 = self.dice(outputs, train_labels_one_hot)
+
+
         train_loss = train_loss1 + train_loss2
 
         self.log('Train_BCE', train_loss1)

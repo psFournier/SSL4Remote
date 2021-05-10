@@ -8,7 +8,8 @@ SCRIPT=/home/pierre/PycharmProjects/RemoteSensing/src/train.py
 --datamodule miniworld_sup \
 --data_dir /home/pierre/Documents/ONERA/ai4geo/miniworld_tif \
 --output_dir /home/pierre/PycharmProjects/RemoteSensing/outputs \
---workers 0 \
---max_epochs 2 \
---limit_train_batches 5 \
---limit_val_batches 2
+--workers 8 \
+--max_epochs 500 \
+--city austin \
+--train_val 2 5 \
+--tta_augment hsv contrast
