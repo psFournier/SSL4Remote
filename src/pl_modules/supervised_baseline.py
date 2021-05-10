@@ -149,7 +149,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         swa_callback = self.trainer.callbacks[1]
         if self.trainer.current_epoch < swa_callback._swa_epoch_start:
-            swa_IoU = torch.zeros(size=(self.num_classes,))
+            swa_IoU = IoU
         else:
             swa_outputs = swa_callback._average_model.network(val_inputs)
             swa_probas = swa_outputs.softmax(dim=1)
