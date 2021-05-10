@@ -55,8 +55,8 @@ def main():
     )
 
     swa = StochasticWeightAveraging(
-        swa_epoch_start=2,
-        annealing_epochs=2
+        # swa_epoch_start=2,
+        # annealing_epochs=2
     )
 
     # The learning module can also define its own specific callbacks
@@ -77,8 +77,8 @@ def main():
         logger=tensorboard,
         profiler=profiler,
         callbacks=callbacks,
-        log_every_n_steps=10,
-        flush_logs_every_n_steps=10,
+        log_every_n_steps=300,
+        flush_logs_every_n_steps=1000,
         num_sanity_val_steps=0,
         check_val_every_n_epoch=1,
         benchmark=True
