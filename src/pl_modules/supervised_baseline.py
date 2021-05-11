@@ -53,7 +53,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         self.im_aug = utils.Compose([
             utils.D4(),
-            utils.ColorJitter(brightness=0.2)
+            utils.Hue(factor=0.2)
         ])
         self.save_hyperparameters()
 

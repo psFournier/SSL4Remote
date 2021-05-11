@@ -4,7 +4,7 @@ import numpy as np
 from utils import Mixup
 import random
 import torchvision.transforms as T
-import torchvision.transforms.functional
+import torchvision.transforms.functional as F
 import torch
 
 # __all__ = [
@@ -24,37 +24,130 @@ class Compose:
             img, label = t(img, label)
         return img, label
 
-class D4:
+class D4(torch.nn.Module):
 
-    def __init__(self):
-        pass
-
-    def __call__(self, x, y):
-
-        angle = random.choice([0, 90, 270])
-        x = T.functional.rotate(x, angle)
-        y = T.functional.rotate(y, angle)
-
-        if random.random() < 0.5:
-            x = T.functional.hflip(x)
-            y = T.functional.hflip(y)
-
-        if random.random() < 0.5:
-            x = T.functional.vflip(x)
-            y = T.functional.vflip(y)
-
-        if random.random() < 0.5:
-            x = torch.transpose(x, 2, 3)
-            y = torch.transpose(y, 2, 3)
-
-        return x, y
-
-
-class ColorJitter(T.ColorJitter):
+    def __init__(self, p=0.5):
+        super().__init__()
+        self.p = p
 
     def __call__(self, img, label):
 
-        return super().__call__(img), label
+        angle = random.choice([0, 90, 270])
+        img = T.functional.rotate(img, angle)
+        label = T.functional.rotate(label, angle)
+
+        if torch.rand(1).item() < self.p:
+            img = T.functional.hflip(img)
+            label = T.functional.hflip(label)
+
+        if torch.rand(1).item() < self.p:
+            img = T.functional.vflip(img)
+            label = T.functional.vflip(label)
+
+        if torch.rand(1).item() < self.p:
+            img = torch.transpose(img, 2, 3)
+            label = torch.transpose(label, 2, 3)
+
+        return img, label
+
+class Gamma(torch.nn.Module):
+
+    def __init__(self, factor, p=0.5):
+        super().__init__()
+        self.factor = factor
+        self.p = p
+
+    def forward(self, img, label=None):
+
+        if torch.rand(1).item() < self.p:
+            return F.adjust_gamma(img, self.factor), label
+        return img, label
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(gamma_factor={},p={})'.format(self.factor, self.p)
+
+class Sharpness(torch.nn.Module):
+
+    def __init__(self, factor, p=0.5):
+        super().__init__()
+        self.factor = factor
+        self.p = p
+
+    def forward(self, img, label=None):
+
+        if torch.rand(1).item() < self.p:
+            return F.adjust_sharpness(img, self.factor), label
+        return img, label
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(sharpness_factor={},p={})'.format(self.factor, self.p)
+
+class Saturation(torch.nn.Module):
+
+    def __init__(self, factor, p=0.5):
+        super().__init__()
+        self.factor = factor
+        self.p = p
+
+    def forward(self, img, label):
+
+        if torch.rand(1).item() < self.p:
+            return F.adjust_saturation(img, self.factor), label
+        return img, label
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(saturation_factor={},p={})'.format(self.factor, self.p)
+
+class Hue(torch.nn.Module):
+
+    def __init__(self, factor, p=0.5):
+        super().__init__()
+        self.factor = factor
+        self.p = p
+
+    def forward(self, img, label):
+
+        if torch.rand(1).item() < self.p:
+            return F.adjust_hue(img, self.factor), label
+        return img, label
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(hue_factor={},p={})'.format(self.factor, self.p)
+
+class Brightness(torch.nn.Module):
+
+    def __init__(self, factor, p=0.5):
+        super().__init__()
+        self.factor = factor
+        self.p = p
+
+    def forward(self, img, label):
+
+        if torch.rand(1).item() < self.p:
+            return F.adjust_brightness(img, self.factor), label
+        return img, label
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(brightness_factor={},p={})'.format(self.factor, self.p)
+
+class Contrast(torch.nn.Module):
+
+    def __init__(self, factor, p=0.5):
+        super().__init__()
+        self.factor = factor
+        self.p = p
+
+    def forward(self, img, label):
+
+        if torch.rand(1).item() < self.p:
+            return F.adjust_contrast(img, self.factor), label
+        return img, label
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(contrast_factor={},p={})'.format(self.factor, self.p)
+
+
+
 
 
 def get_augment(names, always_apply=False):
