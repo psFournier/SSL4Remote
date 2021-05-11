@@ -1,12 +1,7 @@
 import albumentations as A
 from typing import Tuple, List
 import numpy as np
-from utils import Mixup
-import random
-import torchvision.transforms as T
-import torchvision.transforms.functional as F
-import torch
-
+import augmentations as aug
 # __all__ = [
 #     "D4_augmentations",
 #     "medium_augmentations",
@@ -14,139 +9,37 @@ import torch
 #     "get_augmentations",
 # ]
 
-class Compose:
-
-    def __init__(self, transforms):
-        self.transforms = transforms
-
-    def __call__(self, img, label):
-        for t in self.transforms:
-            img, label = t(img, label)
-        return img, label
-
-class D4(torch.nn.Module):
-
-    def __init__(self, p=0.5):
-        super().__init__()
-        self.p = p
-
-    def __call__(self, img, label):
-
-        angle = random.choice([0, 90, 270])
-        img = T.functional.rotate(img, angle)
-        label = T.functional.rotate(label, angle)
-
-        if torch.rand(1).item() < self.p:
-            img = T.functional.hflip(img)
-            label = T.functional.hflip(label)
-
-        if torch.rand(1).item() < self.p:
-            img = T.functional.vflip(img)
-            label = T.functional.vflip(label)
-
-        if torch.rand(1).item() < self.p:
-            img = torch.transpose(img, 2, 3)
-            label = torch.transpose(label, 2, 3)
-
-        return img, label
-
-class Gamma(torch.nn.Module):
-
-    def __init__(self, factor, p=0.5):
-        super().__init__()
-        self.factor = factor
-        self.p = p
-
-    def forward(self, img, label=None):
-
-        if torch.rand(1).item() < self.p:
-            return F.adjust_gamma(img, self.factor), label
-        return img, label
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(gamma_factor={},p={})'.format(self.factor, self.p)
-
-class Sharpness(torch.nn.Module):
-
-    def __init__(self, factor, p=0.5):
-        super().__init__()
-        self.factor = factor
-        self.p = p
-
-    def forward(self, img, label=None):
-
-        if torch.rand(1).item() < self.p:
-            return F.adjust_sharpness(img, self.factor), label
-        return img, label
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(sharpness_factor={},p={})'.format(self.factor, self.p)
-
-class Saturation(torch.nn.Module):
-
-    def __init__(self, factor, p=0.5):
-        super().__init__()
-        self.factor = factor
-        self.p = p
-
-    def forward(self, img, label):
-
-        if torch.rand(1).item() < self.p:
-            return F.adjust_saturation(img, self.factor), label
-        return img, label
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(saturation_factor={},p={})'.format(self.factor, self.p)
-
-class Hue(torch.nn.Module):
-
-    def __init__(self, factor, p=0.5):
-        super().__init__()
-        self.factor = factor
-        self.p = p
-
-    def forward(self, img, label):
-
-        if torch.rand(1).item() < self.p:
-            return F.adjust_hue(img, self.factor), label
-        return img, label
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(hue_factor={},p={})'.format(self.factor, self.p)
-
-class Brightness(torch.nn.Module):
-
-    def __init__(self, factor, p=0.5):
-        super().__init__()
-        self.factor = factor
-        self.p = p
-
-    def forward(self, img, label):
-
-        if torch.rand(1).item() < self.p:
-            return F.adjust_brightness(img, self.factor), label
-        return img, label
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(brightness_factor={},p={})'.format(self.factor, self.p)
-
-class Contrast(torch.nn.Module):
-
-    def __init__(self, factor, p=0.5):
-        super().__init__()
-        self.factor = factor
-        self.p = p
-
-    def forward(self, img, label):
-
-        if torch.rand(1).item() < self.p:
-            return F.adjust_contrast(img, self.factor), label
-        return img, label
-
-    def __repr__(self):
-        return self.__class__.__name__ + '(contrast_factor={},p={})'.format(self.factor, self.p)
+image_level_aug = {
+    'd4': aug.D4,
+    'hue': aug.Hue,
+    'saturation': aug.Saturation,
+    'sharpness': aug.Sharpness,
+    'contrast': aug.Contrast,
+    'gamma': aug.Gamma,
+    'brightness': aug.Brightness,
+}
 
 
+def get_image_level_aug(names, p=None):
+
+    kwargs = {}
+    if p is not None:
+        kwargs['p'] = p
+    l = [image_level_aug[name](**kwargs) for name in names]
+
+    return l
+
+
+batch_level_aug = {
+    'no': aug.NoOp,
+    'mixup': aug.Mixup,
+    'cutmix': aug.Cutmix
+}
+
+
+def get_batch_level_aug(name):
+
+    return batch_level_aug[name]()
 
 
 
@@ -179,7 +72,7 @@ def get_augment(names, always_apply=False):
     return l
 
 batch_augments = {
-    "mixup": [Mixup(alpha=0.4)],
+    # "mixup": [Mixup(alpha=0.4)],
 }
 
 def get_batch_augment(names):

@@ -1,17 +1,14 @@
 from argparse import ArgumentParser
-from functools import partial
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 
-from utils import MergeLabels
-
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
-from utils import get_augment, get_batch_augment
 import torch
 import numpy as np
+from utils import get_image_level_aug, get_batch_level_aug
+from augmentations import Compose
+
 
 class BaseSupervisedDatamodule(LightningDataModule):
 
@@ -21,11 +18,9 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  epoch_len,
                  batch_size,
                  workers,
-                 augment,
-                 batch_augment,
-                 tta_augment,
+                 img_aug,
+                 batch_aug,
                  train_val,
-                 mixup_alpha,
                  *args,
                  **kwargs):
 
@@ -39,7 +34,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.train_val = tuple(train_val)
         self.sup_train_set = None
         self.val_set = None
-
+        self.img_aug = Compose(get_image_level_aug(names=img_aug))
+        self.batch_aug = get_batch_level_aug(name=batch_aug)
 
     def prepare_data(self, *args, **kwargs):
 
@@ -57,6 +53,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--workers", default=8, type=int)
         parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
+        parser.add_argument('--img_aug', nargs='+', type=str, default=[])
+        parser.add_argument('--batch_aug', type=str, default='no')
 
         return parser
 
@@ -64,13 +62,18 @@ class BaseSupervisedDatamodule(LightningDataModule):
         uint64_seed = torch.initial_seed()
         np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
 
-    def train_dataloader(self):
+    def collate_and_aug(self, batch):
 
-        """
-        Contrary to many standard image datasets with a lot of small images,
-        remote sensing datasets come with a few big images, from which we sample
-        multiple crops randomly at train time.
-        """
+        batch = default_collate(batch)
+        batch = self.img_aug(*batch)
+        batch = self.batch_aug(batch)
+        if len(batch) < 3:
+            s = batch[0].size()
+            batch = (*batch, torch.ones(size=(s[0], s[2], s[3])))
+
+        return batch
+
+    def train_dataloader(self):
 
         sup_train_sampler = RandomSampler(
             data_source=self.sup_train_set,
@@ -81,11 +84,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            # collate_fn=partial(
-            #     self.augment_and_collate,
-            #     image_augment=self.train_augment,
-            #     batch_augment=self.batch_augment
-            # ),
+            collate_fn=self.collate_and_aug,
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -100,10 +99,6 @@ class BaseSupervisedDatamodule(LightningDataModule):
             dataset=self.val_set,
             shuffle=False,
             batch_size=self.batch_size,
-            # collate_fn=partial(
-            #     self.tta_and_collate,
-            #     tta_augment=self.tta_augment
-            # ),
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=self.wif
