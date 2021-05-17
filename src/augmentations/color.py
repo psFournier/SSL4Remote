@@ -3,7 +3,7 @@ import torchvision.transforms.functional as F
 
 class Gamma(torch.nn.Module):
 
-    def __init__(self, bounds=(0.8, 1.2), p=0.5):
+    def __init__(self, bounds=(0.5, 1.5), p=0.5):
         super().__init__()
         self.bounds = bounds
         self.p = p
@@ -19,7 +19,7 @@ class Gamma(torch.nn.Module):
 
 class Saturation(torch.nn.Module):
 
-    def __init__(self, bounds=(0.8, 1.2), p=0.5):
+    def __init__(self, bounds=(0.5, 1.5), p=0.5):
         super().__init__()
         self.bounds = bounds
         self.p = p
@@ -34,7 +34,7 @@ class Saturation(torch.nn.Module):
 
 class Hue(torch.nn.Module):
 
-    def __init__(self, bounds=(-0.2, 0.2), p=0.5):
+    def __init__(self, bounds=(-0.05, 0.05), p=0.5):
         super().__init__()
         self.bounds = bounds
         self.p = p
@@ -64,7 +64,7 @@ class Brightness(torch.nn.Module):
 
 class Contrast(torch.nn.Module):
 
-    def __init__(self, bounds=(0.8, 1.2), p=0.5):
+    def __init__(self, bounds=(0.6, 1.4), p=0.5):
         super().__init__()
         self.bounds = bounds
         self.p = p

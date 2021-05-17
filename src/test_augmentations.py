@@ -1,40 +1,19 @@
-from torch_datasets import ChristchurchLabeled
+from torch_datasets import ChristchurchLabeled, AustinLabeled
 from torch.utils.data import DataLoader
-import albumentations as A
 from matplotlib import pyplot as plt
+from utils import get_image_level_aug
+import torch
+
+augname='gamma'
 
 plt.switch_backend("TkAgg")
 
-def visualize(image, mask, original_image=None, original_mask=None):
-    fontsize = 18
+fontsize = 18
 
-    if original_image is None and original_mask is None:
-        f, ax = plt.subplots(2, 1, figsize=(16, 16))
-
-        ax[0].imshow(image)
-        ax[1].imshow(mask)
-    else:
-        f, ax = plt.subplots(2, 2, figsize=(16, 16))
-
-        ax[0, 0].imshow(original_image)
-        ax[0, 0].set_title('Original image', fontsize=fontsize)
-
-        ax[1, 0].imshow(original_mask)
-        ax[1, 0].set_title('Original mask', fontsize=fontsize)
-
-        ax[0, 1].imshow(image)
-        ax[0, 1].set_title('Transformed image', fontsize=fontsize)
-
-        ax[1, 1].imshow(mask)
-        ax[1, 1].set_title('Transformed mask', fontsize=fontsize)
-
-aug = A.MaskDropout(p=1, max_objects=5)
-
-dataset = ChristchurchLabeled(
+dataset = AustinLabeled(
     data_path='/home/pierre/Documents/ONERA/ai4geo/miniworld_tif',
     idxs=list(range(5)),
     crop=256,
-    augmentations=A.NoOp()
 )
 
 dataloader = DataLoader(
@@ -44,11 +23,18 @@ dataloader = DataLoader(
 
 image, mask = next(iter(dataloader))
 
-image = image[0, ...].numpy()
-mask = mask[0, ...].numpy()
-augmented = aug(image=image, mask=mask)
-visualize(augmented['image'], augmented['mask'], original_image=image,
-          original_mask=mask)
+f, ax = plt.subplots(3, 3, figsize=(20, 20))
+
+ax[1, 1].imshow(image[0].permute(1, 2, 0))
+for i in range(3):
+    for j in range(3):
+        if i!=1 or j!=1:
+            aug = get_image_level_aug(names=[augname], p=1)[1]
+            aug_im, aug_mask = aug(image, mask)
+            ax[i, j].imshow(aug_im[0].permute(1, 2, 0))
+            print(torch.mean(image - aug_im)*255)
+f.suptitle(augname)
+
 plt.tight_layout()
 
 plt.show()

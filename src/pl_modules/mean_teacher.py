@@ -9,6 +9,7 @@ class MeanTeacher(SupervisedBaseline):
 
     def __init__(self,
                  ema,
+                 consistency_aug,
                  *args,
                  **kwargs):
 
@@ -19,6 +20,8 @@ class MeanTeacher(SupervisedBaseline):
 
         # Exponential moving average
         self.ema = ema
+        # self.consistency_aug = get_image_level_aug(consistency_aug
+
 
         # Unsupervised leaning loss
         self.mse = nn.MSELoss()
@@ -28,37 +31,38 @@ class MeanTeacher(SupervisedBaseline):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--ema", type=float, default=0.95)
+        parser.add_argument('--consistency_aug', nargs='+', type=str, default=[])
 
         return parser
 
     def training_step(self, batch, batch_idx):
 
-        sup_data, unsup_data = batch["sup"], batch["unsup"]
-        sup_train_inputs, sup_train_labels = sup_data
-        sup_train_labels = sup_train_labels.long()
+        sup_data, unsup_inputs = batch["sup"], batch["unsup"]
+        sup_inputs, sup_labels_onehot, sup_masks = sup_data
+        sup_labels = torch.argmax(sup_labels_onehot, dim=1).long()
 
-        student_outputs = self.network(sup_train_inputs)
-        sup_train_loss1 = self.ce(student_outputs, sup_train_labels)
-        sup_train_loss2 = self.dice(student_outputs, sup_train_labels)
-        sup_train_loss = sup_train_loss1 + sup_train_loss2
+        student_outputs = self.network(sup_inputs)
+        sup_loss1 = self.bce(student_outputs, sup_labels_onehot)
+        sup_loss2 = self.dice(student_outputs, sup_labels_onehot)
 
-        augmentation = random.randint(0,4)
-        augmented_inputs = torch.rot90(unsup_data, k=augmentation, dims=[2, 3])
-        student_outputs = self.network(augmented_inputs)
+        sup_loss = sup_loss1 + sup_loss2
+
+        self.log('Train_sup_BCE', sup_loss1)
+        self.log('Train_sup_Dice', sup_loss2)
+        self.log('Train_sup_loss', sup_loss)
+
         with torch.no_grad():
-            teacher_outputs = self.teacher_network(unsup_data)
-        teacher_outputs = torch.rot90(teacher_outputs, k=augmentation, dims=[2, 3])
-        unsup_train_loss = self.mse(student_outputs, teacher_outputs)
+            unsup_targets = self.teacher_network(unsup_inputs)
+        for aug in self.consistency_aug:
+            unsup_inputs, unsup_targets = aug(unsup_inputs, unsup_targets)
+        unsup_outputs = self.network(unsup_inputs)
+        unsup_loss = self.mse(unsup_outputs, unsup_targets)
 
-        train_loss = sup_train_loss + unsup_train_loss
+        self.log("Train_unsup_loss", unsup_loss)
 
-        self.log('Cross entropy loss', sup_train_loss1)
-        self.log('Dice loss', sup_train_loss2)
-        self.log("sup_train_loss", sup_train_loss)
-        self.log("unsup_train_loss", unsup_train_loss)
         probas = student_outputs.softmax(dim=1)
         IoU = metrics.iou(probas,
-                          sup_train_labels,
+                          sup_labels,
                           reduction='none',
                           num_classes=self.num_classes)
         self.log('Train_IoU_0', IoU[0])
@@ -68,7 +72,9 @@ class MeanTeacher(SupervisedBaseline):
         # Update teacher model in place AFTER EACH BATCH?
         ema = min(1.0 - 1.0 / float(self.global_step + 1), self.ema)
         for param_t, param in zip(self.teacher_network.parameters(),
-                                  self.student_network.parameters()):
+                                  self.network.parameters()):
             param_t.data.mul_(ema).add_(param.data, alpha=1 - ema)
 
-        return {"loss": train_loss}
+        loss = sup_loss + unsup_loss
+
+        return {"loss": loss}

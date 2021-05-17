@@ -8,19 +8,18 @@ class Cutmix():
 
         self.alpha = alpha
 
-    def __call__(self, batch):
+    def __call__(self, input_batch, target_batch):
 
         lam = np.random.beta(self.alpha, self.alpha)
-        inputs, targets = batch
-        batchsize = inputs.size()[0]
+        batchsize = input_batch.size()[0]
         idx = torch.randperm(batchsize)
         # Use a more generic mask rather than bboxes ?
-        bbx1, bby1, bbx2, bby2 = rand_bbox(inputs.size(), lam)
-        cutmix_inputs, cutmix_targets = inputs, targets
-        cutmix_inputs[:, :, bbx1:bbx2, bby1:bby2] = inputs[idx, :, bbx1:bbx2, bby1:bby2]
-        cutmix_targets[:, :, bbx1:bbx2, bby1:bby2] = targets[idx, :, bbx1:bbx2, bby1:bby2]
-        all_inputs = torch.vstack([inputs, cutmix_inputs])
-        all_targets = torch.vstack([targets, cutmix_targets])
+        bbx1, bby1, bbx2, bby2 = rand_bbox(input_batch.size(), lam)
+        cutmix_inputs, cutmix_targets = input_batch, target_batch
+        cutmix_inputs[:, :, bbx1:bbx2, bby1:bby2] = input_batch[idx, :, bbx1:bbx2, bby1:bby2]
+        cutmix_targets[:, :, bbx1:bbx2, bby1:bby2] = target_batch[idx, :, bbx1:bbx2, bby1:bby2]
+        all_inputs = torch.vstack([input_batch, cutmix_inputs])
+        all_targets = torch.vstack([target_batch, cutmix_targets])
         idx = np.random.choice(2*batchsize, size=batchsize, replace=False)
         batch = (all_inputs[idx, :], all_targets[idx, :])
 

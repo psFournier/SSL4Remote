@@ -4,7 +4,7 @@ import random
 
 class D4(torch.nn.Module):
 
-    def __init__(self, p=0.5):
+    def __init__(self, p=1):
         super().__init__()
         self.p = p
 
