@@ -6,9 +6,9 @@ class NoOp():
 
         pass
 
-    def __call__(self, batch):
+    def __call__(self, input_batch, target_batch):
 
-        return batch
+        return input_batch, target_batch
 
 class Compose:
 

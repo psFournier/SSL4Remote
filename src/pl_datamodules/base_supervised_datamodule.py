@@ -55,7 +55,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--workers", default=8, type=int)
         parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
         parser.add_argument('--img_aug', nargs='+', type=str, default=[])
-        parser.add_argument('--img_aug', type=float, default=0.7)
+        parser.add_argument('--aug_prob', type=float, default=0.7)
         parser.add_argument('--batch_aug', type=str, default='no')
 
         return parser

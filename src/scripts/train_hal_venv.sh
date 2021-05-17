@@ -3,6 +3,7 @@
 #PBS -l select=1:ncpus=12:mem=92G:ngpus=1
 #PBS -l walltime=12:00:00
 
+module load python/3.7.2
 cd "${TMPDIR}"
 mkdir miniworld_tif
 cp -r /work/OT/ai4geo/users/fournip/miniworld_tif/austin miniworld_tif/
@@ -21,3 +22,5 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 --city austin \
 --train_val 2 5 \
 --tta_augment hsv contrast
+
+module unload python/3.7.2
