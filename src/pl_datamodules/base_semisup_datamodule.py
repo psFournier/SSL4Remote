@@ -20,7 +20,6 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
     def train_dataloader(self):
 
         """
-        See the supervised dataloader for comments on the need for samplers.
         The semi supervised loader consists in two loaders for labeled and
         unlabeled data.
         """
@@ -37,6 +36,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
             sampler=unsup_train_sampler,
+            collate_fn=self.collate_and_aug,
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=self.wif

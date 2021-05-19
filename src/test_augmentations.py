@@ -29,7 +29,7 @@ ax[1, 1].imshow(image[0].permute(1, 2, 0))
 for i in range(3):
     for j in range(3):
         if i!=1 or j!=1:
-            aug = get_image_level_aug(names=[augname], p=1)[1]
+            aug = get_image_level_aug(names=[augname], p=1)[0]
             aug_im, aug_mask = aug(image, mask)
             ax[i, j].imshow(aug_im[0].permute(1, 2, 0))
             print(torch.mean(image - aug_im)*255)

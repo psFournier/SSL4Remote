@@ -23,7 +23,7 @@ def get_image_level_aug(names, p=None, bounds=None):
         kwargs['p'] = p
     if bounds is not None:
         kwargs['bounds'] = bounds
-    l = [aug.D4(p=1)] + [image_level_aug[name](**kwargs) for name in names]
+    l = [image_level_aug[name](**kwargs) for name in names]
 
     return l
 

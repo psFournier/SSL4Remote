@@ -6,8 +6,19 @@ import numpy as np
 
 class BaseCity(Base, ABC):
 
+    """
+    Inherits from the Base dataset class and overloads common methods of miniworld cities classes to minimize code
+    redundancy in the actual cities dataset classes.
+    """
+
     @staticmethod
     def colors_to_labels(labels_color):
+
+        '''
+        Creates one-hot encoded labels for binary classification.
+        :param labels_color:
+        :return:
+        '''
 
         labels0 = np.zeros(shape=labels_color.shape[1:], dtype=float)
         labels1 = np.zeros(shape=labels_color.shape[1:], dtype=float)

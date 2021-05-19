@@ -1,9 +1,9 @@
 import torch.nn as nn
 import copy
 from pl_modules import SupervisedBaseline
-import random
 import torch
 import torchmetrics.functional as metrics
+from utils import get_image_level_aug
 
 class MeanTeacher(SupervisedBaseline):
 
@@ -20,8 +20,7 @@ class MeanTeacher(SupervisedBaseline):
 
         # Exponential moving average
         self.ema = ema
-        # self.consistency_aug = get_image_level_aug(consistency_aug
-
+        self.consistency_aug = get_image_level_aug(consistency_aug, p=1)
 
         # Unsupervised leaning loss
         self.mse = nn.MSELoss()
@@ -31,7 +30,8 @@ class MeanTeacher(SupervisedBaseline):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--ema", type=float, default=0.95)
-        parser.add_argument('--consistency_aug', nargs='+', type=str, default=[])
+        parser.add_argument('--consistency_aug', nargs='+', type=str, default=[],
+                            help='list of augmentations names to perform Consistency Regularization with on unlabeled data.')
 
         return parser
 

@@ -1,7 +1,5 @@
 from abc import ABC
 from torch_datasets import BaseCity, BaseLabeled, BaseUnlabeled
-import glob
-import numpy as np
 
 
 class Tyrolw(BaseCity, ABC):

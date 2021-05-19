@@ -38,7 +38,6 @@ class SupervisedBaseline(pl.LightningModule):
         self.class_weights = class_weights if wce else torch.FloatTensor(
             [1.] * self.num_classes
         )
-        # self.ce = nn.CrossEntropyLoss(weight=self.class_weights)
         self.bce = nn.BCEWithLogitsLoss()
         self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
         self.tta = get_image_level_aug(tta, p=1)
@@ -55,7 +54,8 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("--learning-rate", type=float, default=1e-3)
         parser.add_argument("--inplaceBN", action='store_true' )
         parser.add_argument("--wce", action='store_true')
-        parser.add_argument('--tta', nargs='+', type=str, default=[])
+        parser.add_argument('--tta', nargs='+', type=str, default=[],
+                            help='list of augmentation name to perform Test Time Augmentation (TTA) with')
 
         return parser
 
@@ -126,8 +126,6 @@ class SupervisedBaseline(pl.LightningModule):
         accuracy = metrics.accuracy(probas, val_labels)
         self.log('Val_acc', accuracy)
 
-        # Could all these be made faster by making sure they rely on the same
-        # computation for fp, fn, etc ?
         IoU = metrics.iou(probas,
                           val_labels,
                           reduction='none',
@@ -135,14 +133,6 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_IoU_0', IoU[0])
         self.log('Val_IoU_1', IoU[1])
         self.log('hp/Val_IoU', torch.mean(IoU))
-
-        precision, recall = metrics.precision_recall(probas,
-                                                     val_labels,
-                                                     mdmc_average='global',
-                                                     average='none',
-                                                     num_classes=self.num_classes)
-        self.log('Val_precision_1', precision[1])
-        self.log('Val_recall_1', recall[1])
 
         swa_callback = self.trainer.callbacks[1]
         if self.trainer.current_epoch < swa_callback._swa_epoch_start:

@@ -11,6 +11,11 @@ warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarni
 
 class Base(Dataset, ABC):
 
+    """
+    Abstract class that inherits from the standard Torch Dataset abstract class
+    and define utilities for remote sensing dataset classes.
+    """
+
     image_size = (0, 0)
 
     def __init__(self,
@@ -89,7 +94,9 @@ class Base(Dataset, ABC):
         raise NotImplementedError
 
 
-class BaseUnlabeled(Base, ABC):
+class BaseUnlabeled(Base):
+
+    """Generic class for datasets without labels."""
 
     def __init__(self, *args, **kwargs):
 
@@ -104,7 +111,10 @@ class BaseUnlabeled(Base, ABC):
         return image
 
 
-class BaseLabeled(BaseUnlabeled, ABC):
+class BaseLabeled(Base):
+
+    """Generic class for datasets wtih labels. Child classes must define
+    the colors_to_labels static method. """
 
     @staticmethod
     def colors_to_labels(labels_color):

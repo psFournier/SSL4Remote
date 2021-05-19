@@ -21,22 +21,28 @@ def main():
 
     # Reading parameters
     parser = ArgumentParser()
-    parser.add_argument("--datamodule", type=str, default='isprs_vai_sup')
-    parser.add_argument("--module", type=str, default="supervised_baseline")
 
-    # Datamodule and module classes define their own specific command line
-    # arguments, so we need them to go further with the parser.
+    parser.add_argument("--datamodule", type=str)
+    parser.add_argument("--module", type=str, default="supervised_baseline")
+    parser.add_argument("--output_dir", type=str, default="./outputs")
+
+    # Datamodule and module classes add their own specific command line
+    # arguments, so we retrieve them to go further with the parser.
     args = parser.parse_known_args()[0]
     parser = datamodules[args.datamodule].add_model_specific_args(parser)
     parser = modules[args.module].add_model_specific_args(parser)
-    parser = Trainer.add_argparse_args(parser)
 
-    parser.add_argument("--exp_name", type=str, default="default")
-    parser.add_argument("--output_dir", type=str, default="./outputs")
+    # The Trainer class also enables to add many arguments to customize the
+    # training process (see Lightning Doc)
+    parser = Trainer.add_argparse_args(parser)
 
     args = parser.parse_args()
     args_dict = vars(args)
 
+    # Logs will be stored in the directory 'tensorboard' of the output
+    # directory, and the individual log of each new run will be stored in a
+    # subdirectory with the datetime as name. The parameters corresponding to
+    # the run can be retrieved in Tensorboard.
     current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     tensorboard = loggers.TensorBoardLogger(
         save_dir=args.output_dir,
@@ -48,26 +54,21 @@ def main():
     # Callback to log the learning rate
     lr_monitor = LearningRateMonitor()
 
+    # Callback that saves the weight of the epoch with the minimal val_loss
+    # (questionable) at the end of training.
     checkpoint_callback = ModelCheckpoint(
         monitor='Val_loss',
         mode='min',
         save_weights_only=True
     )
 
+    # Callback that performs Stochastic Weight Averaging at the end of
+    # training
     swa = StochasticWeightAveraging(
-        # swa_epoch_start=2,
-        # annealing_epochs=2,
         device=None
     )
 
-    # The learning module can also define its own specific callbacks
-    callbacks = [
-        checkpoint_callback,
-        lr_monitor,
-        swa
-    ]
-
-    # Montoring time spent in each call. Difficult to understand the data
+    # Monitoring time spent in each call. Difficult to understand the data
     # loading part when multiple workers are at use.
     profiler = SimpleProfiler()
 
@@ -77,7 +78,11 @@ def main():
         args,
         logger=tensorboard,
         profiler=profiler,
-        callbacks=callbacks,
+        callbacks=[
+            checkpoint_callback,
+            lr_monitor,
+            swa
+        ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,
         num_sanity_val_steps=0,
