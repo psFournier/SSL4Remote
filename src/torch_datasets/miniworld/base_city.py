@@ -50,8 +50,3 @@ class BaseCity(Base, ABC):
         self.label_paths = train_label_paths + test_label_paths
 
         self.unlabeled_image_paths = []
-
-        self.default_train_val = (
-            len(train_label_paths),
-            len(test_label_paths)
-        )

@@ -53,7 +53,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--workers", default=8, type=int)
-        parser.add_argument('--train_val', nargs=2, type=int, default=[0, 0])
+        parser.add_argument('--train_val', nargs=2, type=int)
         parser.add_argument('--img_aug', nargs='+', type=str, default=['d4'])
         parser.add_argument('--aug_prob', type=float, default=0.7)
         parser.add_argument('--batch_aug', type=str, default='no')
@@ -67,7 +67,13 @@ class BaseSupervisedDatamodule(LightningDataModule):
     def collate_and_aug(self, batch):
 
         batch = default_collate(batch)
-        batch = self.img_aug(*batch)
+
+        try:
+            img, label = batch
+        except:
+            img, label = batch, None
+
+        batch = self.img_aug(img=img, label=label)
         batch = self.batch_aug(*batch)
         if len(batch) < 3:
             s = batch[0].size()

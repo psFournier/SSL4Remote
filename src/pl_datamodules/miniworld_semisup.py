@@ -1,6 +1,15 @@
-from pl_datamodules import BaseSupervisedDatamodule
+from pl_datamodules import MiniworldSup, BaseSemisupDatamodule
 from torch_datasets import *
 from torch import tensor
+
+cities_unlabeled = {
+    'christchurch': ChristchurchUnlabeled,
+    'austin': AustinUnlabeled,
+    'chicago': ChicagoUnlabeled,
+    'kitsap': KitsapUnlabeled,
+    'tyrol-w': TyrolwUnlabeled,
+    'vienna': ViennaUnlabeled
+}
 
 cities_labeled = {
     'christchurch': ChristchurchLabeled,
@@ -11,25 +20,12 @@ cities_labeled = {
     'vienna': ViennaLabeled
 }
 
-class MiniworldSup(BaseSupervisedDatamodule):
 
-    class_weights = tensor(
-        [1., 1.]
-    )
+class MiniworldSemisup(MiniworldSup, BaseSemisupDatamodule):
 
-    def __init__(self, city, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.city = city
-
-    @classmethod
-    def add_model_specific_args(cls, parent_parser):
-
-        parser = super().add_model_specific_args(parent_parser)
-        parser.add_argument("--city", type=str, default='christchurch',
-                            help="Which city to train on.")
-
-        return parser
 
     def setup(self, stage=None):
 
@@ -44,8 +40,14 @@ class MiniworldSup(BaseSupervisedDatamodule):
             fixed_crop=True
         )
 
+        self.unsup_train_set = cities_unlabeled[self.city](
+            data_path = self.data_dir,
+            crop=self.crop_size
+        )
+
         train, val = self.train_val
         nb_labeled_images = len(self.sup_train_set.labeled_image_paths)
         labeled_idxs = list(range(nb_labeled_images))
         self.sup_train_set.path_idxs = labeled_idxs[:train]
         self.val_set.path_idxs = labeled_idxs[train:train+val]
+        self.unsup_train_set.path_idxs = labeled_idxs[train+val:train+val+self.unsup_train]

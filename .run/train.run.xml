@@ -12,7 +12,7 @@
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/src/train.py" />
-    <option name="PARAMETERS" value="--module supervised_baseline --datamodule miniworld_sup --data_dir $USER_HOME$/Documents/ONERA/ai4geo/miniworld_tif --output_dir $PROJECT_DIR$/outputs --batch_size 5 --workers 0 --max_epochs 5 --limit_train_batches 5 --limit_val_batches 2 --city austin" />
+    <option name="PARAMETERS" value="--module mean_teacher --datamodule miniworld_semisup --data_dir $USER_HOME$/Documents/ONERA/ai4geo/miniworld_tif --output_dir $PROJECT_DIR$/outputs --batch_size 5 --workers 0 --max_epochs 5 --limit_train_batches 5 --limit_val_batches 2 --city christchurch --train_val 1 2 --unsup_train 1 --consistency_aug hue contrast gamma" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />

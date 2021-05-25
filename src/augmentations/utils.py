@@ -15,7 +15,7 @@ class Compose:
     def __init__(self, transforms):
         self.transforms = transforms
 
-    def __call__(self, img, label):
+    def __call__(self, img, label=None):
         for t in self.transforms:
             img, label = t(img, label)
         return img, label

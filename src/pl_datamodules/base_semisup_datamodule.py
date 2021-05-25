@@ -4,16 +4,17 @@ from pl_datamodules import BaseSupervisedDatamodule
 
 class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
-    def __init__(self, prop_unsup_train, *args, **kwargs):
+    def __init__(self, unsup_train, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.prop_unsup_train = prop_unsup_train
         self.unsup_train_set = None
+        self.unsup_train = unsup_train
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument('--unsup_train', type=int, default=0)
 
         return parser
 
@@ -36,7 +37,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
             dataset=self.unsup_train_set,
             batch_size=self.batch_size,
             sampler=unsup_train_sampler,
-            collate_fn=self.collate_and_aug,
+            # collate_fn=self.collate_and_aug,
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=self.wif

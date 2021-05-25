@@ -6,7 +6,8 @@
 module load python/3.7.2
 cd "${TMPDIR}"
 mkdir miniworld_tif
-cp -r /work/OT/ai4geo/users/fournip/miniworld_tif/austin miniworld_tif/
+CITY=austin
+cp -r /work/OT/ai4geo/users/fournip/miniworld_tif/"${CITY}" miniworld_tif/
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
 SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
@@ -17,10 +18,9 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 --data_dir "${TMPDIR}"/miniworld_tif \
 --output_dir /home/eh/fournip/SemiSupervised/SSL4Remote/outputs \
 --workers 12 \
---max_epochs 500 \
+--max_epochs 800 \
 --gpus 1 \
---city austin \
---train_val 2 5 \
---tta_augment hsv contrast
+--city "${CITY}" \
+--train_val 31 5
 
 module unload python/3.7.2

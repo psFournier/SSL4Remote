@@ -4,17 +4,18 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, St
 from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
-from pl_datamodules import MiniworldSup
+from pl_datamodules import *
 
 modules = {
     'supervised_baseline': SupervisedBaseline,
-    # 'mean_teacher': MeanTeacher
+    'mean_teacher': MeanTeacher
 }
 
 datamodules = {
     # 'isprs_vai_sup': IsprsVaiSup,
     'miniworld_sup': MiniworldSup,
     # 'airs_sup': AirsSup
+    'miniworld_semisup': MiniworldSemisup
 }
 
 def main():
