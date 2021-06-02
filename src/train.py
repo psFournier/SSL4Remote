@@ -1,11 +1,9 @@
-import datetime
 from argparse import ArgumentParser
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, StochasticWeightAveraging
 from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
 from pl_datamodules import *
-import sys
 
 modules = {
     'sup': SupervisedBaseline,
@@ -47,8 +45,6 @@ def main():
     # directory, and the individual log of each new run will be stored in a
     # subdirectory with the datetime as name. The parameters corresponding to
     # the run can be retrieved in Tensorboard.
-    # name = f'{args.module}_{args.datamodule}_{args.city}_{args.train_val[0]}-{args.train_val[1]}_' + args.exp_name
-    # current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     tensorboard = loggers.TensorBoardLogger(
         save_dir=args.output_dir,
         name=args.exp_name,

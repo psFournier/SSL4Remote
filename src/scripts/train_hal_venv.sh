@@ -1,5 +1,4 @@
 #!/bin/bash
-#PBS -N "${NAME}"
 #PBS -q qgpgpu
 #PBS -l select=1:ncpus=12:mem=92G:ngpus=1
 #PBS -l walltime=12:00:00
@@ -23,6 +22,6 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 --datamodule mw \
 --city "${CITY}" \
 --train_val 31 5 \
---exp_name "${NAME}"
+--exp_name "${PBS_JOBNAME}"
 
 module unload python/3.7.2
