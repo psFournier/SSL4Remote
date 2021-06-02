@@ -57,15 +57,15 @@ def main():
     # Callback that saves the weight of the epoch with the minimal val_loss
     # (questionable) at the end of training.
     checkpoint_callback = ModelCheckpoint(
-        monitor='Val_loss',
-        mode='min',
-        save_weights_only=True
+        # monitor='Val_loss',
+        # mode='min',
     )
 
     # Callback that performs Stochastic Weight Averaging at the end of
     # training
     swa = StochasticWeightAveraging(
-        device=None
+        device=None,
+        # swa_epoch_start=1
     )
 
     # Monitoring time spent in each call. Difficult to understand the data

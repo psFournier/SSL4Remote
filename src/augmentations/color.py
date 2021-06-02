@@ -8,11 +8,15 @@ class Gamma(torch.nn.Module):
         self.bounds = bounds
         self.p = p
 
+    def apply(self, img, label=None, factor=1.):
+
+        return F.adjust_gamma(img, factor), label
+
     def forward(self, img, label=None):
 
-        factor = float(torch.empty(1).uniform_(self.bounds[0], self.bounds[1]))
         if torch.rand(1).item() < self.p:
-            return F.adjust_gamma(img, factor), label
+            factor = float(torch.empty(1).uniform_(self.bounds[0], self.bounds[1]))
+            return self.apply(img, label, factor)
 
         return img, label
 

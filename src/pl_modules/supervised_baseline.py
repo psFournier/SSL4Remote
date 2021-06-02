@@ -7,6 +7,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 import torch
 import torchmetrics.functional as metrics
 from utils import get_image_level_aug, DiceLoss
+from copy import deepcopy
 
 class SupervisedBaseline(pl.LightningModule):
 
@@ -17,8 +18,6 @@ class SupervisedBaseline(pl.LightningModule):
                  num_classes=2,
                  inplaceBN=False,
                  learning_rate=0.001,
-                 tta=(),
-                 wce=False,
                  *args,
                  **kwargs):
 
@@ -33,13 +32,13 @@ class SupervisedBaseline(pl.LightningModule):
         )
         self.num_classes = num_classes
         self.network = network
+        self.swa_network = deepcopy(self.network)
         self.learning_rate = learning_rate # Initial learning rate
         # self.class_weights = class_weights if wce else torch.FloatTensor(
         #     [1.] * self.num_classes
         # )
         self.bce = nn.BCEWithLogitsLoss()
         self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
-        self.tta = get_image_level_aug(tta, p=1)
         self.save_hyperparameters()
 
     @classmethod
@@ -53,8 +52,6 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("--learning-rate", type=float, default=1e-3)
         parser.add_argument("--inplaceBN", action='store_true' )
         parser.add_argument("--wce", action='store_true')
-        parser.add_argument('--tta', nargs='+', type=str, default=[],
-                            help='list of augmentation name to perform Test Time Augmentation (TTA) with')
 
         return parser
 
@@ -67,19 +64,14 @@ class SupervisedBaseline(pl.LightningModule):
         optimizer = Adam(self.parameters(), lr=self.learning_rate)
         scheduler = MultiStepLR(
             optimizer,
-            milestones=[
-                int(self.trainer.max_epochs * 0.5),
-                int(self.trainer.max_epochs * 0.7),
-                int(self.trainer.max_epochs * 0.9)],
+            milestones=[100, 300],
             gamma=0.3
         )
 
         return [optimizer], [scheduler]
 
     def on_train_start(self):
-        self.logger.log_hyperparams(self.hparams, {"hp/Val_IoU": 0,
-                                                   "hp/Swa_Val_IoU": 0,
-                                                   "hp/TTA_Val_IoU":0})
+        self.logger.log_hyperparams(self.hparams, {"hp/Val_IoU": 0})
 
     def training_step(self, batch, batch_idx):
 
@@ -134,29 +126,5 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('hp/Val_IoU', torch.mean(IoU))
 
         swa_callback = self.trainer.callbacks[1]
-        if self.trainer.current_epoch < swa_callback._swa_epoch_start:
-            swa_IoU = IoU
-        else:
-            swa_outputs = swa_callback._average_model.network(val_inputs)
-            swa_probas = swa_outputs.softmax(dim=1)
-            swa_IoU = metrics.iou(swa_probas,
-                                  val_labels,
-                                  reduction='none',
-                                  num_classes=self.num_classes)
-        self.log('Swa_Val_IoU_0', swa_IoU[0])
-        self.log('Swa_Val_IoU_1', swa_IoU[1])
-        self.log('hp/Swa_Val_IoU', torch.mean(swa_IoU))
-
-        tta_batches = [outputs]
-        for tta in self.tta:
-            tta_inputs, tta_targets = tta(val_inputs, val_labels_one_hot)
-            tta_batches.append(self.network(tta_inputs))
-        tta_probas = torch.stack(tta_batches).mean(dim=0).softmax(dim=1)
-
-        tta_IoU = metrics.iou(tta_probas,
-                          val_labels,
-                          reduction='none',
-                          num_classes=self.num_classes)
-        self.log('TTA_Val_IoU_0', tta_IoU[0])
-        self.log('TTA_Val_IoU_1', tta_IoU[1])
-        self.log('hp/TTA_Val_IoU', torch.mean(tta_IoU))
+        if self.trainer.current_epoch >= swa_callback._swa_epoch_start:
+            self.swa_network = swa_callback._average_model.network
