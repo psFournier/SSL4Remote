@@ -1,4 +1,5 @@
 #!/bin/bash
+#PBS -N sup_mw_austin_31-5
 #PBS -q qgpgpu
 #PBS -l select=1:ncpus=12:mem=92G:ngpus=1
 #PBS -l walltime=12:00:00
@@ -21,6 +22,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 --module sup \
 --datamodule mw \
 --city "${CITY}" \
---train_val 31 5
+--train_val 31 5 \
+--exp_name
 
 module unload python/3.7.2
