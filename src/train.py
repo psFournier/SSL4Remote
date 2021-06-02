@@ -27,7 +27,7 @@ def main():
     parser.add_argument("--datamodule", type=str, default='mw')
     parser.add_argument("--module", type=str, default="sup")
     parser.add_argument("--output_dir", type=str, default="./outputs")
-    parser.add_argument("--exp_name", type=str, default="test")
+    parser.add_argument("--exp_name", type=str)
 
     # Datamodule and module classes add their own specific command line
     # arguments, so we retrieve them to go further with the parser.
@@ -47,11 +47,11 @@ def main():
     # directory, and the individual log of each new run will be stored in a
     # subdirectory with the datetime as name. The parameters corresponding to
     # the run can be retrieved in Tensorboard.
-    name = f'{args.module}_{args.datamodule}_{args.city}_{args.train_val[0]}-{args.train_val[1]}_' + args.exp_name
+    # name = f'{args.module}_{args.datamodule}_{args.city}_{args.train_val[0]}-{args.train_val[1]}_' + args.exp_name
     # current_date = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
     tensorboard = loggers.TensorBoardLogger(
         save_dir=args.output_dir,
-        name=name,
+        name=args.exp_name,
         default_hp_metric=False
     )
 
