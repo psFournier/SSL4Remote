@@ -13,13 +13,13 @@ PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
 SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 
 "${PYTHON}" "${SCRIPT}" \
---module supervised_baseline \
---datamodule miniworld_sup \
 --data_dir "${TMPDIR}"/miniworld_tif \
 --output_dir /home/eh/fournip/SemiSupervised/SSL4Remote/outputs \
 --workers 12 \
 --max_epochs 800 \
 --gpus 1 \
+--module sup \
+--datamodule mw \
 --city "${CITY}" \
 --train_val 31 5
 

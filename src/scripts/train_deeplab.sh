@@ -4,8 +4,8 @@ PYTHON=/d/pfournie/semi-supervised-learning/venv/bin/python
 SCRIPT=/d/pfournie/semi-supervised-learning/src/train.py
 
 "${PYTHON}" "${SCRIPT}" \
---module supervised_baseline \
---datamodule miniworld_sup \
+--module sup \
+--datamodule mw \
 --data_dir /scratch_ai4geo/miniworld_tif \
 --output_dir /d/pfournie/semi-supervised-learning/outputs \
 --workers 12 \

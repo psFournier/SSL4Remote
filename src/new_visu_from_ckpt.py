@@ -37,7 +37,7 @@ with rio.open(image_path) as image_file:
                                           height=full_height),
                             out_dtype=np.float32) / 255
 
-    for window in get_tiles(image_file, width=128, height=128, col_step=128,
+    for window in get_tiles(width=128, height=128, col_step=128,
                             row_step=128, nols=full_width, nrows=full_height):
 
         tile = image_file.read(window=window, out_dtype=np.float32) / 255

@@ -43,7 +43,8 @@ class Base(Dataset, ABC):
         # Assumes all image are the same size.
         self.precomputed_crops = [
             window for window in get_tiles(
-                image_size=self.image_size,
+                nols=self.image_size[1],
+                nrows=self.image_size[0],
                 width=self.crop,
                 height=self.crop,
                 col_step=self.crop,

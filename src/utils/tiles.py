@@ -2,13 +2,8 @@ from itertools import product
 from rasterio.windows import Window
 import numpy as np
 
-def get_tiles(ds, nols, nrows, width=256, height=256, col_step=128,
+def get_tiles(nols, nrows, width=256, height=256, col_step=128,
               row_step=128):
-
-    assert col_step <= width
-    assert row_step <= height
-    assert nols <= ds.meta['width']
-    assert nrows <= ds.meta['height']
 
     max_col_offset = int(np.ceil((nols-width)/col_step))
     # Remove all offsets such that offset+width > nols and add one offset to
