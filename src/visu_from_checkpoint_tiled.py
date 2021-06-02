@@ -3,8 +3,7 @@ import rasterio as rio
 import numpy as np
 from rasterio.windows import Window
 import matplotlib.pyplot as plt
-from torch_datasets import Paris, ChristchurchLabeled
-from utils import MergeLabels
+from torch_datasets import ChristchurchLabeled
 import cv2
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -59,17 +58,17 @@ def get_tiles(ds, nols, nrows, width=256, height=256, col_step=128,
 
 
 # ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/tensorboard/baseline_paris_2021-04-24/checkpoints/epoch=999-step=312999.ckpt'
-ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/from_onera/austin_2021-04-30/checkpoints/epoch=433-step=135841.ckpt'
+ckpt_path = '/home/pierre/PycharmProjects/RemoteSensing/outputs/from_onera/austin_d4allcolor_2021-05-06/checkpoints/epoch=477-step=149613.ckpt'
 
-module = SupervisedBaseline.load_from_checkpoint(ckpt_path)
+module = SupervisedBaseline.load_from_checkpoint(ckpt_path, tta=[])
 module.eval()
 augment = A.Compose([
     A.Normalize(),
     ToTensorV2(transpose_mask=False)
 ])
 
-image_path = '/home/pierre/Documents/ONERA/ai4geo/miniminiworld/chicago/test/0_x.png'
-label_path = '/home/pierre/Documents/ONERA/ai4geo/miniminiworld/chicago/test/0_y.png'
+image_path = '/home/pierre/Documents/ONERA/ai4geo/miniminiworld/austin/test/0_x.png'
+label_path = '/home/pierre/Documents/ONERA/ai4geo/miniminiworld/austin/test/0_y.png'
 
 
 windows = []

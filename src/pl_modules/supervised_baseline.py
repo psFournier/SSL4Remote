@@ -11,15 +11,14 @@ from utils import get_image_level_aug, DiceLoss
 class SupervisedBaseline(pl.LightningModule):
 
     def __init__(self,
-                 encoder,
-                 pretrained,
-                 in_channels,
-                 num_classes,
-                 inplaceBN,
-                 learning_rate,
-                 class_weights,
-                 tta,
-                 wce,
+                 encoder='efficientnet-b0',
+                 pretrained=False,
+                 in_channels=3,
+                 num_classes=2,
+                 inplaceBN=False,
+                 learning_rate=0.001,
+                 tta=(),
+                 wce=False,
                  *args,
                  **kwargs):
 
@@ -35,9 +34,9 @@ class SupervisedBaseline(pl.LightningModule):
         self.num_classes = num_classes
         self.network = network
         self.learning_rate = learning_rate # Initial learning rate
-        self.class_weights = class_weights if wce else torch.FloatTensor(
-            [1.] * self.num_classes
-        )
+        # self.class_weights = class_weights if wce else torch.FloatTensor(
+        #     [1.] * self.num_classes
+        # )
         self.bce = nn.BCEWithLogitsLoss()
         self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
         self.tta = get_image_level_aug(tta, p=1)
