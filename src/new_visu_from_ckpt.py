@@ -6,6 +6,7 @@ import cv2
 import torch
 from utils import get_tiles
 from argparse import ArgumentParser
+import torchvision.transforms.functional as F
 
 parser = ArgumentParser()
 parser.add_argument("--ckpt_dir", type=str, default='/home/pierre/PycharmProjects/RemoteSensing/outputs')
@@ -25,57 +26,87 @@ module.eval()
 image_path = os.path.join(args.image_dir, args.image_path)
 label_path = os.path.join(args.image_dir, args.label_path)
 
-windows = []
-tiles = []
-full_height = 257
-full_width = 257
+def infer(module,
+          img_file,
+          height,
+          width,
+          tile_height,
+          tile_width,
+          col_step,
+          row_step,
+          batch_size):
+
+    windows = []
+    tiles = []
+    for window in get_tiles(width=tile_width,
+                            height=tile_height,
+                            col_step=col_step,
+                            row_step=row_step,
+                            nols=width,
+                            nrows=height):
+
+        tile = img_file.read(window=window, out_dtype=np.float32) / 255
+        tiles.append(torch.as_tensor(tile))
+        windows.append(window)
+
+    nb_tiles = len(tiles)
+    l = list(range(0, nb_tiles, batch_size))+[nb_tiles]
+
+    preds = []
+    pred_windows = []
+    for i, j in zip(l[:-1], l[1:]):
+
+        batch = torch.stack(tiles[i:j])
+        pred = module.network(batch).detach().numpy()
+        preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0], axis=0)]
+        pred_windows += windows[i:j]
+
+        aug_batch = F.rotate(batch, 90)
+        aug_pred = F.rotate(module.network(aug_batch).detach(), -90).numpy()
+        preds += [np.squeeze(e, axis=0) for e in np.split(aug_pred, aug_pred.shape[0], axis=0)]
+        pred_windows += windows[i:j]
+
+    stitched_pred = np.zeros(shape=(2, height, width))
+    nb_tiles = np.zeros(shape=(height, width))
+    for pred, window in zip(preds, pred_windows):
+        stitched_pred[:, window.row_off:window.row_off+window.width,
+        window.col_off:window.col_off+window.height] += pred
+        nb_tiles[window.row_off:window.row_off+window.width,
+        window.col_off:window.col_off+window.height] += 1
+    avg_pred = np.argmax(stitched_pred, axis=0)
+
+    return avg_pred
+
+
+width = 500
+height = 500
 with rio.open(image_path) as image_file:
 
     image = image_file.read(window=Window(col_off=0,
                                           row_off=0,
-                                          width=full_width,
-                                          height=full_height),
+                                          width=width,
+                                          height=height),
                             out_dtype=np.float32) / 255
 
-    for window in get_tiles(width=128, height=128, col_step=128,
-                            row_step=128, nols=full_width, nrows=full_height):
+    avg_pred = infer(module,
+                     image_file,
+                     height=height,
+                     width=width,
+                     tile_height=128,
+                     tile_width=128,
+                     col_step=64,
+                     row_step=64,
+                     batch_size=16)
 
-        tile = image_file.read(window=window, out_dtype=np.float32) / 255
-        tiles.append(torch.as_tensor(tile))
-        windows.append(window)
+    bool_avg_pred = avg_pred.astype(bool)
 
-preds = []
-i=0
-while i+16 < len(tiles):
-    batch = torch.stack(tiles[i:i+16], dim=0)
-    pred = module.network(batch)
-    pred = np.argmax(pred.detach().numpy().squeeze(), axis=1).astype(bool)
-    preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0],
-                                                      axis=0)]
-    i += 16
-batch = torch.stack(tiles[i:], dim=0)
-pred = module.network(batch)
-pred = np.argmax(pred.detach().numpy().squeeze(), axis=1).astype(bool)
-preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0],
-                                                  axis=0)]
-
-stitched_pred = np.zeros(shape=(full_height,full_width))
-nb_tiles = np.zeros(shape=(full_height, full_width))
-for pred, window in zip(preds, windows):
-    stitched_pred[window.row_off:window.row_off+window.width,
-    window.col_off:window.col_off+window.height] += pred
-    nb_tiles[window.row_off:window.row_off+window.width,
-    window.col_off:window.col_off+window.height] += 1
-avg_pred = np.rint(np.divide(stitched_pred, nb_tiles))
-bool_avg_pred = avg_pred.astype(bool)
-# bool_uncertain = (avg_pred != avg_pred.round())
 
 
 with rio.open(label_path) as label_file:
     label = label_file.read(window=Window(col_off=0,
                                           row_off=0,
-                                          width=full_width,
-                                          height=full_height),
+                                          width=width,
+                                          height=height),
                             out_dtype=np.uint8)
 
 gt = AustinLabeled.colors_to_labels(label)

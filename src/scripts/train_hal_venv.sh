@@ -16,7 +16,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 --data_dir "${TMPDIR}"/miniworld_tif \
 --output_dir /home/eh/fournip/SemiSupervised/SSL4Remote/outputs \
 --workers 12 \
---max_epochs 800 \
+--max_epochs 500 \
 --gpus 1 \
 --module sup \
 --datamodule mw \
