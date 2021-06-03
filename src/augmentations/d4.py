@@ -1,6 +1,7 @@
 import torch
 import torchvision.transforms.functional as F
 import random
+from augmentations import Compose
 
 class Vflip(torch.nn.Module):
 
@@ -8,10 +9,12 @@ class Vflip(torch.nn.Module):
         super().__init__()
         self.p = p
 
-    def __call__(self, img, label):
+    def __call__(self, img, label=None):
 
         if torch.rand(1).item() < self.p:
-            return F.vflip(img), F.vflip(label)
+            img = F.vflip(img)
+            if label is not None: label = F.vflip(label)
+            return img, label
 
         return img, label
 
@@ -21,10 +24,12 @@ class Hflip(torch.nn.Module):
         super().__init__()
         self.p = p
 
-    def __call__(self, img, label):
+    def __call__(self, img, label=None):
 
         if torch.rand(1).item() < self.p:
-            return F.hflip(img), F.hflip(label)
+            img = F.hflip(img)
+            if label is not None: label = F.hflip(label)
+            return img, label
 
         return img, label
 
@@ -34,10 +39,12 @@ class Transpose(torch.nn.Module):
         super().__init__()
         self.p = p
 
-    def __call__(self, img, label):
+    def __call__(self, img, label=None):
 
         if torch.rand(1).item() < self.p:
-            return torch.transpose(img, 2, 3), torch.transpose(label, 2, 3)
+            img = torch.transpose(img, 2, 3)
+            if label is not None: label = torch.transpose(label, 2, 3)
+            return img, label
 
         return img, label
 
@@ -48,11 +55,13 @@ class Rotate(torch.nn.Module):
         self.p = p
         self.angles = angles
 
-    def __call__(self, img, label):
+    def __call__(self, img, label=None):
 
         if torch.rand(1).item() < self.p:
             angle = random.choice(self.angles)
-            return F.rotate(img, angle), F.rotate(label, angle)
+            img = F.rotate(img, angle)
+            if label is not None: label = F.rotate(label, angle)
+            return img, label
 
         return img, label
 
@@ -60,18 +69,22 @@ class D4(torch.nn.Module):
 
     def __init__(self, p=0.5):
         super().__init__()
-        self.p = p
-        self.transforms = [
-            Rotate(angles=(0, 90, 180, 270)),
-            Hflip(),
-            Vflip(),
-            Transpose()
-        ]
+        self.transforms = []
+        for angle in [0,90,270]:
+            for ph in [0, 1]:
+                for pv in [0, 1]:
+                    for pt in [0, 1]:
+                        self.transforms.append(
+                            Compose([
+                                Rotate(p=1, angles=(angle,)),
+                                Hflip(p=ph),
+                                Vflip(p=pv),
+                                Transpose(p=pt)
+                            ])
+                        )
 
     def __call__(self, img, label):
 
-        if torch.rand(1).item() < self.p:
-            for transform in self.transforms:
-                img, label = transform(img, label)
+        t = random.choice(self.transforms)
 
-        return img, label
+        return t(img, label)

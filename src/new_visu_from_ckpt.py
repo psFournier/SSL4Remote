@@ -7,6 +7,7 @@ import torch
 from utils import get_tiles
 from argparse import ArgumentParser
 import torchvision.transforms.functional as F
+from augmentations import *
 
 parser = ArgumentParser()
 parser.add_argument("--ckpt_dir", type=str, default='/home/pierre/PycharmProjects/RemoteSensing/outputs')
@@ -57,14 +58,28 @@ def infer(module,
     for i, j in zip(l[:-1], l[1:]):
 
         batch = torch.stack(tiles[i:j])
-        pred = module.network(batch).detach().numpy()
-        preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0], axis=0)]
-        pred_windows += windows[i:j]
 
-        aug_batch = F.rotate(batch, 90)
-        aug_pred = F.rotate(module.network(aug_batch).detach(), -90).numpy()
-        preds += [np.squeeze(e, axis=0) for e in np.split(aug_pred, aug_pred.shape[0], axis=0)]
-        pred_windows += windows[i:j]
+        for angle in [0,90,270]:
+            for ph in [0, 1]:
+                for pv in [0, 1]:
+                    for pt in [0, 1]:
+                        t = Compose([
+                            Rotate(p=1, angles=(angle,)),
+                            Hflip(p=ph),
+                            Vflip(p=pv),
+                            Transpose(p=pt)
+                        ])
+                        aug_batch = t(batch)[0]
+                        aug_pred = module.network(aug_batch).detach()
+                        anti_t = Compose([
+                            Transpose(p=pt),
+                            Vflip(p=pv),
+                            Hflip(p=ph),
+                            Rotate(p=1, angles=(-angle,))
+                        ])
+                        pred = anti_t(aug_pred)[0].numpy()
+                        preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0], axis=0)]
+                        pred_windows += windows[i:j]
 
     stitched_pred = np.zeros(shape=(2, height, width))
     nb_tiles = np.zeros(shape=(height, width))
@@ -92,10 +107,10 @@ with rio.open(image_path) as image_file:
                      image_file,
                      height=height,
                      width=width,
-                     tile_height=128,
-                     tile_width=128,
-                     col_step=64,
-                     row_step=64,
+                     tile_height=256,
+                     tile_width=256,
+                     col_step=128,
+                     row_step=128,
                      batch_size=16)
 
     bool_avg_pred = avg_pred.astype(bool)
