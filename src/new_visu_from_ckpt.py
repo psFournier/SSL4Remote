@@ -9,25 +9,9 @@ from argparse import ArgumentParser
 import torchvision.transforms.functional as F
 from augmentations import *
 
-parser = ArgumentParser()
-parser.add_argument("--ckpt_dir", type=str, default='/home/pierre/PycharmProjects/RemoteSensing/outputs')
-parser.add_argument("--ckpt_path", type=str)
-parser.add_argument("--image_dir", type=str, default='/home/pierre/Documents/ONERA/ai4geo/miniworld_tif')
-parser.add_argument("--image_path", type=str)
-parser.add_argument("--label_path", type=str)
-args = parser.parse_args()
-args_dict = vars(args)
-
-ckpt_path = os.path.join(args.ckpt_dir, args.ckpt_path)
-ckpt = torch.load(ckpt_path)
-module = SupervisedBaseline()
-module.load_state_dict(ckpt['state_dict'])
-module.eval()
-
-image_path = os.path.join(args.image_dir, args.image_path)
-label_path = os.path.join(args.image_dir, args.label_path)
-
-def infer(module,
+def infer(net,
+          device,
+          nb_class,
           img_file,
           height,
           width,
@@ -57,7 +41,7 @@ def infer(module,
     pred_windows = []
     for i, j in zip(l[:-1], l[1:]):
 
-        batch = torch.stack(tiles[i:j])
+        batch = torch.stack(tiles[i:j]).to(device)
 
         for angle in [0,90,270]:
             for ph in [0, 1]:
@@ -70,18 +54,19 @@ def infer(module,
                             Transpose(p=pt)
                         ])
                         aug_batch = t(batch)[0]
-                        aug_pred = module.network(aug_batch).detach()
+                        with torch.no_grad():
+                            aug_pred = net(aug_batch).detach()
                         anti_t = Compose([
                             Transpose(p=pt),
                             Vflip(p=pv),
                             Hflip(p=ph),
                             Rotate(p=1, angles=(-angle,))
                         ])
-                        pred = anti_t(aug_pred)[0].numpy()
+                        pred = anti_t(aug_pred)[0].cpu().numpy()
                         preds += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0], axis=0)]
                         pred_windows += windows[i:j]
 
-    stitched_pred = np.zeros(shape=(2, height, width))
+    stitched_pred = np.zeros(shape=(nb_class, height, width))
     nb_tiles = np.zeros(shape=(height, width))
     for pred, window in zip(preds, pred_windows):
         stitched_pred[:, window.row_off:window.row_off+window.width,
@@ -93,9 +78,27 @@ def infer(module,
     return avg_pred
 
 
-width = 500
-height = 500
-with rio.open(image_path) as image_file:
+if __name__ == "__main__":
+
+    parser = ArgumentParser()
+    parser.add_argument("--ckpt_path", type=str)
+    parser.add_argument("--image_path", type=str)
+    parser.add_argument("--output", type=str)
+    parser.add_argument("--label_path", type=str)
+    args = parser.parse_args()
+    args_dict = vars(args)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    ckpt = torch.load(args.ckpt_path)
+    module = SupervisedBaseline()
+    module.load_state_dict(ckpt['state_dict'])
+    net = module.network.to(device).eval()
+
+    image_file = rasterio.open(args.image_path)
+
+    width = 500
+    height = 500
 
     image = image_file.read(window=Window(col_off=0,
                                           row_off=0,
@@ -103,61 +106,75 @@ with rio.open(image_path) as image_file:
                                           height=height),
                             out_dtype=np.float32) / 255
 
-    avg_pred = infer(module,
-                     image_file,
+    avg_pred = infer(net=net,
+                     device=device,
+                     nb_class=module.num_classes,
+                     img_file=image_file,
                      height=height,
                      width=width,
-                     tile_height=256,
-                     tile_width=256,
+                     tile_height=128,
+                     tile_width=128,
                      col_step=128,
                      row_step=128,
                      batch_size=16)
 
+    pred_profile = image_file.profile
+    pred_profile.update(
+        height=height,
+        width=width,
+        count=1,
+    )
+    with rasterio.open(args.output, 'w', **pred_profile) as dst:
+        dst.write(np.uint8(avg_pred),
+                  window=Window(col_off=0,
+                                row_off=0,
+                                width=width,
+                                height=height),
+                  indexes=1)
+
     bool_avg_pred = avg_pred.astype(bool)
 
+    label_file = rasterio.open(args.label_path)
 
-
-with rio.open(label_path) as label_file:
     label = label_file.read(window=Window(col_off=0,
                                           row_off=0,
                                           width=width,
                                           height=height),
                             out_dtype=np.uint8)
 
-gt = AustinLabeled.colors_to_labels(label)
-gt = np.argmax(gt, axis=0).astype(bool)
+    gt = AustinLabeled.colors_to_labels(label)
+    gt = np.argmax(gt, axis=0).astype(bool)
 
-overlay = image.copy().transpose(1,2,0)
-image = image.transpose(1,2,0)
-# Correct predictions (Hits) painted with green
-overlay[gt & bool_avg_pred] = np.array([0, 250, 0], dtype=overlay.dtype)
-# Misses painted with red
-overlay[gt & ~bool_avg_pred] = np.array([250, 0, 0], dtype=overlay.dtype)
-# False alarm painted with blue
-overlay[~gt & bool_avg_pred] = np.array([0, 0, 250], dtype=overlay.dtype)
+    overlay = image.copy().transpose(1,2,0)
+    image = image.transpose(1,2,0)
+    # Correct predictions painted with green
+    overlay[gt & bool_avg_pred] = np.array([0, 250, 0], dtype=overlay.dtype)
+    # Misses painted with red
+    overlay[gt & ~bool_avg_pred] = np.array([250, 0, 0], dtype=overlay.dtype)
+    # False alarm painted with blue
+    overlay[~gt & bool_avg_pred] = np.array([0, 0, 250], dtype=overlay.dtype)
 
-overlay = cv2.addWeighted(image, 0.5, overlay, 0.5, 0)
+    overlay = cv2.addWeighted(image, 0.5, overlay, 0.5, 0)
 
-# uncertainty = image.copy()
-# uncertainty[bool_uncertain] = np.array([250, 0, 0], dtype=overlay.dtype)
-# uncertainty = cv2.addWeighted(image, 0.5, uncertainty, 0.5, 0)
+    plt.switch_backend("TkAgg")
 
-plt.switch_backend("TkAgg")
+    f, ax = plt.subplots(2, 2, figsize=(16, 16))
 
-f, ax = plt.subplots(2, 2, figsize=(16, 16))
+    ax[0, 0].imshow(image)
+    ax[0, 0].set_title('Original image', fontsize=16)
 
-ax[0, 0].imshow(image)
-ax[0, 0].set_title('Original image', fontsize=16)
+    ax[1, 0].imshow(gt)
+    ax[1, 0].set_title('Ground truth', fontsize=16)
 
-ax[1, 0].imshow(gt)
-ax[1, 0].set_title('Ground truth', fontsize=16)
+    ax[0, 1].imshow(avg_pred)
+    ax[0, 1].set_title('Model predictions', fontsize=16)
 
-ax[0, 1].imshow(avg_pred)
-ax[0, 1].set_title('Model predictions', fontsize=16)
+    ax[1, 1].imshow(overlay)
+    ax[1, 1].set_title('Prediction quality', fontsize=16)
 
-ax[1, 1].imshow(overlay)
-ax[1, 1].set_title('Prediction quality', fontsize=16)
+    plt.tight_layout()
+    plt.show()
 
-plt.tight_layout()
-plt.show()
+
+
 
