@@ -33,6 +33,7 @@ class BaseCity(Base, ABC):
     @staticmethod
     def labels_to_colors(labels):
 
+        labels = labels.cpu().numpy()
         colors = np.zeros(shape=(labels.shape[0], labels.shape[1], labels.shape[2], 3), dtype=np.uint8)
         idx = np.array(labels == 1)
         colors[idx] = np.array([255,255,255])
