@@ -4,6 +4,7 @@ from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
 from pl_datamodules import *
+from callbacks import SegmentationImagesVisualisation
 
 modules = {
     'sup': SupervisedBaseline,
@@ -72,6 +73,8 @@ def main():
     # loading part when multiple workers are at use.
     profiler = SimpleProfiler()
 
+    image_visu = SegmentationImagesVisualisation()
+
     # Using from_argparse_args enables to use any standard parameter of the
     # lightning Trainer class without having to manually add them to the parser.
     trainer = Trainer.from_argparse_args(
@@ -81,7 +84,8 @@ def main():
         callbacks=[
             checkpoint_callback,
             lr_monitor,
-            swa
+            swa,
+            image_visu
         ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,

@@ -128,3 +128,5 @@ class SupervisedBaseline(pl.LightningModule):
         swa_callback = self.trainer.callbacks[1]
         if self.trainer.current_epoch >= swa_callback._swa_epoch_start:
             self.swa_network = swa_callback._average_model.network
+
+        return {'preds': outputs}

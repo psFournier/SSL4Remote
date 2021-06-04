@@ -2,7 +2,7 @@ from abc import ABC
 from torch_datasets import Base
 import glob
 import numpy as np
-
+import torch
 
 class BaseCity(Base, ABC):
 
@@ -12,7 +12,7 @@ class BaseCity(Base, ABC):
     """
 
     @staticmethod
-    def colors_to_labels(labels_color):
+    def colors_to_labels(colors):
 
         '''
         Creates one-hot encoded labels for binary classification.
@@ -20,14 +20,23 @@ class BaseCity(Base, ABC):
         :return:
         '''
 
-        labels0 = np.zeros(shape=labels_color.shape[1:], dtype=float)
-        labels1 = np.zeros(shape=labels_color.shape[1:], dtype=float)
-        mask = np.any(labels_color != [0], axis=0)
+        labels0 = np.zeros(shape=colors.shape[1:], dtype=float)
+        labels1 = np.zeros(shape=colors.shape[1:], dtype=float)
+        mask = np.any(colors != [0], axis=0)
         np.putmask(labels0, ~mask, 1.)
         np.putmask(labels1, mask, 1.)
         labels = np.stack([labels0, labels1], axis=0)
 
         return labels
+
+    @staticmethod
+    def labels_to_colors(labels):
+
+        colors = np.zeros(shape=(labels.shape[0], labels.shape[1], labels.shape[2], 3), dtype=np.uint8)
+        idx = np.array(labels == 1)
+        colors[idx] = np.array([255,255,255])
+        res = np.transpose(colors, axes=(0, 3, 1, 2))
+        return torch.from_numpy(res).float()
 
     def __init__(self, city, *args, **kwargs):
 
