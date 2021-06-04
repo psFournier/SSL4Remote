@@ -113,3 +113,9 @@ class BaseSupervisedDatamodule(LightningDataModule):
         )
 
         return val_dataloader
+
+    # def test_dataloader(self):
+    #
+    #     test_dataloader = DataLoader(
+    #         dataset=
+    #     )
