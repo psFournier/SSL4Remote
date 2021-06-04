@@ -4,10 +4,9 @@ from torch_datasets import BaseCity, BaseLabeled, BaseUnlabeled
 
 class Christchurch(BaseCity, ABC):
 
-    image_size = (1500, 1500)
-
     def __init__(self, *args, **kwargs):
 
+        self.image_size = (1500, 1500)
         super().__init__(city='christchurch', *args, **kwargs)
 
 

@@ -16,11 +16,12 @@ class Base(Dataset, ABC):
     and define utilities for remote sensing dataset classes.
     """
 
-    image_size = (0, 0)
+    # image_size = (0, 0)
 
     def __init__(self,
-                 data_path,
-                 crop,
+                 data_path=None,
+                 crop=128,
+                 crop_step=None,
                  idxs=None,
                  fixed_crop=False,
                  *args,
@@ -32,23 +33,32 @@ class Base(Dataset, ABC):
         self.data_path = data_path
         self.path_idxs = idxs
         self.crop = crop
+        self.crop_step = crop_step
         self.mean_labeled_pixels = []
         self.std_labeled_pixels = []
 
-        self.labeled_image_paths = None
-        self.label_paths = None
-        self.unlabeled_image_paths = None
+        self.labeled_image_paths = []
+        self.label_paths = []
+        self.unlabeled_image_paths = []
 
         self.fixed_crop = fixed_crop
-        # Assumes all image are the same size.
+        self.image_size = None
+
+    def precompute_crops(self):
+
+        if self.image_size is None:
+            with rasterio.open(self.labeled_image_paths[0]) as image_file:
+                data = image_file.profile.data
+                self.image_size = (data['height'], data['width'])
+
         self.precomputed_crops = [
             window for window in get_tiles(
                 nols=self.image_size[1],
                 nrows=self.image_size[0],
                 width=self.crop,
                 height=self.crop,
-                col_step=self.crop,
-                row_step=self.crop
+                col_step=self.crop_step,
+                row_step=self.crop_step
             )
         ]
 
@@ -74,7 +84,7 @@ class Base(Dataset, ABC):
 
             image = image_file.read(window=window, out_dtype=np.float32) / 255
 
-        return image, window
+        return image, window, image_filepath
 
     def get_label(self, path_idx, window):
 
@@ -84,7 +94,7 @@ class Base(Dataset, ABC):
 
             label = label_file.read(window=window, out_dtype=np.float32)
 
-        return label
+        return label, window, label_filepath
 
     def __len__(self):
 
@@ -107,7 +117,7 @@ class BaseUnlabeled(Base):
 
         path_idx = self.path_idxs[idx % len(self.path_idxs)]
         crop_idx = idx // len(self.path_idxs)
-        image, window = self.get_image(path_idx, crop_idx)
+        image, window, image_filepath = self.get_image(path_idx, crop_idx)
 
         return image
 
@@ -130,8 +140,8 @@ class BaseLabeled(Base):
 
         path_idx = self.path_idxs[idx % len(self.path_idxs)]
         crop_idx = idx // len(self.path_idxs)
-        image, window = self.get_image(path_idx, crop_idx)
-        label = self.get_label(path_idx, window)
+        image, window, image_filetpath = self.get_image(path_idx, crop_idx)
+        label, window, label_filepath = self.get_label(path_idx, window)
         mask = self.colors_to_labels(label)
 
         return image, mask

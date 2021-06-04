@@ -7,18 +7,20 @@ from torch.utils.data import DataLoader
 from utils import get_image_level_aug
 import torch
 
-datasets = {
-    # 'christchurch': ChristchurchLabeled,
-    'austin': AustinLabeled,
-    'chicago': ChicagoLabeled,
-    'kitsap': KitsapLabeled,
-    'tyrol-w': TyrolwLabeled,
-    'vienna': ViennaLabeled
-}
+# datasets = {
+#     # 'christchurch': ChristchurchLabeled,
+#     'austin': AustinLabeled,
+#     'chicago': ChicagoLabeled,
+#     'kitsap': KitsapLabeled,
+#     'tyrol-w': TyrolwLabeled,
+#     'vienna': ViennaLabeled,
+#     'image': BaseCityImageLabeled
+# }
 
 parser = ArgumentParser()
 parser.add_argument("--ckpt_path", type=str)
-parser.add_argument("--data_dir", type=str)
+parser.add_argument("--image_path", type=str)
+parser.add_argument("--label_path", type=str)
 parser = Trainer.add_argparse_args(parser)
 args = parser.parse_args()
 args_dict = vars(args)
@@ -27,12 +29,20 @@ ckpt = torch.load(args.ckpt_path)
 module = SupervisedBaseline()
 module.load_state_dict(ckpt['state_dict'])
 
-dataset = datasets['austin'](
-    data_path=args.data_dir,
-    idxs=[2],
-    crop=128,
+dataset = BaseCityImageLabeled(
+    image_path=args.image_path,
+    label_path=args.label_path,
+    crop=256,
+    crop_step=128,
     fixed_crop=True
 )
+
+# dataset = datasets[args.dataset](
+#     data_path=args.data_path,
+#     idxs=[2],
+#     crop=128,
+#     fixed_crop=True
+# )
 
 def wif(id):
     uint64_seed = torch.initial_seed()

@@ -31,18 +31,21 @@ class MiniworldSemisup(MiniworldSup, BaseSemisupDatamodule):
 
         self.sup_train_set = cities_labeled[self.city](
             data_path=self.data_dir,
-            crop=self.crop_size
+            crop=self.crop_size,
+            crop_step=self.crop_size
         )
 
         self.val_set = cities_labeled[self.city](
             data_path=self.data_dir,
             crop=self.crop_size,
+            crop_step=self.crop_size,
             fixed_crop=True
         )
 
         self.unsup_train_set = cities_unlabeled[self.city](
             data_path = self.data_dir,
-            crop=self.crop_size
+            crop=self.crop_size,
+            crop_step=self.crop_size
         )
 
         train, val = self.train_val

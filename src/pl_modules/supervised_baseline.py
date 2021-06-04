@@ -138,8 +138,8 @@ class SupervisedBaseline(pl.LightningModule):
         batch_size, channels, rows, cols = test_inputs.shape
         test_labels = torch.argmax(test_labels_one_hot, dim=1).long()
 
-        summed_pred = torch.zeros(size=(batch_size, self.num_classes, rows, cols))
-        nb_pred = torch.zeros(size=(batch_size, self.num_classes, rows, cols))
+        summed_pred = torch.zeros(size=(batch_size, self.num_classes, rows, cols)).to(self.device)
+        nb_pred = torch.zeros(size=(batch_size, self.num_classes, rows, cols)).to(self.device)
 
         for angle in [0,90,270]:
             for ph in [0, 1]:
@@ -174,8 +174,10 @@ class SupervisedBaseline(pl.LightningModule):
 
     def test_epoch_end(self, outputs):
 
-        avg_IoU = torch.stack([output['IoU'] for output in outputs]).mean(dim=1)
-        self.test_results = {'avg_IoU': avg_IoU}
+        avg_IoU = torch.stack([output['IoU'] for output in outputs]).mean(dim=0)
+        self.test_results = {'IoU_0': avg_IoU[0],
+                             'IoU_1': avg_IoU[1],
+                             'IoU': avg_IoU.mean()}
 
         return avg_IoU
 

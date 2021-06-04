@@ -35,13 +35,15 @@ class MiniworldSup(BaseSupervisedDatamodule):
 
         self.sup_train_set = cities_labeled[self.city](
             data_path=self.data_dir,
-            crop=self.crop_size
+            crop=self.crop_size,
+            crop_step=self.crop_size
         )
 
         self.val_set = cities_labeled[self.city](
             data_path=self.data_dir,
             crop=self.crop_size,
-            fixed_crop=True
+            fixed_crop=True,
+            crop_step=self.crop_size
         )
 
         train, val = self.train_val

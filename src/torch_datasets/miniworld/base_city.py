@@ -1,8 +1,9 @@
 from abc import ABC
-from torch_datasets import Base
+from torch_datasets import Base, BaseLabeled, BaseUnlabeled
 import glob
 import numpy as np
 import torch
+import rasterio
 
 class BaseCity(Base, ABC):
 
@@ -59,3 +60,38 @@ class BaseCity(Base, ABC):
         self.label_paths = train_label_paths + test_label_paths
 
         self.unlabeled_image_paths = []
+
+        self.precompute_crops()
+
+
+class BaseCityImage(Base, ABC):
+
+    def __init__(self, image_path, label_path, *args, **kwargs):
+
+        super(BaseCityImage, self).__init__(*args, **kwargs)
+        self.labeled_image_paths = [image_path]
+        self.label_paths = [label_path]
+        self.path_idxs = [0]
+        self.precompute_crops()
+
+    def colors_to_labels(self, colors):
+
+        return BaseCity.colors_to_labels(colors)
+
+    def labels_to_colors(self, labels):
+
+        return BaseCity.labels_to_colors(labels)
+
+
+class BaseCityImageLabeled(BaseCityImage, BaseLabeled):
+
+    def __init__(self, image_path, label_path, *args, **kwargs):
+
+        super().__init__(image_path, label_path, *args, **kwargs)
+
+
+class BaseCityImageUnlabeled(BaseCityImage, BaseUnlabeled):
+
+    def __init__(self, image_path, label_path, *args, **kwargs):
+
+        super().__init__(image_path, label_path, *args, **kwargs)
