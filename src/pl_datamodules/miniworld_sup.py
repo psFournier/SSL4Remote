@@ -47,7 +47,11 @@ class MiniworldSup(BaseSupervisedDatamodule):
         )
 
         train, val = self.train_val
-        nb_labeled_images = len(self.sup_train_set.labeled_image_paths)
-        labeled_idxs = list(range(nb_labeled_images))
-        self.sup_train_set.path_idxs = labeled_idxs[:train]
-        self.val_set.path_idxs = labeled_idxs[train:train+val]
+        if train != 0 and val != 0:
+            nb_labeled_images = len(self.sup_train_set.labeled_image_paths)
+            labeled_idxs = list(range(nb_labeled_images))
+            self.sup_train_set.path_idxs = labeled_idxs[:train]
+            self.val_set.path_idxs = labeled_idxs[train:train+val]
+        else:
+            self.sup_train_set.path_idxs = list(self.train_idxs)
+            self.val_set.path_idxs = list(self.val_idxs)

@@ -22,6 +22,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  aug_prob,
                  batch_aug,
                  train_val,
+                 train_idxs,
+                 val_idxs,
                  *args,
                  **kwargs):
 
@@ -33,6 +35,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.batch_size = batch_size
         self.num_workers = workers
         self.train_val = tuple(train_val)
+        self.train_idxs = list(train_idxs)
+        self.val_idxs = list(val_idxs)
         self.sup_train_set = None
         self.val_set = None
         self.img_aug = Compose(get_image_level_aug(names=img_aug, p=aug_prob))
@@ -53,7 +57,9 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument("--batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=128)
         parser.add_argument("--workers", default=8, type=int)
-        parser.add_argument('--train_val', nargs=2, type=int)
+        parser.add_argument('--train_val', nargs=2, type=int, default=(0, 0))
+        parser.add_argument('--train_idxs', nargs='+', type=int, default=[])
+        parser.add_argument('--val_idxs', nargs='+', type=int, default=[])
         parser.add_argument('--img_aug', nargs='+', type=str, default=[])
         parser.add_argument('--aug_prob', type=float, default=0.7)
         parser.add_argument('--batch_aug', type=str, default='no')
