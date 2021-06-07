@@ -8,7 +8,6 @@ import torch
 import torchmetrics.functional as metrics
 from utils import get_image_level_aug, DiceLoss
 from copy import deepcopy
-from augmentations import *
 
 class SupervisedBaseline(pl.LightningModule):
 
@@ -134,43 +133,18 @@ class SupervisedBaseline(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        test_inputs, test_labels_one_hot = batch
-        batch_size, channels, rows, cols = test_inputs.shape
+        test_inputs, test_labels_one_hot = batch['image'], batch['mask']
         test_labels = torch.argmax(test_labels_one_hot, dim=1).long()
 
-        summed_pred = torch.zeros(size=(batch_size, self.num_classes, rows, cols)).to(self.device)
-        nb_pred = torch.zeros(size=(batch_size, self.num_classes, rows, cols)).to(self.device)
-
-        for angle in [0,90,270]:
-            for ph in [0, 1]:
-                for pv in [0, 1]:
-                    for pt in [0, 1]:
-                        t = Compose([
-                            Rotate(p=1, angles=(angle,)),
-                            Hflip(p=ph),
-                            Vflip(p=pv),
-                            Transpose(p=pt)
-                        ])
-                        aug_inputs = t(test_inputs)[0]
-                        aug_pred = self.network(aug_inputs)
-                        anti_t = Compose([
-                            Transpose(p=pt),
-                            Vflip(p=pv),
-                            Hflip(p=ph),
-                            Rotate(p=1, angles=(-angle,))
-                        ])
-                        pred = anti_t(aug_pred)[0]
-                        summed_pred += pred
-                        nb_pred += 1
-
-        avg_probs = summed_pred.softmax(axis=1)
-
-        IoU = metrics.iou(avg_probs,
+        outputs = self.network(test_inputs)
+        probas = outputs.softmax(dim=1)
+        accuracy = metrics.accuracy(probas, test_labels)
+        IoU = metrics.iou(probas,
                           test_labels,
                           reduction='none',
                           num_classes=self.num_classes)
 
-        return {'IoU': IoU}
+        return {'preds': outputs, 'accuracy': accuracy, 'IoU': IoU}
 
     def test_epoch_end(self, outputs):
 

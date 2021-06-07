@@ -119,8 +119,7 @@ class BaseUnlabeled(Base):
         crop_idx = idx // len(self.path_idxs)
         image, window, image_filepath = self.get_image(path_idx, crop_idx)
 
-        return image
-
+        return {'image': image, 'window': window}
 
 class BaseLabeled(Base):
 
@@ -144,4 +143,4 @@ class BaseLabeled(Base):
         label, window, label_filepath = self.get_label(path_idx, window)
         mask = self.colors_to_labels(label)
 
-        return image, mask
+        return {'image': image, 'mask': mask, 'window': window}

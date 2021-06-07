@@ -1,1 +1,2 @@
 from callbacks.image_visu import SegmentationImagesVisualisation
+from callbacks.whole_image_pred import WholeImagePred

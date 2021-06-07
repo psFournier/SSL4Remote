@@ -6,6 +6,8 @@ from torch_datasets import *
 from torch.utils.data import DataLoader
 from utils import get_image_level_aug
 import torch
+from torch.utils.data._utils.collate import default_collate
+from callbacks import *
 
 # datasets = {
 #     # 'christchurch': ChristchurchLabeled,
@@ -32,62 +34,56 @@ module.load_state_dict(ckpt['state_dict'])
 dataset = BaseCityImageLabeled(
     image_path=args.image_path,
     label_path=args.label_path,
-    crop=256,
+    crop=128,
     crop_step=128,
     fixed_crop=True
 )
-
-# dataset = datasets[args.dataset](
-#     data_path=args.data_path,
-#     idxs=[2],
-#     crop=128,
-#     fixed_crop=True
-# )
 
 def wif(id):
     uint64_seed = torch.initial_seed()
     np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
 
+def test_collate(batch):
+
+    to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+    windows = [elem['window'] for elem in batch]
+    batch = default_collate(to_collate)
+    batch['window'] = windows
+    if 'mask' not in batch.keys():
+        batch['mask'] = None
+
+    return batch
+
 dataloader = DataLoader(
     dataset=dataset,
     shuffle=False,
-    batch_size=16,
+    collate_fn=test_collate,
+    batch_size=32,
     num_workers=8,
     pin_memory=True,
     worker_init_fn=wif
 )
 
-trainer = Trainer.from_argparse_args(args)
-trainer.test(model=module, test_dataloaders=dataloader, verbose=True)
-results = module.test_results
-print(results)
 
+output_name = '_'.join(os.path.splitext(args.image_path)[0].split('/'))[1:]+'_pred.tif'
+ckpt_dir = os.path.dirname(args.ckpt_path)
+save_output_path = os.path.join(ckpt_dir, output_name)
+tta = WholeImagePred(
+    image_size=dataset.image_size,
+    label_path=dataset.label_paths[0],
+    colors_to_label=dataset.colors_to_labels,
+    tta=None,
+    swa=None,
+    save_output_path=save_output_path
+)
 
-# tta = get_image_level_aug(args.tta, p=1)
-#
-# for batch, batch_idx in dataloader:
-#
-#     inputs, labels_one_hot = batch
-#     labels = torch.argmax(labels_one_hot, dim=1).long()
-#     outputs = module.network(inputs)
-#     outputs_swa = module.swa_network(inputs)
-#
-#     tta_batches = [outputs_swa]
-#     for aug in tta:
-#         tta_inputs, tta_targets = aug(inputs, labels_one_hot)
-#         tta_outputs = module.swa_network(tta_inputs)
-#
-#         tta_batches.append()
-#     tta_probas = torch.stack(tta_batches).mean(dim=0).softmax(dim=1)
-#
-#     tta_IoU = metrics.iou(tta_probas,
-#                           val_labels,
-#                           reduction='none',
-#                           num_classes=self.num_classes)
-#     self.log('TTA_Val_IoU_0', tta_IoU[0])
-#     self.log('TTA_Val_IoU_1', tta_IoU[1])
-#     self.log('hp/TTA_Val_IoU', torch.mean(tta_IoU))
-#
-# trainer = Trainer.from_argparse_args(args)
-# trainer.test(model=pl_module, test_dataloaders=dataloader, verbose=True)
+trainer = Trainer.from_argparse_args(
+    args,
+    callbacks=[tta],
+    logger=[],
+)
 
+trainer.test(model=module, test_dataloaders=dataloader)
+
+print(module.test_results)
+print(tta.tta_metrics)
