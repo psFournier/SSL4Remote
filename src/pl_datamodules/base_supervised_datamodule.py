@@ -64,22 +64,28 @@ class BaseSupervisedDatamodule(LightningDataModule):
         uint64_seed = torch.initial_seed()
         np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
 
-    def collate_and_aug(self, batch):
+    def train_collate(self, batch):
 
-        batch = default_collate(batch)
-
-        try:
-            img, label = batch
-        except:
-            img, label = batch, None
-
-        batch = self.img_aug(img=img, label=label)
+        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+        batch = default_collate(to_collate)
+        if 'mask' not in batch.keys():
+            batch['mask'] = None
+        batch = self.img_aug(img=batch['image'], label=batch['mask'])
         batch = self.batch_aug(*batch)
         if len(batch) < 3:
             s = batch[0].size()
             batch = (*batch, torch.ones(size=(s[0], s[2], s[3])))
 
         return batch
+
+    def val_collate(self, batch):
+
+        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+        batch = default_collate(to_collate)
+        if 'mask' not in batch.keys():
+            batch['mask'] = None
+
+        return batch['image'], batch['mask']
 
     def train_dataloader(self):
 
@@ -92,7 +98,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.batch_size,
-            collate_fn=self.collate_and_aug,
+            collate_fn=self.train_collate,
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -106,6 +112,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             shuffle=False,
+            collate_fn=self.val_collate,
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -113,9 +120,3 @@ class BaseSupervisedDatamodule(LightningDataModule):
         )
 
         return val_dataloader
-
-    # def test_dataloader(self):
-    #
-    #     test_dataloader = DataLoader(
-    #         dataset=
-    #     )
