@@ -14,6 +14,7 @@ dataset = AustinLabeled(
     data_path='/home/pierre/Documents/ONERA/ai4geo/miniworld_tif',
     idxs=list(range(5)),
     crop=256,
+    crop_step=128
 )
 
 dataloader = DataLoader(
