@@ -32,7 +32,7 @@ class SupervisedBaseline(pl.LightningModule):
         )
         self.num_classes = num_classes
         self.network = network
-        self.swa_network = deepcopy(self.network)
+        self.swa_network = deepcopy(network)
         self.learning_rate = learning_rate # Initial learning rate
         # self.class_weights = class_weights if wce else torch.FloatTensor(
         #     [1.] * self.num_classes
@@ -70,8 +70,8 @@ class SupervisedBaseline(pl.LightningModule):
 
         return [optimizer], [scheduler]
 
-    def on_train_start(self):
-        self.logger.log_hyperparams(self.hparams, {"hp/Val_IoU": 0})
+    # def on_train_start(self):
+    #     self.logger.log_hyperparams(self.hparams, {"hp/Val_IoU": 0})
 
     def training_step(self, batch, batch_idx):
 
@@ -123,13 +123,9 @@ class SupervisedBaseline(pl.LightningModule):
                           num_classes=self.num_classes)
         self.log('Val_IoU_0', IoU[0])
         self.log('Val_IoU_1', IoU[1])
-        self.log('hp/Val_IoU', torch.mean(IoU))
+        self.log('Val_IoU', torch.mean(IoU))
 
-        swa_callback = self.trainer.callbacks[1]
-        if self.trainer.current_epoch >= swa_callback._swa_epoch_start:
-            self.swa_network = swa_callback._average_model.network
-
-        return {'preds': outputs}
+        return {'preds': outputs, 'IoU': IoU}
 
     def test_step(self, batch, batch_idx):
 

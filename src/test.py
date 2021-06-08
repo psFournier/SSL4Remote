@@ -38,14 +38,16 @@ def main():
     args = parser.parse_args()
 
     ckpt = torch.load(args.ckpt_path)
-    module = SupervisedBaseline()
-    module.load_state_dict(ckpt['state_dict'])
-
     if args.with_swa:
-        module.network = module.swa_network
+        module = list(ckpt['callbacks'].values())[0]['average_model']
+    else:
+        module = SupervisedBaseline()
+        module.load_state_dict(ckpt['state_dict'])
+
+    # module = SupervisedBaseline.load_from_checkpoint(args.ckpt_path)
 
     crop_size = 128
-    if args.tta:
+    if 'translate' in args.tta:
         crop_step = crop_size // 2
     else:
         crop_step = crop_size
@@ -96,9 +98,14 @@ def main():
         save_output_path=save_output_path,
     )
 
+    callbacks = [whole_image_pred]
+    if args.with_swa:
+        # module.network = module.swa_network
+        callbacks.append(CustomSwa(device=None))
+
     trainer = Trainer.from_argparse_args(
         args,
-        callbacks=[whole_image_pred],
+        callbacks=callbacks,
         logger=[],
     )
 

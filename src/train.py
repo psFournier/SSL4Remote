@@ -4,7 +4,7 @@ from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from pl_modules import *
 from pl_datamodules import *
-from callbacks import SegmentationImagesVisualisation
+from callbacks import SegmentationImagesVisualisation, CustomSwa
 
 modules = {
     'sup': SupervisedBaseline,
@@ -64,9 +64,12 @@ def main():
 
     # Callback that performs Stochastic Weight Averaging at the end of
     # training
-    swa = StochasticWeightAveraging(
-        device=None,
-        # swa_epoch_start=1
+    # swa = StochasticWeightAveraging(
+    #     device=None,
+    #     # swa_epoch_start=1
+    # )
+    swa = CustomSwa(
+        device=None
     )
 
     # Monitoring time spent in each call. Difficult to understand the data
