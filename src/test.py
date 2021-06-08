@@ -8,6 +8,7 @@ from utils import get_image_level_aug
 import torch
 from torch.utils.data._utils.collate import default_collate
 from callbacks import *
+from augmentations import Compose
 
 # datasets = {
 #     # 'christchurch': ChristchurchLabeled,
@@ -31,6 +32,7 @@ def main():
     parser.add_argument("--store_pred", action='store_true')
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--workers", default=8, type=int)
+    parser.add_argument('--img_aug', nargs='+', type=str, default=[])
 
     parser = Trainer.add_argparse_args(parser)
     args = parser.parse_args()
@@ -60,6 +62,7 @@ def main():
         uint64_seed = torch.initial_seed()
         np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
 
+    img_aug = Compose(get_image_level_aug(names=args.img_aug, p=1))
     def test_collate(batch):
 
         to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
@@ -68,6 +71,7 @@ def main():
         batch['window'] = windows
         if 'mask' not in batch.keys():
             batch['mask'] = None
+        batch['image'], batch['mask'] = img_aug(img=batch['image'], label=batch['mask'])
 
         return batch
 
