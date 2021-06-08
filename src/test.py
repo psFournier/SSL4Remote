@@ -85,12 +85,15 @@ def main():
         worker_init_fn=wif
     )
 
-    output_name = '_'.join(os.path.splitext(args.image_path)[0].split('/'))[1:]+'_pred.tif'
-    ckpt_dir = os.path.dirname(args.ckpt_path)
-    save_output_path = os.path.join(ckpt_dir, output_name)
+    if args.store_pred:
+        output_name = '_'.join(os.path.splitext(args.image_path)[0].split('/'))[1:]+'_pred.tif'
+        ckpt_dir = os.path.dirname(args.ckpt_path)
+        save_output_path = os.path.join(ckpt_dir, output_name)
+    else:
+        save_output_path = None
     whole_image_pred = WholeImagePred(
         tta=args.tta,
-        save_output_path=save_output_path
+        save_output_path=save_output_path,
     )
 
     trainer = Trainer.from_argparse_args(
