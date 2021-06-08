@@ -23,7 +23,7 @@ class CustomSwa(pl.callbacks.StochasticWeightAveraging):
         else:
             val_inputs, val_labels_one_hot = batch
             val_labels = torch.argmax(val_labels_one_hot, dim=1).long()
-            swa_outputs = self._average_model.network(val_inputs)
+            swa_outputs = self._average_model.network(val_inputs.to(pl_module.device)).cpu()
             swa_probas = swa_outputs.softmax(dim=1)
             swa_IoU = metrics.iou(swa_probas,
                                   val_labels,
@@ -45,12 +45,12 @@ class CustomSwa(pl.callbacks.StochasticWeightAveraging):
             # Last SWA epoch. Transfer weights from average model to pl_module
             self.transfer_weights(self._average_model.network, pl_module.swa_network)
 
-    def on_save_checkpoint(self, trainer, pl_module, checkpoint):
-        return {
-            'average_model': self._average_model
-        }
-
-    def on_load_checkpoint(self, trainer, pl_module, callback_state):
-
-        self._average_model = callback_state['average_model']
+    # def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+    #     return {
+    #         'average_model': self._average_model
+    #     }
+    #
+    # def on_load_checkpoint(self, trainer, pl_module, callback_state):
+    #
+    #     self._average_model = callback_state['average_model']
 

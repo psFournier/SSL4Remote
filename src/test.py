@@ -38,13 +38,8 @@ def main():
     args = parser.parse_args()
 
     ckpt = torch.load(args.ckpt_path)
-    if args.with_swa:
-        module = list(ckpt['callbacks'].values())[0]['average_model']
-    else:
-        module = SupervisedBaseline()
-        module.load_state_dict(ckpt['state_dict'])
-
-    # module = SupervisedBaseline.load_from_checkpoint(args.ckpt_path)
+    module = SupervisedBaseline()
+    module.load_state_dict(ckpt['state_dict'])
 
     crop_size = 128
     if 'translate' in args.tta:
@@ -100,8 +95,8 @@ def main():
 
     callbacks = [whole_image_pred]
     if args.with_swa:
-        # module.network = module.swa_network
-        callbacks.append(CustomSwa(device=None))
+        module.network = module.swa_network
+        # callbacks.append(CustomSwa(device=None))
 
     trainer = Trainer.from_argparse_args(
         args,
