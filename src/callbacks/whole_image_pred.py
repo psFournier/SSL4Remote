@@ -8,32 +8,32 @@ from augmentations import *
 import numpy as np
 import torchmetrics.functional as metrics
 import rasterio
+import imagesize
 
 
 class WholeImagePred(pl.Callback):
 
-    def __init__(self, image_size, label_path, colors_to_label, tta, swa=False, save_output_path=None):
+    def __init__(self, tta, save_output_path=None):
 
         super(WholeImagePred, self).__init__()
+        self.tta_metrics = {}
+        self.tta = tta
+        self.save_output_path = save_output_path
         self.pred_sum = None
         self.nb_in_sum = None
-        self.image_size = image_size
-        self.label_path = label_path
-        self.colors_to_label = colors_to_label
-        self.tta_metrics = {}
-        self.tta = False
-        self.save_output_path = save_output_path
-        self.swa = swa
-
 
     def on_test_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
 
-        height, width = self.image_size
+        dataset = pl_module.test_dataloader.dataloader.dataset
+        assert len(dataset.labeled_image_paths) == 1
+        self.image_path = dataset.labeled_image_paths[0]
+        self.label_path = dataset.label_paths[0]
+        self.colors_to_labels = dataset.colors_to_labels
+
+        height, width = imagesize.get(self.image_path)
         self.pred_sum = torch.zeros(size=(pl_module.num_classes, height, width))
         self.nb_in_sum = torch.zeros(size=(pl_module.num_classes, height, width))
         pl_module.eval()
-
-    # def tta_d4(self):
 
     def on_test_batch_end(
         self,
@@ -52,7 +52,7 @@ class WholeImagePred(pl.Callback):
         pred_list = [np.squeeze(e, axis=0) for e in np.split(standard_pred, standard_pred.shape[0], axis=0)]
         window_list = windows[:]
 
-        if self.tta:
+        if 'd4' in self.tta:
             for angle in [0,90,270]:
                 for ph in [0, 1]:
                     for pv in [0, 1]:
@@ -86,7 +86,7 @@ class WholeImagePred(pl.Callback):
 
         avg_probs = torch.unsqueeze(self.pred_sum.softmax(dim=0), 0)
         label_file = rasterio.open(self.label_path)
-        full_image_label = self.colors_to_label(label_file.read(out_dtype=np.float32))
+        full_image_label = self.colors_to_labels(label_file.read(out_dtype=np.float32))
         test_labels = torch.unsqueeze(torch.argmax(torch.from_numpy(full_image_label), dim=0).long(), 0)
         IoU = metrics.iou(avg_probs,
                           test_labels,

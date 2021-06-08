@@ -19,71 +19,87 @@ from callbacks import *
 #     'image': BaseCityImageLabeled
 # }
 
-parser = ArgumentParser()
-parser.add_argument("--ckpt_path", type=str)
-parser.add_argument("--image_path", type=str)
-parser.add_argument("--label_path", type=str)
-parser = Trainer.add_argparse_args(parser)
-args = parser.parse_args()
-args_dict = vars(args)
+def main():
 
-ckpt = torch.load(args.ckpt_path)
-module = SupervisedBaseline()
-module.load_state_dict(ckpt['state_dict'])
+    parser = ArgumentParser()
 
-dataset = BaseCityImageLabeled(
-    image_path=args.image_path,
-    label_path=args.label_path,
-    crop=128,
-    crop_step=128,
-    fixed_crop=True
-)
+    parser.add_argument("--ckpt_path", type=str)
+    parser.add_argument("--image_path", type=str)
+    parser.add_argument("--label_path", type=str)
+    parser.add_argument("--with_swa", action='store_true')
+    parser.add_argument("--tta", nargs='+', type=str, default=[])
+    parser.add_argument("--store_pred", action='store_true')
+    parser.add_argument("--batch_size", type=int, default=32)
+    parser.add_argument("--workers", default=8, type=int)
 
-def wif(id):
-    uint64_seed = torch.initial_seed()
-    np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
+    parser = Trainer.add_argparse_args(parser)
+    args = parser.parse_args()
 
-def test_collate(batch):
+    ckpt = torch.load(args.ckpt_path)
+    module = SupervisedBaseline()
+    module.load_state_dict(ckpt['state_dict'])
 
-    to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
-    windows = [elem['window'] for elem in batch]
-    batch = default_collate(to_collate)
-    batch['window'] = windows
-    if 'mask' not in batch.keys():
-        batch['mask'] = None
+    if args.with_swa:
+        module.network = module.swa_network
 
-    return batch
+    crop_size = 128
+    if args.tta:
+        crop_step = crop_size // 2
+    else:
+        crop_step = crop_size
 
-dataloader = DataLoader(
-    dataset=dataset,
-    shuffle=False,
-    collate_fn=test_collate,
-    batch_size=32,
-    num_workers=8,
-    pin_memory=True,
-    worker_init_fn=wif
-)
+    dataset = BaseCityImageLabeled(
+        image_path=args.image_path,
+        label_path=args.label_path,
+        crop=crop_size,
+        crop_step=crop_step,
+        fixed_crop=True
+    )
 
+    def wif(id):
+        uint64_seed = torch.initial_seed()
+        np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
 
-output_name = '_'.join(os.path.splitext(args.image_path)[0].split('/'))[1:]+'_pred.tif'
-ckpt_dir = os.path.dirname(args.ckpt_path)
-save_output_path = os.path.join(ckpt_dir, output_name)
-tta = WholeImagePred(
-    image_size=dataset.image_size,
-    label_path=dataset.label_paths[0],
-    colors_to_label=dataset.colors_to_labels,
-    tta=None,
-    swa=None,
-    save_output_path=save_output_path
-)
+    def test_collate(batch):
 
-trainer = Trainer.from_argparse_args(
-    args,
-    callbacks=[tta],
-    logger=[],
-)
+        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+        windows = [elem['window'] for elem in batch]
+        batch = default_collate(to_collate)
+        batch['window'] = windows
+        if 'mask' not in batch.keys():
+            batch['mask'] = None
 
-trainer.test(model=module, test_dataloaders=dataloader)
+        return batch
 
-print(module.test_results)
-print(tta.tta_metrics)
+    dataloader = DataLoader(
+        dataset=dataset,
+        shuffle=False,
+        collate_fn=test_collate,
+        batch_size=args.batch_size,
+        num_workers=args.workers,
+        pin_memory=True,
+        worker_init_fn=wif
+    )
+
+    output_name = '_'.join(os.path.splitext(args.image_path)[0].split('/'))[1:]+'_pred.tif'
+    ckpt_dir = os.path.dirname(args.ckpt_path)
+    save_output_path = os.path.join(ckpt_dir, output_name)
+    whole_image_pred = WholeImagePred(
+        tta=args.tta,
+        save_output_path=save_output_path
+    )
+
+    trainer = Trainer.from_argparse_args(
+        args,
+        callbacks=[whole_image_pred],
+        logger=[],
+    )
+
+    trainer.test(model=module, test_dataloaders=dataloader)
+
+    print(module.test_results)
+    print(whole_image_pred.tta_metrics)
+
+if __name__ == "__main__":
+
+    main()
