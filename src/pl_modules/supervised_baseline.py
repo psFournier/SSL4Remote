@@ -32,7 +32,7 @@ class SupervisedBaseline(pl.LightningModule):
         )
         self.num_classes = num_classes
         self.network = network
-        self.swa_network = deepcopy(network)
+        # self.swa_network = deepcopy(network)
         self.learning_rate = learning_rate # Initial learning rate
         # self.class_weights = class_weights if wce else torch.FloatTensor(
         #     [1.] * self.num_classes

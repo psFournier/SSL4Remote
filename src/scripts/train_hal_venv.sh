@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -q qgpgpu
-#PBS -l select=1:ncpus=12:mem=92G:ngpus=1
+#PBS -l select=1:ncpus=6:mem=92G:ngpus=1
 #PBS -l walltime=12:00:00
 
 module load python/3.7.2
@@ -15,7 +15,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/src/train.py
 "${PYTHON}" "${SCRIPT}" \
 --data_dir "${TMPDIR}"/miniworld_tif \
 --output_dir /work/OT/ai4geo/users/fournip/outputs \
---workers 12 \
+--workers 6 \
 --max_epochs 500 \
 --gpus 1 \
 --module sup \

@@ -49,7 +49,7 @@ class WholeImagePred(pl.Callback):
                 for ph in [0, 1]:
                     for pv in [0, 1]:
                         for pt in [0, 1]:
-                            if any([a!=0 for a in [angle, ph, pv, pt]]) and all([a!=1 for a in [angle, ph, pv, pt]]):
+                            if any([a!=0 for a in [angle, ph, pv, pt]]):
                                 t = Compose([
                                     Rotate(p=1, angles=(angle,)),
                                     Hflip(p=ph),
