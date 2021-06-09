@@ -64,7 +64,7 @@ class SupervisedBaseline(pl.LightningModule):
         optimizer = Adam(self.parameters(), lr=self.learning_rate)
         scheduler = MultiStepLR(
             optimizer,
-            milestones=[100, 200, 300],
+            milestones=[250, 350, 450],
             gamma=0.3
         )
 
@@ -124,6 +124,20 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_IoU_0', IoU[0])
         self.log('Val_IoU_1', IoU[1])
         self.log('Val_IoU', torch.mean(IoU))
+
+        swa_callback = self.trainer.callbacks[1]
+        if self.trainer.current_epoch < swa_callback._swa_epoch_start:
+            swa_IoU = IoU
+        else:
+            swa_outputs = swa_callback._average_model.network(val_inputs)
+            swa_probas = swa_outputs.softmax(dim=1)
+            swa_IoU = metrics.iou(swa_probas,
+                                  val_labels,
+                                  reduction='none',
+                                  num_classes=self.num_classes)
+        self.log('Swa_Val_IoU_0', swa_IoU[0])
+        self.log('Swa_Val_IoU_1', swa_IoU[1])
+        self.log('Swa_Val_IoU', torch.mean(swa_IoU))
 
         return {'preds': outputs, 'IoU': IoU}
 
