@@ -1,8 +1,9 @@
 import pytorch_lightning as pl
 import torch
 import torchmetrics.functional as metrics
+from pytorch_lightning.callbacks import StochasticWeightAveraging
 
-class CustomSwa(pl.callbacks.StochasticWeightAveraging):
+class CustomSwa(StochasticWeightAveraging):
 
     def __init__(self, *args, **kwargs):
 

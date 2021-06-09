@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--ckpt_path", type=str)
     parser.add_argument("--image_path", type=str)
     parser.add_argument("--label_path", type=str)
+    parser.add_argument("--output_name", type=str)
     parser.add_argument("--with_swa", action='store_true')
     parser.add_argument("--tta", nargs='+', type=str, default=[])
     parser.add_argument("--store_pred", action='store_true')
@@ -83,9 +84,8 @@ def main():
     )
 
     if args.store_pred:
-        output_name = '_'.join(os.path.splitext(args.image_path)[0].split('/'))[1:]+'_pred.tif'
         ckpt_dir = os.path.dirname(args.ckpt_path)
-        save_output_path = os.path.join(ckpt_dir, output_name)
+        save_output_path = os.path.join(ckpt_dir, args.output_name)+'.tif'
     else:
         save_output_path = None
     whole_image_pred = WholeImagePred(
