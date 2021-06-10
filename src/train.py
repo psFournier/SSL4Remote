@@ -57,9 +57,19 @@ def main():
 
     # Callback that saves the weight of the epoch with the minimal val_loss
     # (questionable) at the end of training.
-    checkpoint_callback = ModelCheckpoint(
-        # monitor='Val_loss',
-        # mode='min',
+    last_2_epoch_ckpt = ModelCheckpoint(
+        monitor='epoch',
+        mode='max',
+        save_top_k=2,
+        verbose=True
+    )
+
+    best_val_loss_ckpt = ModelCheckpoint(
+        monitor='Val_loss',
+        mode='min',
+        save_top_k=1,
+        verbose=True,
+        filename='{epoch}-{val_loss:.2f}'
     )
 
     # Callback that performs Stochastic Weight Averaging at the end of
@@ -85,7 +95,8 @@ def main():
         logger=tensorboard,
         profiler=profiler,
         callbacks=[
-            checkpoint_callback,
+            last_2_epoch_ckpt,
+            best_val_loss_ckpt,
             lr_monitor,
             swa,
             # image_visu

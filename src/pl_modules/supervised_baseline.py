@@ -125,19 +125,21 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_IoU_1', IoU[1])
         self.log('Val_IoU', torch.mean(IoU))
 
-        swa_callback = self.trainer.callbacks[1]
-        if self.trainer.current_epoch < swa_callback._swa_epoch_start:
-            swa_IoU = IoU
-        else:
-            swa_outputs = swa_callback._average_model.network(val_inputs)
-            swa_probas = swa_outputs.softmax(dim=1)
-            swa_IoU = metrics.iou(swa_probas,
-                                  val_labels,
-                                  reduction='none',
-                                  num_classes=self.num_classes)
-        self.log('Swa_Val_IoU_0', swa_IoU[0])
-        self.log('Swa_Val_IoU_1', swa_IoU[1])
-        self.log('Swa_Val_IoU', torch.mean(swa_IoU))
+        self.log('epoch', self.trainer.current_epoch)
+        #
+        # swa_callback = self.trainer.callbacks[1]
+        # if self.trainer.current_epoch < swa_callback._swa_epoch_start:
+        #     swa_IoU = IoU
+        # else:
+        #     swa_outputs = swa_callback._average_model.network(val_inputs)
+        #     swa_probas = swa_outputs.softmax(dim=1)
+        #     swa_IoU = metrics.iou(swa_probas,
+        #                           val_labels,
+        #                           reduction='none',
+        #                           num_classes=self.num_classes)
+        # self.log('Swa_Val_IoU_0', swa_IoU[0])
+        # self.log('Swa_Val_IoU_1', swa_IoU[1])
+        # self.log('Swa_Val_IoU', torch.mean(swa_IoU))
 
         return {'preds': outputs, 'IoU': IoU}
 
@@ -146,7 +148,7 @@ class SupervisedBaseline(pl.LightningModule):
         test_inputs, test_labels_one_hot = batch['image'], batch['mask']
         test_labels = torch.argmax(test_labels_one_hot, dim=1).long()
 
-        outputs = self.network(test_inputs)
+        outputs = self.swa_network(test_inputs)
         probas = outputs.softmax(dim=1)
         accuracy = metrics.accuracy(probas, test_labels)
         IoU = metrics.iou(probas,

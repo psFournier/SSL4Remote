@@ -3,6 +3,8 @@ from torch.utils.data import DataLoader
 from matplotlib import pyplot as plt
 from utils import get_image_level_aug
 import torch
+from torch.utils.data._utils.collate import default_collate
+
 
 augname='gamma'
 
@@ -17,14 +19,25 @@ dataset = AustinLabeled(
     crop_step=128
 )
 
+def test_collate(batch):
+
+    to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+    batch = default_collate(to_collate)
+
+    return batch
+
 dataloader = DataLoader(
-    dataset,
-    batch_size=1
+    dataset=dataset,
+    shuffle=False,
+    collate_fn=test_collate,
+    batch_size=1,
 )
 
-image, mask = next(iter(dataloader))
+batch = next(iter(dataloader))
+image = batch['image']
+mask = batch['mask']
 
-f, ax = plt.subplots(3, 3, figsize=(20, 20))
+f, ax = plt.subplots(3, 3, figsize=(15, 15))
 
 ax[1, 1].imshow(image[0].permute(1, 2, 0))
 for i in range(3):

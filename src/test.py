@@ -9,6 +9,8 @@ import torch
 from torch.utils.data._utils.collate import default_collate
 from callbacks import *
 from augmentations import Compose
+from copy import deepcopy
+
 
 # datasets = {
 #     # 'christchurch': ChristchurchLabeled,
@@ -34,25 +36,24 @@ def main():
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--workers", default=8, type=int)
     parser.add_argument('--img_aug', nargs='+', type=str, default=[])
+    parser.add_argument("--crop_size", type=int, default=128)
+    parser.add_argument("--crop_step", type=int, default=128)
 
     parser = Trainer.add_argparse_args(parser)
     args = parser.parse_args()
-
-    ckpt = torch.load(args.ckpt_path)
+    ckpt = torch.load(args.ckpt_path, map_location=torch.device('cpu'))
     module = SupervisedBaseline()
+    # module.swa_network = deepcopy(module.network)
+    swa_params_before = list(module.swa_network.parameters()).copy()
     module.load_state_dict(ckpt['state_dict'])
+    swa_params_after = list(module.swa_network.parameters())
 
-    crop_size = 128
-    if 'translate' in args.tta:
-        crop_step = crop_size // 2
-    else:
-        crop_step = crop_size
 
     dataset = BaseCityImageLabeled(
         image_path=args.image_path,
         label_path=args.label_path,
-        crop=crop_size,
-        crop_step=crop_step,
+        crop=args.crop_size,
+        crop_step=args.crop_step,
         fixed_crop=True
     )
 
@@ -94,8 +95,8 @@ def main():
     )
 
     callbacks = [whole_image_pred]
-    if args.with_swa:
-        module.network = module.swa_network
+    # if args.with_swa:
+    #     module.network = module.swa_network
         # callbacks.append(CustomSwa(device=None))
 
     trainer = Trainer.from_argparse_args(
