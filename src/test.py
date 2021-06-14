@@ -38,10 +38,11 @@ def main():
     parser.add_argument('--img_aug', nargs='+', type=str, default=[])
     parser.add_argument("--crop_size", type=int, default=128)
     parser.add_argument("--crop_step", type=int, default=128)
-
     parser = Trainer.add_argparse_args(parser)
     args = parser.parse_args()
-    ckpt = torch.load(args.ckpt_path, map_location=torch.device('cpu'))
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ckpt = torch.load(args.ckpt_path, map_location=torch.device(device))
     module = SupervisedBaseline()
     module.load_state_dict(ckpt['state_dict'])
 
