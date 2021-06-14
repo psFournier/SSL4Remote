@@ -43,10 +43,7 @@ def main():
     args = parser.parse_args()
     ckpt = torch.load(args.ckpt_path, map_location=torch.device('cpu'))
     module = SupervisedBaseline()
-    # module.swa_network = deepcopy(module.network)
-    swa_params_before = list(module.swa_network.parameters()).copy()
     module.load_state_dict(ckpt['state_dict'])
-    swa_params_after = list(module.swa_network.parameters())
 
 
     dataset = BaseCityImageLabeled(
@@ -95,9 +92,6 @@ def main():
     )
 
     callbacks = [whole_image_pred]
-    # if args.with_swa:
-    #     module.network = module.swa_network
-        # callbacks.append(CustomSwa(device=None))
 
     trainer = Trainer.from_argparse_args(
         args,

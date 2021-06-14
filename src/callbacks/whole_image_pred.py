@@ -105,6 +105,7 @@ class WholeImagePred(pl.Callback):
 
             pred_profile = rasterio.open(self.image_path).profile
             pred_profile.update(count=1)
+            pred_profile.update(nodata=None)
             with rasterio.open(self.save_output_path, 'w', **pred_profile) as dst:
                 dst.write(np.uint8(np.argmax(self.pred_sum, axis=0)), indexes=1)
 
