@@ -13,8 +13,8 @@ modules = {
 
 datamodules = {
     'mw': {
-        'sup' : MiniworldSup,
-        'MT' : MiniworldSemisup
+        'sup' : Miniworld2,
+        'MT' : Miniworld2Semisup
     }
 }
 
@@ -113,7 +113,7 @@ def main():
 
     # The lightning module is where the training schema is implemented. Class
     # weights are a property of the dataset being processed, given by its class.
-    args_dict['class_weights'] = datamodules[args.datamodule][args.module].class_weights
+    # args_dict['class_weights'] = datamodules[args.datamodule][args.module].class_weights
     pl_module = modules[args.module](**args_dict)
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

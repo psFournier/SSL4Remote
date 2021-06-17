@@ -9,7 +9,7 @@ import imagesize
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
-class MultipleImages(Dataset, ABC):
+class MultipleImages(Dataset):
 
     """
     Abstract class that inherits from the standard Torch Dataset abstract class
@@ -48,24 +48,22 @@ class MultipleImages(Dataset, ABC):
 
 class MultipleImagesLabeled(MultipleImages):
 
-    @staticmethod
-    def colors_to_labels(labels_color):
+    def __init__(self, labels_paths, colors_to_labels, *args, **kwargs):
 
-        raise NotImplementedError
-
-    def __init__(self, labels_paths, *args, **kwargs):
-
-        super(MultipleImages, self).__init__(*args, **kwargs)
+        super(MultipleImagesLabeled, self).__init__(*args, **kwargs)
         assert len(labels_paths) == len(self.images_paths)
         self.labels_paths = labels_paths
+        self.colors_to_labels = colors_to_labels
 
     def __getitem__(self, idx):
 
-        d = super(MultipleImages, self).__getitem__(idx)
+        d = super(MultipleImagesLabeled, self).__getitem__(idx)
         label_path = self.labels_paths[idx]
 
         with rasterio.open(label_path) as label_file:
 
             label = label_file.read(window=d['window'], out_dtype=np.float32)
 
-        return {**d, **{'mask': label}}
+        mask = self.colors_to_labels(label)
+
+        return {**d, **{'mask': mask}}
