@@ -84,9 +84,9 @@ class SupervisedBaseline(pl.LightningModule):
 
         loss = loss1 + loss2
 
-        self.log('Train_BCE', loss1)
-        self.log('Train_Dice', loss2)
-        self.log('Train_loss', loss)
+        self.log('Train_sup_BCE', loss1)
+        self.log('Train_sup_Dice', loss2)
+        self.log('Train_sup_loss', loss)
 
         probas = outputs.softmax(dim=1)
         IoU = metrics.iou(probas,
