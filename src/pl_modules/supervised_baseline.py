@@ -148,7 +148,7 @@ class SupervisedBaseline(pl.LightningModule):
         test_inputs, test_labels_one_hot = batch['image'], batch['mask']
         test_labels = torch.argmax(test_labels_one_hot, dim=1).long()
 
-        outputs = self.swa_network(test_inputs)
+        outputs = self.network(test_inputs)
         probas = outputs.softmax(dim=1)
         accuracy = metrics.accuracy(probas, test_labels)
         IoU = metrics.iou(probas,

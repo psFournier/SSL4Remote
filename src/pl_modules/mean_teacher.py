@@ -3,7 +3,7 @@ import copy
 from pl_modules import SupervisedBaseline
 import torch
 import torchmetrics.functional as metrics
-from utils import get_image_level_aug
+from augmentations import Cutmix
 
 class MeanTeacher(SupervisedBaseline):
 
@@ -20,7 +20,7 @@ class MeanTeacher(SupervisedBaseline):
 
         # Exponential moving average
         self.ema = ema
-        self.consistency_aug = get_image_level_aug(consistency_aug, p=1)
+        self.consistency_aug = Cutmix()
 
         # Unsupervised leaning loss
         self.mse = nn.MSELoss()
@@ -37,7 +37,7 @@ class MeanTeacher(SupervisedBaseline):
 
     def training_step(self, batch, batch_idx):
 
-        sup_data, unsup_inputs = batch["sup"], batch["unsup"]
+        sup_data, unsup_data = batch["sup"], batch["unsup"]
         sup_inputs, sup_labels_onehot, sup_masks = sup_data
         sup_labels = torch.argmax(sup_labels_onehot, dim=1).long()
 
@@ -51,12 +51,15 @@ class MeanTeacher(SupervisedBaseline):
         self.log('Train_sup_Dice', sup_loss2)
         self.log('Train_sup_loss', sup_loss)
 
-        with torch.no_grad():
-            unsup_targets = self.teacher_network(unsup_inputs)
-        for aug in self.consistency_aug:
-            unsup_inputs, unsup_targets = aug(unsup_inputs, unsup_targets)
-        unsup_outputs = self.network(unsup_inputs)
-        unsup_loss = self.mse(unsup_outputs, unsup_targets)
+        if self.trainer.current_epoch > 10:
+            unsup_inputs, _ = unsup_data
+            with torch.no_grad():
+                unsup_targets = self.teacher_network(unsup_inputs)
+            unsup_inputs, unsup_targets = self.consistency_aug(unsup_inputs, unsup_targets)
+            unsup_outputs = self.network(unsup_inputs)
+            unsup_loss = self.mse(unsup_outputs.softmax(dim=1), unsup_targets.softmax(dim=1))
+        else:
+            unsup_loss = 0
 
         self.log("Train_unsup_loss", unsup_loss)
 

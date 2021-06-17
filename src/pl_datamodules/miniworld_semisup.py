@@ -42,15 +42,33 @@ class MiniworldSemisup(MiniworldSup, BaseSemisupDatamodule):
             fixed_crop=True
         )
 
+        train, val = self.train_val
+        if train != 0 and val != 0:
+            nb_labeled_images = len(self.sup_train_set.labeled_image_paths)
+            labeled_idxs = list(range(nb_labeled_images))
+            self.sup_train_set.path_idxs = labeled_idxs[:train]
+            self.val_set.path_idxs = labeled_idxs[train:train+val]
+        else:
+            self.sup_train_set.path_idxs = list(self.train_idxs)
+            self.val_set.path_idxs = list(self.val_idxs)
+
         self.unsup_train_set = cities_unlabeled[self.city](
             data_path = self.data_dir,
             crop=self.crop_size,
             crop_step=self.crop_size
         )
 
-        train, val = self.train_val
-        nb_labeled_images = len(self.sup_train_set.labeled_image_paths)
-        labeled_idxs = list(range(nb_labeled_images))
-        self.sup_train_set.path_idxs = labeled_idxs[:train]
-        self.val_set.path_idxs = labeled_idxs[train:train+val]
-        self.unsup_train_set.path_idxs = labeled_idxs[train+val:train+val+self.unsup_train]
+        if self.unsup_train != 0:
+            nb_unlabeled_images = len(self.unsup_train_set.unlabeled_image_paths)
+            unlabeled_idxs = list(range(nb_unlabeled_images))
+            self.unsup_train_set.path_idxs = unlabeled_idxs[:self.unsup_train]
+        else:
+            self.unsup_train_set.path_idxs = list(self.unsup_train_idxs)
+
+
+        # train, val = self.train_val
+        # nb_labeled_images = len(self.sup_train_set.labeled_image_paths)
+        # labeled_idxs = list(range(nb_labeled_images))
+        # self.sup_train_set.path_idxs = labeled_idxs[:train]
+        # self.val_set.path_idxs = labeled_idxs[train:train+val]
+        # self.unsup_train_set.path_idxs = labeled_idxs[train+val:train+val+self.unsup_train]

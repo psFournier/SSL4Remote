@@ -30,7 +30,6 @@ def main():
     parser.add_argument("--image_path", type=str)
     parser.add_argument("--label_path", type=str)
     parser.add_argument("--output_name", type=str)
-    parser.add_argument("--with_swa", action='store_true')
     parser.add_argument("--tta", nargs='+', type=str, default=[])
     parser.add_argument("--store_pred", action='store_true')
     parser.add_argument("--batch_size", type=int, default=32)

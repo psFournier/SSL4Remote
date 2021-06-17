@@ -60,7 +60,7 @@ class BaseCity(Base, ABC):
         )
         self.label_paths = train_label_paths + test_label_paths
 
-        self.unlabeled_image_paths = []
+        self.unlabeled_image_paths = self.labeled_image_paths[:]
 
         self.precompute_crops()
 
