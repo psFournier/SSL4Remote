@@ -45,8 +45,8 @@ class Miniworld2(BaseSupervisedDatamodule):
 
         for city in self.cities:
 
-            image_list = glob.glob(f'{self.data_dir}/{city}/train/*_x.tif')
-            label_list = glob.glob(f'{self.data_dir}/{city}/train/*_y.tif')
+            image_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_x.tif'))
+            label_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_y.tif'))
             sup_train_set = MultipleImagesLabeled(
                 images_paths=image_list,
                 labels_paths=label_list,
@@ -55,8 +55,8 @@ class Miniworld2(BaseSupervisedDatamodule):
             )
             city_sup_train_sets.append(sup_train_set)
 
-            image_list = glob.glob(f'{self.data_dir}/{city}/test/*_x.tif')
-            label_list = glob.glob(f'{self.data_dir}/{city}/test/*_y.tif')
+            image_list = sorted(glob.glob(f'{self.data_dir}/{city}/test/*_x.tif'))
+            label_list = sorted(glob.glob(f'{self.data_dir}/{city}/test/*_y.tif'))
             val_set = MultipleImagesLabeled(
                 images_paths=image_list,
                 labels_paths=label_list,
@@ -83,8 +83,8 @@ class Miniworld2Semisup(Miniworld2, BaseSemisupDatamodule):
 
         for city in self.cities:
 
-            image_list = glob.glob(f'{self.data_dir}/{city}/train/*_x.tif')
-            label_list = glob.glob(f'{self.data_dir}/{city}/train/*_y.tif')
+            image_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_x.tif'))
+            label_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_y.tif'))
             sup_train_set = MultipleImagesLabeled(
                 images_paths=image_list,
                 labels_paths=label_list,
@@ -93,8 +93,8 @@ class Miniworld2Semisup(Miniworld2, BaseSemisupDatamodule):
             )
             city_sup_train_sets.append(sup_train_set)
 
-            image_list = glob.glob(f'{self.data_dir}/{city}/test/*_x.tif')
-            label_list = glob.glob(f'{self.data_dir}/{city}/test/*_y.tif')
+            image_list = sorted(glob.glob(f'{self.data_dir}/{city}/test/*_x.tif'))
+            label_list = sorted(glob.glob(f'{self.data_dir}/{city}/test/*_y.tif'))
             val_set = MultipleImagesLabeled(
                 images_paths=image_list,
                 labels_paths=label_list,
@@ -103,8 +103,8 @@ class Miniworld2Semisup(Miniworld2, BaseSemisupDatamodule):
             )
             city_val_sets.append(val_set)
 
-            image_list = glob.glob(f'{self.data_dir}/{city}/train/*_x.tif') + \
-                         glob.glob(f'{self.data_dir}/{city}/test/*_x.tif')
+            image_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_x.tif')) + \
+                sorted(glob.glob(f'{self.data_dir}/{city}/test/*_x.tif'))
             unsup_train_set = MultipleImages(
                 images_paths=image_list,
                 crop=self.crop_size
