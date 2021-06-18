@@ -31,6 +31,6 @@ class CustomSwa(StochasticWeightAveraging):
                                   val_labels,
                                   reduction='none',
                                   num_classes=pl_module.num_classes)
-        pl_module.log('callback_Swa_Val_IoU_0', swa_IoU[0])
-        pl_module.log('callback_Swa_Val_IoU_1', swa_IoU[1])
-        pl_module.log('callback_Swa_Val_IoU', torch.mean(swa_IoU))
+        pl_module.log('Swa_Val_IoU_0', swa_IoU[0])
+        pl_module.log('Swa_Val_IoU_1', swa_IoU[1])
+        pl_module.log('Swa_Val_IoU', torch.mean(swa_IoU))

@@ -16,7 +16,6 @@ class SupervisedBaseline(pl.LightningModule):
                  pretrained=False,
                  in_channels=3,
                  num_classes=2,
-                 inplaceBN=False,
                  learning_rate=0.001,
                  *args,
                  **kwargs):
@@ -28,15 +27,11 @@ class SupervisedBaseline(pl.LightningModule):
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
             classes=num_classes,
-            decoder_use_batchnorm='inplace' if inplaceBN else True
+            decoder_use_batchnorm=True
         )
         self.num_classes = num_classes
         self.network = network
-        # self.swa_network = deepcopy(network)
-        self.learning_rate = learning_rate # Initial learning rate
-        # self.class_weights = class_weights if wce else torch.FloatTensor(
-        #     [1.] * self.num_classes
-        # )
+        self.learning_rate = learning_rate
         self.bce = nn.BCEWithLogitsLoss()
         self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
         self.save_hyperparameters()
@@ -50,8 +45,6 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str, default='efficientnet-b0')
         parser.add_argument("--learning-rate", type=float, default=1e-3)
-        parser.add_argument("--inplaceBN", action='store_true' )
-        parser.add_argument("--wce", action='store_true')
 
         return parser
 
@@ -69,9 +62,6 @@ class SupervisedBaseline(pl.LightningModule):
         )
 
         return [optimizer], [scheduler]
-
-    # def on_train_start(self):
-    #     self.logger.log_hyperparams(self.hparams, {"hp/Val_IoU": 0})
 
     def training_step(self, batch, batch_idx):
 
@@ -126,20 +116,6 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_IoU', torch.mean(IoU))
 
         self.log('epoch', self.trainer.current_epoch)
-        #
-        # swa_callback = self.trainer.callbacks[1]
-        # if self.trainer.current_epoch < swa_callback._swa_epoch_start:
-        #     swa_IoU = IoU
-        # else:
-        #     swa_outputs = swa_callback._average_model.network(val_inputs)
-        #     swa_probas = swa_outputs.softmax(dim=1)
-        #     swa_IoU = metrics.iou(swa_probas,
-        #                           val_labels,
-        #                           reduction='none',
-        #                           num_classes=self.num_classes)
-        # self.log('Swa_Val_IoU_0', swa_IoU[0])
-        # self.log('Swa_Val_IoU_1', swa_IoU[1])
-        # self.log('Swa_Val_IoU', torch.mean(swa_IoU))
 
         return {'preds': outputs, 'IoU': IoU}
 
