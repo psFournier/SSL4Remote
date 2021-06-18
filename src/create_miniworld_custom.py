@@ -90,10 +90,10 @@ def resizefile(root, XY, output, nativeresolution, outputresolution=50.0):
 # resizefile('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif', XY, '/home/pierre/Documents/ONERA/ai4geo', 30)
 
 availabledata = [
-    "isprs",
-    "airs",
+    # "isprs",
+    # "airs",
     "inria",
-    "semcity"
+    # "semcity"
 ]
 root = "/scratch_ai4geo/DATASETS/"
 rootminiworld = "/scratch_ai4geo/miniworld_tif/"
@@ -107,7 +107,8 @@ def makepath(name):
 
 if "inria" in availabledata:
     print("export inria")
-    towns = ["austin", "chicago", "kitsap", "tyrol-w", "vienna"]
+    # towns = ["austin", "chicago", "kitsap", "tyrol-w", "vienna"]
+    towns = ["bellingham", "bloomington", "innsbruck", "sfo", "tyrol-e"]
     for town in towns:
         makepath(town)
 

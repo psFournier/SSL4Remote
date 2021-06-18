@@ -12,9 +12,13 @@ modules = {
 }
 
 datamodules = {
-    'mw': {
+    'mw2': {
         'sup' : Miniworld2,
         'MT' : Miniworld2Semisup
+    },
+    'mw': {
+        'sup': MiniworldSup,
+        'MT':MiniworldSemisup
     }
 }
 
