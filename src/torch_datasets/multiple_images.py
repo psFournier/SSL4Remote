@@ -35,6 +35,7 @@ class MultipleImages(Dataset):
     def __getitem__(self, idx):
 
         image_path = self.images_paths[idx]
+
         height, width = imagesize.get(image_path)
         cx = np.random.randint(0, width - self.crop - 1)
         cy = np.random.randint(0, height - self.crop - 1)

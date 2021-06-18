@@ -51,6 +51,7 @@ class OneImage(Dataset, ABC):
 
         tile_idx = self.idxs[idx]
         tile_window = self.tile_windows[tile_idx]
+
         col_offset = tile_window.col_off
         row_offset = tile_window.row_off
         tile_height, tile_width = self.tile_size
