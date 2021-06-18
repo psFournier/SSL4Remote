@@ -28,10 +28,8 @@ class OneImage(Dataset, ABC):
         super().__init__()
 
         self.image_path = image_path
-        self.idxs = idxs
-        self.tile_size = tile_size
-        self.crop = crop
         self.image_size = imagesize.get(self.image_path)
+        self.tile_size = tile_size
         self.tile_windows = [
             w for w in get_tiles(
                 nols=self.image_size[1],
@@ -42,6 +40,8 @@ class OneImage(Dataset, ABC):
                 row_step=self.tile_size[0]
             )
         ]
+        self.idxs = list(range(len(self.tile_windows))) if idxs is None else idxs
+        self.crop = crop
 
     def __len__(self):
 
@@ -55,8 +55,8 @@ class OneImage(Dataset, ABC):
         col_offset = tile_window.col_off
         row_offset = tile_window.row_off
         tile_height, tile_width = self.tile_size
-        cx = np.random.randint(col_offset, col_offset + tile_width - self.crop - 1)
-        cy = np.random.randint(row_offset, row_offset + tile_height - self.crop - 1)
+        cx = np.random.randint(col_offset, col_offset + tile_width - self.crop + 1)
+        cy = np.random.randint(row_offset, row_offset + tile_height - self.crop + 1)
         window = Window(cx, cy, self.crop, self.crop)
 
         with rasterio.open(self.image_path) as image_file:
@@ -65,17 +65,14 @@ class OneImage(Dataset, ABC):
 
         return {'image': image, 'window': window}
 
+
 class OneLabeledImage(OneImage):
 
-    @staticmethod
-    def colors_to_labels(labels_color):
-
-        raise NotImplementedError
-
-    def __init__(self, label_path, *args, **kwargs):
+    def __init__(self, label_path, labels_formatter, *args, **kwargs):
 
         super(OneLabeledImage, self).__init__(*args, **kwargs)
         self.label_path = label_path
+        self.labels_formatter = labels_formatter
 
     def __getitem__(self, idx):
 
@@ -85,4 +82,6 @@ class OneLabeledImage(OneImage):
 
             label = label_file.read(window=d['window'], out_dtype=np.float32)
 
-        return {**d, **{'mask': label}}
+        mask = self.labels_formatter(label)
+
+        return {**d, **{'mask': mask}}

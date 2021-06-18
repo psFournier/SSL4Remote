@@ -37,8 +37,8 @@ class MultipleImages(Dataset):
         image_path = self.images_paths[idx]
 
         height, width = imagesize.get(image_path)
-        cx = np.random.randint(0, width - self.crop - 1)
-        cy = np.random.randint(0, height - self.crop - 1)
+        cx = np.random.randint(0, width - self.crop + 1)
+        cy = np.random.randint(0, height - self.crop + 1)
         window = Window(cx, cy, self.crop, self.crop)
 
         with rasterio.open(image_path) as image_file:
@@ -49,12 +49,12 @@ class MultipleImages(Dataset):
 
 class MultipleImagesLabeled(MultipleImages):
 
-    def __init__(self, labels_paths, colors_to_labels, *args, **kwargs):
+    def __init__(self, labels_paths, labels_formatter, *args, **kwargs):
 
         super(MultipleImagesLabeled, self).__init__(*args, **kwargs)
         assert len(labels_paths) == len(self.images_paths)
         self.labels_paths = labels_paths
-        self.colors_to_labels = colors_to_labels
+        self.labels_formatter = labels_formatter
 
     def __getitem__(self, idx):
 
@@ -65,6 +65,6 @@ class MultipleImagesLabeled(MultipleImages):
 
             label = label_file.read(window=d['window'], out_dtype=np.float32)
 
-        mask = self.colors_to_labels(label)
+        mask = self.labels_formatter(label)
 
         return {**d, **{'mask': mask}}

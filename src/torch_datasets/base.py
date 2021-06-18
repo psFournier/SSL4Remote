@@ -65,8 +65,8 @@ class Base(Dataset, ABC):
     def get_random_crop(self):
 
         cols, rows = self.image_size
-        cx = np.random.randint(0, cols - self.crop - 1)
-        cy = np.random.randint(0, rows - self.crop - 1)
+        cx = np.random.randint(0, cols - self.crop + 1)
+        cy = np.random.randint(0, rows - self.crop + 1)
         w = Window(cx, cy, self.crop, self.crop)
 
         return w

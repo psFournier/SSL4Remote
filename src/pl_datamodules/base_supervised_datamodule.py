@@ -8,7 +8,7 @@ import torch
 import numpy as np
 from utils import get_image_level_aug, get_batch_level_aug
 from augmentations import Compose
-
+from utils import worker_init_function
 
 class BaseSupervisedDatamodule(LightningDataModule):
 
@@ -66,10 +66,6 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         return parser
 
-    def wif(self, id):
-        uint64_seed = torch.initial_seed()
-        np.random.seed([uint64_seed >> 32, uint64_seed & 0xffff_ffff])
-
     def train_collate(self, batch):
 
         to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
@@ -108,7 +104,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
-            worker_init_fn=self.wif
+            worker_init_fn=worker_init_function
         )
 
         return sup_train_dataloader
@@ -122,7 +118,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
             batch_size=self.batch_size,
             num_workers=self.num_workers,
             pin_memory=True,
-            worker_init_fn=self.wif
+            worker_init_fn=worker_init_function
         )
 
         return val_dataloader

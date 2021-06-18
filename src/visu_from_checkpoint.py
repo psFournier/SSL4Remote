@@ -43,8 +43,8 @@ with rio.open(image_path) as image_file:
 
     cols = image_file.width
     rows = image_file.height
-    cx = np.random.randint(0, cols - crop_size - 1)
-    cy = np.random.randint(0, rows - crop_size - 1)
+    cx = np.random.randint(0, cols - crop_size + 1)
+    cy = np.random.randint(0, rows - crop_size + 1)
     window = rio.windows.Window(cx, cy, crop_size, crop_size)
     image = image_file.read(window=window,
                             out_dtype=np.uint8).transpose(1, 2, 0)

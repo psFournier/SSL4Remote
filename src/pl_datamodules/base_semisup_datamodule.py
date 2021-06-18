@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader, RandomSampler
 from pl_datamodules import BaseSupervisedDatamodule
-
+from utils import worker_init_function
 
 class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
@@ -42,7 +42,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
             collate_fn=self.val_collate,
             num_workers=self.num_workers,
             pin_memory=True,
-            worker_init_fn=self.wif
+            worker_init_fn=worker_init_function
         )
 
         train_dataloaders = {
