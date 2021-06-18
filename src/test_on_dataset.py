@@ -27,21 +27,22 @@ def main():
     module.load_state_dict(ckpt['state_dict'])
 
     labels_formatter = Miniworld2.colors_to_labels
-    dataset = OneLabeledImage(
-        image_path=args.image_path,
-        label_path=args.label_path,
-        idxs=None,
-        tile_size=(args.crop_size, args.crop_size),
-        crop=args.crop_size,
-        labels_formatter=labels_formatter
-    )
-
-    # dataset = MultipleImagesLabeled(
-    #     images_paths=sorted(glob.glob(f'{data_dir}/{city}/test/*_x.tif')),
-    #     labels_paths=sorted(glob.glob(f'{data_dir}/{city}/test/*_y.tif')),
+    # dataset = OneLabeledImage(
+    #     image_path=args.image_path,
+    #     label_path=args.label_path,
+    #     idxs=None,
+    #     tile_size=(args.crop_size, args.crop_size),
     #     crop=args.crop_size,
     #     labels_formatter=labels_formatter
     # )
+
+    data_dir = '/home/pierre/Documents/ONERA/ai4geo/miniworld_tif'
+    dataset = MultipleImagesLabeled(
+        images_paths=sorted(glob.glob(f'{data_dir}/vienna/test/*_x.tif')),
+        labels_paths=sorted(glob.glob(f'{data_dir}/vienna/test/*_y.tif')),
+        crop=args.crop_size,
+        labels_formatter=labels_formatter
+    )
 
     def collate(batch):
 

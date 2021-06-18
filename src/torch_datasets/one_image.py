@@ -1,4 +1,3 @@
-import warnings
 import numpy as np
 import rasterio
 from rasterio.windows import Window
@@ -7,19 +6,14 @@ from abc import ABC
 from utils import get_tiles
 import imagesize
 
-warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 class OneImage(Dataset, ABC):
-
-    """
-    Abstract class that inherits from the standard Torch Dataset abstract class
-    and define utilities for remote sensing dataset classes.
-    """
 
     def __init__(self,
                  image_path=None,
                  idxs=None,
                  tile_size = None,
+                 tile_step = None,
                  crop=None,
                  *args,
                  **kwargs
@@ -30,14 +24,15 @@ class OneImage(Dataset, ABC):
         self.image_path = image_path
         self.image_size = imagesize.get(self.image_path)
         self.tile_size = tile_size
+        self.tile_step = tile_size if tile_step is None else tile_step
         self.tile_windows = [
             w for w in get_tiles(
                 nols=self.image_size[1],
                 nrows=self.image_size[0],
                 width=self.tile_size[1],
                 height=self.tile_size[0],
-                col_step=self.tile_size[1],
-                row_step=self.tile_size[0]
+                col_step=self.tile_step[1],
+                row_step=self.tile_step[0]
             )
         ]
         self.idxs = list(range(len(self.tile_windows))) if idxs is None else idxs
