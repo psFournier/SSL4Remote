@@ -111,8 +111,6 @@ def main():
         for pred, window in zip(pred_list, window_list):
             pred_sum[:, window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] += pred
 
-        break
-
     avg_probs = pred_sum.softmax(dim=0)
     labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
     labels_one_hot = torch.from_numpy(labels_formatter(labels))
