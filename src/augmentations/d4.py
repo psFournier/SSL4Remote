@@ -33,7 +33,7 @@ class Hflip(torch.nn.Module):
 
         return img, label
 
-class Transpose(torch.nn.Module):
+class Transpose1(torch.nn.Module):
 
     def __init__(self, p=0.5):
         super().__init__()
@@ -48,40 +48,48 @@ class Transpose(torch.nn.Module):
 
         return img, label
 
-class Rotate(torch.nn.Module):
+class Transpose2(torch.nn.Module):
 
-    def __init__(self, p=0.5, angles=(90, 180, 270)):
+    def __init__(self, p=0.5):
         super().__init__()
         self.p = p
-        self.angles = angles
 
     def __call__(self, img, label=None):
 
         if torch.rand(1).item() < self.p:
-            angle = random.choice(self.angles)
-            img = F.rotate(img, angle)
-            if label is not None: label = F.rotate(label, angle)
+            img = torch.transpose(img[:, :, ::-1, ::-1], 2, 3)
+            if label is not None:
+                label = torch.transpose(label[:, :, ::-1, ::-1], 2, 3)
             return img, label
 
         return img, label
+
+# class Rotate(torch.nn.Module):
+#
+#     def __init__(self, p=0.5, angles=(90, 180, 270)):
+#         super().__init__()
+#         self.p = p
+#         self.angles = angles
+#
+#     def __call__(self, img, label=None):
+#
+#         if torch.rand(1).item() < self.p:
+#             angle = random.choice(self.angles)
+#             img = F.rotate(img, angle)
+#             if label is not None: label = F.rotate(label, angle)
+#             return img, label
+#
+#         return img, label
 
 class D4(torch.nn.Module):
 
     def __init__(self, p=0.5):
         super().__init__()
-        self.transforms = []
-        for angle in [0,90,270]:
-            for ph in [0, 1]:
-                for pv in [0, 1]:
-                    for pt in [0, 1]:
-                        self.transforms.append(
-                            Compose([
-                                Rotate(p=1, angles=(angle,)),
-                                Hflip(p=ph),
-                                Vflip(p=pv),
-                                Transpose(p=pt)
-                            ])
-                        )
+        self.transforms = [Hflip(p=1), Vflip(p=1), Transpose1(p=1), Transpose2(p=1)]
+        for t in [Hflip, Vflip, Transpose1, Transpose2]:
+            self.transforms.append(
+                Compose([Hflip(p=1), t(p=1)])
+            )
 
     def __call__(self, img, label):
 

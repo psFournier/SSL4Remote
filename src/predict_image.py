@@ -23,28 +23,13 @@ def _apply_tta(
     window_list = []
 
     if 'd4' in tta:
-        for angle in [0,90,270]:
-            for ph in [0, 1]:
-                for pv in [0, 1]:
-                    for pt in [0, 1]:
-                        if any([a!=0 for a in [angle, ph, pv, pt]]):
-                            t = Compose([
-                                Rotate(p=1, angles=(angle,)),
-                                Hflip(p=ph),
-                                Vflip(p=pv),
-                                Transpose(p=pt)
-                            ])
-                            aug_inputs = t(test_inputs)[0]
-                            aug_pred = network(aug_inputs)
-                            anti_t = Compose([
-                                Transpose(p=pt),
-                                Vflip(p=pv),
-                                Hflip(p=ph),
-                                Rotate(p=1, angles=(-angle,))
-                            ])
-                            pred = anti_t(aug_pred)[0].cpu()
-                            pred_list += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0], axis=0)]
-                            window_list += batch['window']
+        d4 = D4()
+        for t in d4.transforms:
+            aug_inputs = t(test_inputs)[0]
+            aug_pred = network(aug_inputs)
+            pred = t(aug_pred)[0].cpu()
+            pred_list += [np.squeeze(e, axis=0) for e in np.split(pred, pred.shape[0], axis=0)]
+            window_list += batch['window']
 
     return pred_list, window_list
 

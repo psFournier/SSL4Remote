@@ -49,12 +49,12 @@ class MultipleImages(Dataset):
 
 class MultipleImagesLabeled(MultipleImages):
 
-    def __init__(self, labels_paths, labels_formatter, *args, **kwargs):
+    def __init__(self, labels_paths, colors_to_labels, *args, **kwargs):
 
         super(MultipleImagesLabeled, self).__init__(*args, **kwargs)
         assert len(labels_paths) == len(self.images_paths)
         self.labels_paths = labels_paths
-        self.labels_formatter = labels_formatter
+        self.labels_formatter = colors_to_labels
 
     def __getitem__(self, idx):
 

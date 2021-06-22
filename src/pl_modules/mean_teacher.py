@@ -78,6 +78,6 @@ class MeanTeacher(SupervisedBaseline):
                                   self.network.parameters()):
             param_t.data.mul_(ema).add_(param.data, alpha=1 - ema)
 
-        loss = sup_loss + unsup_loss
+        loss = sup_loss + 5*unsup_loss
 
         return {"loss": loss}
