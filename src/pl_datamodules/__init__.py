@@ -1,7 +1,5 @@
 from pl_datamodules.base_supervised_datamodule import BaseSupervisedDatamodule
 from pl_datamodules.base_semisup_datamodule import BaseSemisupDatamodule
-# from pl_datamodules.isprs_vai_sup import IsprsVaiSup
-from pl_datamodules.miniworld_sup import MiniworldSup
-# from pl_datamodules.airs_sup import AirsSup
-from pl_datamodules.miniworld_semisup import MiniworldSemisup
-from pl_datamodules.miniworld2 import Miniworld2, Miniworld2Semisup
+from pl_datamodules.miniworld.miniworld_v1 import MiniworldV1, MiniworldV1Semisup
+from pl_datamodules.miniworld.miniworld_v2 import MiniworldV2, MiniworldV2Semisup
+from pl_datamodules.miniworld.miniworld_v3 import MiniworldV3, MiniworldV3Semisup

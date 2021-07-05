@@ -12,14 +12,18 @@ modules = {
 }
 
 datamodules = {
-    'mw2': {
-        'sup' : Miniworld2,
-        'MT' : Miniworld2Semisup
+    'mw1': {
+        'sup': MiniworldV1,
+        'mt': MiniworldV1Semisup
     },
-    'mw': {
-        'sup': MiniworldSup,
-        'MT':MiniworldSemisup
-    }
+    'mw2': {
+        'sup': MiniworldV2,
+        'mt': MiniworldV2Semisup
+    },
+    'mw3': {
+        'sup': MiniworldV3,
+        'mt': MiniworldV3Semisup
+    },
 }
 
 def main():
@@ -68,13 +72,13 @@ def main():
         verbose=True
     )
 
-    best_val_loss_ckpt = ModelCheckpoint(
-        monitor='Val_loss',
-        mode='min',
-        save_top_k=1,
-        verbose=True,
-        filename='{epoch}-{val_loss:.2f}'
-    )
+    # best_val_loss_ckpt = ModelCheckpoint(
+    #     monitor='Val_loss',
+    #     mode='min',
+    #     save_top_k=1,
+    #     verbose=True,
+    #     filename='{epoch}-{val_loss:.2f}'
+    # )
 
     # Callback that performs Stochastic Weight Averaging at the end of
     # training
@@ -100,7 +104,7 @@ def main():
         profiler=profiler,
         callbacks=[
             last_2_epoch_ckpt,
-            best_val_loss_ckpt,
+            # best_val_loss_ckpt,
             lr_monitor,
             swa,
             # image_visu
