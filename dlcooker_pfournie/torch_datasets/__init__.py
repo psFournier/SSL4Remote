@@ -1,0 +1,3 @@
+from dlcooker_pfournie.torch_datasets.one_image import OneImage, OneLabeledImage
+from dlcooker_pfournie.torch_datasets.multiple_images import MultipleImages, MultipleImagesLabeled
+from dlcooker_pfournie.torch_datasets.miniworld import colors_to_labels

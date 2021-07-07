@@ -1,0 +1,5 @@
+from dlcooker_pfournie.pl_datamodules.base_supervised_datamodule import BaseSupervisedDatamodule
+from dlcooker_pfournie.pl_datamodules.base_semisup_datamodule import BaseSemisupDatamodule
+from dlcooker_pfournie.pl_datamodules.miniworld.miniworld_v1 import MiniworldV1, MiniworldV1Semisup
+from dlcooker_pfournie.pl_datamodules.miniworld.miniworld_v2 import MiniworldV2, MiniworldV2Semisup
+from dlcooker_pfournie.pl_datamodules.miniworld.miniworld_v3 import MiniworldV3, MiniworldV3Semisup
