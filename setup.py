@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='dlcooker_pfournie',
+    name='dl_toolbox',
     version='1.0.0',
     # url='https://github.com/mypackage.git',
     author='Pierre Fournier',
     author_email='pierre.fournier@onera.fr',
-    description='Deep learning for remote sensing',
+    description='Deep learning toolbox',
     packages=find_packages(),
 )

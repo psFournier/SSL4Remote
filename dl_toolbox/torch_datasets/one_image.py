@@ -49,9 +49,8 @@ class OneImage(Dataset, ABC):
 
         col_offset = tile_window.col_off
         row_offset = tile_window.row_off
-        tile_height, tile_width = self.tile_size
-        cx = np.random.randint(col_offset, col_offset + tile_width - self.crop_size + 1)
-        cy = np.random.randint(row_offset, row_offset + tile_height - self.crop_size + 1)
+        cx = np.random.randint(col_offset, col_offset + self.tile_size - self.crop_size + 1)
+        cy = np.random.randint(row_offset, row_offset + self.tile_size - self.crop_size + 1)
         window = Window(cx, cy, self.crop_size, self.crop_size)
 
         with rasterio.open(self.image_path) as image_file:
