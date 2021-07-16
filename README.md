@@ -22,7 +22,7 @@ It relies on:
 
 > **_NOTE:_** For now I have not decided whether there should be one datamodule per method or one per pair dataset/method. What is gained in genericity is lost in ease of reuse.
     
-* For a given SSL algo, there is one Lightning Module file in `src/pl_modules`. The "research code" most probably lies in the `training_step()` method, as it should with Lightning modules.
+* For a given SSL algo, there is one Lightning Module file in `src/lightning_modules`. The "research code" most probably lies in the `training_step()` method, as it should with Lightning modules.
 * The `src/networks` is only used if we need networks that are not in segmentation-models-pytorch.
 * Validation data in the repo should rather be understood as test data; in particular, following [[1]](#1), we should not carry out any hyperparameter search on artificially held out validation samples from the labeled pool.
 

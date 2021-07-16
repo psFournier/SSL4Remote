@@ -1,0 +1,123 @@
+from argparse import ArgumentParser
+
+from pytorch_lightning import LightningDataModule
+from torch.utils.data import DataLoader, RandomSampler
+from torch.utils.data._utils.collate import default_collate
+import torch
+
+from dl_toolbox.augmentations import get_image_level_aug, get_batch_level_aug
+from dl_toolbox.augmentations import Compose
+from dl_toolbox.utils import worker_init_function
+
+class BaseSupervisedDatamodule(LightningDataModule):
+
+    def __init__(self,
+                 data_dir,
+                 crop_size,
+                 epoch_len,
+                 batch_size,
+                 workers,
+                 img_aug,
+                 aug_prob,
+                 batch_aug,
+                 train_val,
+                 train_idxs,
+                 val_idxs,
+                 *args,
+                 **kwargs):
+
+        super().__init__()
+
+        self.data_dir = data_dir
+        self.crop_size = crop_size
+        self.epoch_len = epoch_len
+        self.batch_size = batch_size
+        self.num_workers = workers
+        self.train_val = tuple(train_val)
+        self.train_idxs = list(train_idxs)
+        self.val_idxs = list(val_idxs)
+        self.sup_train_set = None
+        self.val_set = None
+        self.img_aug = Compose(get_image_level_aug(names=img_aug, p=aug_prob))
+        self.batch_aug = get_batch_level_aug(name=batch_aug)
+
+    def prepare_data(self, *args, **kwargs):
+
+        # Nothing to write on disk, data is already there, no hard
+        # preprocessing necessary
+        pass
+
+    @classmethod
+    def add_model_specific_args(cls, parent_parser):
+
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--epoch_len", type=int, default=10000)
+        parser.add_argument("--data_dir", type=str)
+        parser.add_argument("--batch_size", type=int, default=32)
+        parser.add_argument("--crop_size", type=int, default=128)
+        parser.add_argument("--workers", default=8, type=int)
+        parser.add_argument('--train_val', nargs=2, type=int, default=(0, 0))
+        parser.add_argument('--train_idxs', nargs='+', type=int, default=[])
+        parser.add_argument('--val_idxs', nargs='+', type=int, default=[])
+        parser.add_argument('--img_aug', nargs='+', type=str, default=[])
+        parser.add_argument('--aug_prob', type=float, default=0.7)
+        parser.add_argument('--batch_aug', type=str, default='no')
+
+        return parser
+
+    def train_collate(self, batch):
+
+        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+        batch = default_collate(to_collate)
+        if 'mask' not in batch.keys():
+            batch['mask'] = None
+        batch = self.img_aug(img=batch['image'], label=batch['mask'])
+        batch = self.batch_aug(*batch)
+        if len(batch) < 3:
+            s = batch[0].size()
+            batch = (*batch, torch.ones(size=(s[0], s[2], s[3])))
+
+        return batch
+
+    def val_collate(self, batch):
+
+        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+        batch = default_collate(to_collate)
+        if 'mask' not in batch.keys():
+            batch['mask'] = None
+
+        return batch['image'], batch['mask']
+
+    def train_dataloader(self):
+
+        sup_train_sampler = RandomSampler(
+            data_source=self.sup_train_set,
+            replacement=True,
+            num_samples=self.epoch_len
+        )
+
+        sup_train_dataloader = DataLoader(
+            dataset=self.sup_train_set,
+            batch_size=self.batch_size,
+            collate_fn=self.train_collate,
+            sampler=sup_train_sampler,
+            num_workers=self.num_workers,
+            pin_memory=True,
+            worker_init_fn=worker_init_function
+        )
+
+        return sup_train_dataloader
+
+    def val_dataloader(self):
+
+        val_dataloader = DataLoader(
+            dataset=self.val_set,
+            shuffle=False,
+            collate_fn=self.val_collate,
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+            pin_memory=True,
+            worker_init_fn=worker_init_function
+        )
+
+        return val_dataloader

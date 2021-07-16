@@ -1,0 +1,2 @@
+from dl_toolbox.torch_datasets.one_image import OneImage, OneLabeledImage
+from dl_toolbox.torch_datasets.multiple_images import MultipleImages, MultipleImagesLabeled
