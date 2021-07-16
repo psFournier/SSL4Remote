@@ -5,12 +5,12 @@ SCRIPT=/d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/src/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module sup \
---datamodule mw \
+--datamodule mw3 \
 --data_dir /d/pfournie/Documents/ai4geo/data/miniworld_tif \
 --output_dir /d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/outputs \
---workers 8 \
+--workers 6 \
 --max_epochs 500 \
 --gpus 1 \
---city austin \
---train_val 2 5 \
---tta_augment hsv contrast
+--train_cities austin vienna kitsap tyrol-w \
+--val_cities chicago \
+--exp_name test_mw3
