@@ -36,7 +36,7 @@ class MultipleImages(Dataset):
 
         image_path = self.images_paths[idx]
 
-        height, width = imagesize.get(image_path)
+        width, height = imagesize.get(image_path)
         cx = np.random.randint(0, width - self.crop_size + 1)
         cy = np.random.randint(0, height - self.crop_size + 1)
         window = Window(cx, cy, self.crop_size, self.crop_size)

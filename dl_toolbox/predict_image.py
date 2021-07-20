@@ -86,7 +86,7 @@ def main():
         worker_init_fn=worker_init_function
     )
 
-    height, width = imagesize.get(args.image_path)
+    width, height = imagesize.get(args.image_path)
     pred_sum = torch.zeros(size=(module.num_classes, height, width))
     metrics = {}
     module.eval()

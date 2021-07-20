@@ -22,7 +22,7 @@ class OneImage(Dataset, ABC):
         super().__init__()
 
         self.image_path = image_path
-        height, width = imagesize.get(self.image_path)
+        width, height = imagesize.get(self.image_path)
         self.tile_size = tile_size
         self.tile_step = tile_size if tile_step is None else tile_step
         self.tile_windows = [

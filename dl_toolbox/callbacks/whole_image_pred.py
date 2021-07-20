@@ -30,7 +30,7 @@ class WholeImagePred(pl.Callback):
         self.colors_to_labels = dataset.colors_to_labels
         self.network = pl_module.network
 
-        height, width = imagesize.get(self.image_path)
+        width, height = imagesize.get(self.image_path)
         self.pred_sum = torch.zeros(size=(pl_module.num_classes, height, width))
         pl_module.eval()
 
