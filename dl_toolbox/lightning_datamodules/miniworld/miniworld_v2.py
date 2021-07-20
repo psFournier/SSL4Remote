@@ -1,8 +1,9 @@
 from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
-from dl_toolbox.torch_datasets import MultipleImages, MultipleImagesLabeled
+from dl_toolbox.torch_datasets import MultipleImages, MultipleImagesLabeled, miniworld_label_formatter
 import glob
 from torch.utils.data import ConcatDataset
 import numpy as np
+from functools import partial
 
 
 class MiniworldV2(BaseSupervisedDatamodule):
@@ -25,24 +26,6 @@ class MiniworldV2(BaseSupervisedDatamodule):
 
         return parser
 
-    @staticmethod
-    def colors_to_labels(colors):
-
-        '''
-        Creates one-hot encoded labels for binary classification.
-        :param labels_color:
-        :return:
-        '''
-
-        labels0 = np.zeros(shape=colors.shape[1:], dtype=float)
-        labels1 = np.zeros(shape=colors.shape[1:], dtype=float)
-        mask = np.any(colors != [0], axis=0)
-        np.putmask(labels0, ~mask, 1.)
-        np.putmask(labels1, mask, 1.)
-        labels = np.stack([labels0, labels1], axis=0)
-
-        return labels
-
     def setup(self, stage=None):
 
         city_sup_train_sets = []
@@ -57,7 +40,7 @@ class MiniworldV2(BaseSupervisedDatamodule):
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
-                formatter=self.colors_to_labels
+                formatter=partial(miniworld_label_formatter, city=city)
             )
             city_sup_train_sets.append(sup_train_set)
 
@@ -67,7 +50,7 @@ class MiniworldV2(BaseSupervisedDatamodule):
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
-                formatter=self.colors_to_labels
+                formatter=partial(miniworld_label_formatter, city=city)
             )
             city_val_sets.append(val_set)
 

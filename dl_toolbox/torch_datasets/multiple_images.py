@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from abc import ABC
 from dl_toolbox.utils import get_tiles
 import imagesize
+from rasterio.rio import insp
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
@@ -28,6 +29,18 @@ class MultipleImages(Dataset):
         self.images_paths = images_paths
         self.crop_size = crop_size
 
+    def minmax(self, img):
+
+        out = np.zeros_like(img).astype(np.float32)
+        for i in range(img.shape[0]):
+            c = img[i, :, :].min()
+            d = img[i, :, :].max()
+
+            t = (img[i, :, :] - c) / (d - c)
+            out[i, :, :] = t
+
+        return out.astype(np.float32)
+
     def __len__(self):
 
         return len(self.images_paths)
@@ -44,7 +57,7 @@ class MultipleImages(Dataset):
         with rasterio.open(image_path) as image_file:
 
             image = image_file.read(window=window, out_dtype=np.float32) / 255
-
+            print(insp.stats((image_file, 4)))
         return {'image': image, 'window': window}
 
 class MultipleImagesLabeled(MultipleImages):
