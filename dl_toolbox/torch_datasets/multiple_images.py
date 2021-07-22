@@ -1,24 +1,22 @@
 import warnings
 import numpy as np
+import torch
 import rasterio
 from rasterio.windows import Window
 from torch.utils.data import Dataset
 from abc import ABC
 from dl_toolbox.utils import get_tiles
 import imagesize
+import matplotlib.pyplot as plt
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 
 class MultipleImages(Dataset):
 
-    """
-    Abstract class that inherits from the standard Torch Dataset abstract class
-    and define utilities for remote sensing dataset classes.
-    """
-
     def __init__(self,
                  images_paths=None,
                  crop_size=None,
+                 transforms=None,
                  *args,
                  **kwargs
                  ):
@@ -27,6 +25,16 @@ class MultipleImages(Dataset):
 
         self.images_paths = images_paths
         self.crop_size = crop_size
+        self.transforms = transforms
+
+    def get_window(self, image_path):
+
+        width, height = imagesize.get(image_path)
+        cx = np.random.randint(0, width - self.crop_size + 1)
+        cy = np.random.randint(0, height - self.crop_size + 1)
+        window = Window(cx, cy, self.crop_size, self.crop_size)
+
+        return window
 
     def __len__(self):
 
@@ -35,15 +43,14 @@ class MultipleImages(Dataset):
     def __getitem__(self, idx):
 
         image_path = self.images_paths[idx]
-
-        width, height = imagesize.get(image_path)
-        cx = np.random.randint(0, width - self.crop_size + 1)
-        cy = np.random.randint(0, height - self.crop_size + 1)
-        window = Window(cx, cy, self.crop_size, self.crop_size)
+        window = self.get_window(image_path)
 
         with rasterio.open(image_path) as image_file:
+            image = image_file.read(window=window, out_dtype=np.float32)
+            image = torch.from_numpy(image).contiguous() / 255
 
-            image = image_file.read(window=window, out_dtype=np.float32) / 255
+        if self.transforms is not None:
+            image = self.transforms(img=image)
 
         return {'image': image, 'window': window}
 
@@ -58,13 +65,21 @@ class MultipleImagesLabeled(MultipleImages):
 
     def __getitem__(self, idx):
 
-        d = super(MultipleImagesLabeled, self).__getitem__(idx)
+        image_path = self.images_paths[idx]
         label_path = self.labels_paths[idx]
+        window = self.get_window(image_path)
+
+        with rasterio.open(image_path) as image_file:
+            image = image_file.read(window=window, out_dtype=np.float32)
+            image = torch.from_numpy(image).contiguous() / 255
 
         with rasterio.open(label_path) as label_file:
+            label = label_file.read(window=window, out_dtype=np.float32)
+            mask = self.labels_formatter(label)
+            mask = torch.from_numpy(mask).contiguous()
 
-            label = label_file.read(window=d['window'], out_dtype=np.float32)
+        if self.transforms is not None:
 
-        mask = self.labels_formatter(label)
+            image, mask = self.transforms(img=image, label=mask)
 
-        return {**d, **{'mask': mask}}
+        return {'image': image, 'window': window, 'mask': mask}

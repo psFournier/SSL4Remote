@@ -5,9 +5,9 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 import torch
 
-from dl_toolbox.augmentations import get_image_level_aug, get_batch_level_aug
-from dl_toolbox.augmentations import Compose
 from dl_toolbox.utils import worker_init_function
+from dl_toolbox.torch_collate import CollateDefault
+from dl_toolbox.augmentations import get_transforms
 
 class BaseSupervisedDatamodule(LightningDataModule):
 
@@ -15,14 +15,16 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  data_dir,
                  crop_size,
                  epoch_len,
-                 batch_size,
+                 sup_batch_size,
                  workers,
                  img_aug,
-                 aug_prob,
                  batch_aug,
                  train_val,
                  train_idxs,
                  val_idxs,
+                 train_dataset_transforms_strat,
+                 val_dataset_transforms_strat,
+                 train_collate_transforms_strat,
                  *args,
                  **kwargs):
 
@@ -31,15 +33,17 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.data_dir = data_dir
         self.crop_size = crop_size
         self.epoch_len = epoch_len
-        self.batch_size = batch_size
+        self.sup_batch_size = sup_batch_size
         self.num_workers = workers
         self.train_val = tuple(train_val)
         self.train_idxs = list(train_idxs)
         self.val_idxs = list(val_idxs)
         self.sup_train_set = None
         self.val_set = None
-        self.img_aug = Compose(get_image_level_aug(names=img_aug, p=aug_prob))
-        self.batch_aug = get_batch_level_aug(name=batch_aug)
+
+        self.train_dataset_transforms = get_transforms(train_dataset_transforms_strat)
+        self.val_dataset_transforms = get_transforms(val_dataset_transforms_strat)
+        self.train_collate_transforms = get_transforms(train_collate_transforms_strat)
 
     def prepare_data(self, *args, **kwargs):
 
@@ -53,40 +57,19 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--data_dir", type=str)
-        parser.add_argument("--batch_size", type=int, default=32)
-        parser.add_argument("--crop_size", type=int, default=128)
+        parser.add_argument("--sup_batch_size", type=int, default=32)
+        parser.add_argument("--crop_size", type=int, default=256)
         parser.add_argument("--workers", default=8, type=int)
         parser.add_argument('--train_val', nargs=2, type=int, default=(0, 0))
         parser.add_argument('--train_idxs', nargs='+', type=int, default=[])
         parser.add_argument('--val_idxs', nargs='+', type=int, default=[])
         parser.add_argument('--img_aug', nargs='+', type=str, default=[])
-        parser.add_argument('--aug_prob', type=float, default=0.7)
         parser.add_argument('--batch_aug', type=str, default='no')
+        parser.add_argument('--train_dataset_transforms_strat', type=str, default='no')
+        parser.add_argument('--val_dataset_transforms_strat', type=str, default='no')
+        parser.add_argument('--train_collate_transforms_strat', type=str, default='no')
 
         return parser
-
-    def train_collate(self, batch):
-
-        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
-        batch = default_collate(to_collate)
-        if 'mask' not in batch.keys():
-            batch['mask'] = None
-        batch = self.img_aug(img=batch['image'], label=batch['mask'])
-        batch = self.batch_aug(*batch)
-        if len(batch) < 3:
-            s = batch[0].size()
-            batch = (*batch, torch.ones(size=(s[0], s[2], s[3])))
-
-        return batch
-
-    def val_collate(self, batch):
-
-        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
-        batch = default_collate(to_collate)
-        if 'mask' not in batch.keys():
-            batch['mask'] = None
-
-        return batch['image'], batch['mask']
 
     def train_dataloader(self):
 
@@ -98,8 +81,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
-            batch_size=self.batch_size,
-            collate_fn=self.train_collate,
+            batch_size=self.sup_batch_size,
+            collate_fn=CollateDefault(self.train_collate_transforms),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -113,8 +96,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             shuffle=False,
-            collate_fn=self.val_collate,
-            batch_size=self.batch_size,
+            collate_fn=CollateDefault(),
+            batch_size=self.sup_batch_size,
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=worker_init_function

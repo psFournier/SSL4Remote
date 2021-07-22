@@ -15,6 +15,7 @@ class OneImage(Dataset, ABC):
                  tile_size = None,
                  tile_step = None,
                  crop_size=None,
+                 transforms=None,
                  *args,
                  **kwargs
                  ):
@@ -37,6 +38,16 @@ class OneImage(Dataset, ABC):
         ]
         self.idxs = list(range(len(self.tile_windows))) if idxs is None else idxs
         self.crop_size = crop_size
+        self.transforms = transforms
+
+    def get_window(self, idx):
+
+        tile_window = self.tile_windows[idx]
+        col_offset = tile_window.col_off
+        row_offset = tile_window.row_off
+        cx = np.random.randint(col_offset, col_offset + self.tile_size - self.crop_size + 1)
+        cy = np.random.randint(row_offset, row_offset + self.tile_size - self.crop_size + 1)
+        window = Window(cx, cy, self.crop_size, self.crop_size)
 
     def __len__(self):
 
@@ -45,20 +56,14 @@ class OneImage(Dataset, ABC):
     def __getitem__(self, idx):
 
         tile_idx = self.idxs[idx]
-        tile_window = self.tile_windows[tile_idx]
-
-        col_offset = tile_window.col_off
-        row_offset = tile_window.row_off
-        cx = np.random.randint(col_offset, col_offset + self.tile_size - self.crop_size + 1)
-        cy = np.random.randint(row_offset, row_offset + self.tile_size - self.crop_size + 1)
-        window = Window(cx, cy, self.crop_size, self.crop_size)
-
+        window = self.get_window(tile_idx)
         with rasterio.open(self.image_path) as image_file:
-
             image = image_file.read(window=window, out_dtype=np.float32) / 255
 
-        return {'image': image, 'window': window}
+        if self.transforms is not None:
+            image = self.transforms(image = image)
 
+        return {'image': image, 'window': window}
 
 class OneLabeledImage(OneImage):
 
@@ -70,12 +75,17 @@ class OneLabeledImage(OneImage):
 
     def __getitem__(self, idx):
 
-        d = super(OneLabeledImage, self).__getitem__(idx)
+        tile_idx = self.idxs[idx]
+        window = self.get_window(tile_idx)
+
+        with rasterio.open(self.image_path) as image_file:
+            image = image_file.read(window=window, out_dtype=np.float32) / 255
 
         with rasterio.open(self.label_path) as label_file:
+            label = label_file.read(window=window, out_dtype=np.float32)
+            mask = self.labels_formatter(label)
 
-            label = label_file.read(window=d['window'], out_dtype=np.float32)
+        if self.transforms is not None:
+            image, mask = self.transforms(img=image, label=mask)
 
-        mask = self.labels_formatter(label)
-
-        return {**d, **{'mask': mask}}
+        return {'image': image, 'window': window, 'mask': mask}

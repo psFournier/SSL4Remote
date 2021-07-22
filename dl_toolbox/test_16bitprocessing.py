@@ -16,10 +16,10 @@ img = np.uint8(img).transpose(1,2,0)
 # img1 = A.functional.adjust_brightness_torchvision(img1, 2)
 # plt.imshow(np.uint8(img1))
 
-# img2 = A.functional.clahe(img)
-f, ax = plt.subplots(2, 1, figsize=(15, 15))
-ax[0,0].imshow(img)
-ax[1,0].imshow()
+img2 = A.functional.clahe(img)
+f, ax = plt.subplots(1, 2, figsize=(15, 15))
+ax[0].imshow(img)
+ax[1].imshow(img2)
 
 
 def histogramnormalization(

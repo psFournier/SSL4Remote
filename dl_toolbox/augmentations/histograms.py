@@ -1,7 +1,7 @@
 import torch
 import torchvision.transforms.functional as F
 
-class HistEq(torch.nn.Module):
+class HistEq:
 
     def __init__(self, p=0.5):
         super().__init__()

@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 class NoOp():
 
@@ -6,9 +7,9 @@ class NoOp():
 
         pass
 
-    def __call__(self, input_batch, target_batch):
+    def __call__(self, img, label=None):
 
-        return input_batch, target_batch
+        return img, label
 
 class Compose:
 
@@ -18,6 +19,19 @@ class Compose:
     def __call__(self, img, label=None):
         for t in self.transforms:
             img, label = t(img, label)
+        return img, label
+
+
+class OneOf:
+
+    def __init__(self, transforms, transforms_ps):
+        self.transforms = transforms
+        s = sum(transforms_ps)
+        self.transforms_ps = [p / s for p in transforms_ps]
+
+    def __call__(self, img, label=None):
+        t = np.random.choice(self.transforms, p=self.transforms_ps)
+        img, label = t(img, label)
         return img, label
 
 

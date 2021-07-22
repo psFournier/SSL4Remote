@@ -37,7 +37,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
         unsup_train_dataloader = DataLoader(
             dataset=self.unsup_train_set,
-            batch_size=self.batch_size,
+            batch_size=self.unsup_batch_size,
             sampler=unsup_train_sampler,
             collate_fn=self.val_collate,
             num_workers=self.num_workers,

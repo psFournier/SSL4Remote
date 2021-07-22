@@ -40,6 +40,7 @@ class MiniworldV2(BaseSupervisedDatamodule):
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
+                transforms=self.train_dataset_transforms,
                 formatter=partial(miniworld_label_formatter, city=city)
             )
             city_sup_train_sets.append(sup_train_set)
@@ -50,6 +51,7 @@ class MiniworldV2(BaseSupervisedDatamodule):
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
+                transforms=self.val_dataset_transforms,
                 formatter=partial(miniworld_label_formatter, city=city)
             )
             city_val_sets.append(val_set)
@@ -76,7 +78,8 @@ class MiniworldV2Semisup(MiniworldV2, BaseSemisupDatamodule):
                 sorted(glob.glob(f'{self.data_dir}/{city}/test/*_x.tif'))
             unsup_train_set = MultipleImages(
                 images_paths=image_list,
-                crop_size=self.crop_size
+                crop_size=self.crop_size,
+                transforms=self.train_dataset_transforms
             )
             city_unsup_train_sets.append(unsup_train_set)
 
