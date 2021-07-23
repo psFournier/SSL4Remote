@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from abc import ABC
 from dl_toolbox.utils import get_tiles
 import imagesize
-
+import torch
 
 class OneImage(Dataset, ABC):
 
@@ -49,6 +49,8 @@ class OneImage(Dataset, ABC):
         cy = np.random.randint(row_offset, row_offset + self.tile_size - self.crop_size + 1)
         window = Window(cx, cy, self.crop_size, self.crop_size)
 
+        return window
+
     def __len__(self):
 
         return len(self.idxs)
@@ -58,12 +60,16 @@ class OneImage(Dataset, ABC):
         tile_idx = self.idxs[idx]
         window = self.get_window(tile_idx)
         with rasterio.open(self.image_path) as image_file:
-            image = image_file.read(window=window, out_dtype=np.float32) / 255
+            image = image_file.read(window=window, out_dtype=np.float32)
+            image = torch.from_numpy(image).contiguous() / 255
 
         if self.transforms is not None:
-            image = self.transforms(image = image)
+            end_image = self.transforms(img=image)
+        else:
+            end_image = image
 
-        return {'image': image, 'window': window}
+        return {'orig_image': image, 'image': end_image, 'window': window}
+
 
 class OneLabeledImage(OneImage):
 
@@ -79,13 +85,18 @@ class OneLabeledImage(OneImage):
         window = self.get_window(tile_idx)
 
         with rasterio.open(self.image_path) as image_file:
-            image = image_file.read(window=window, out_dtype=np.float32) / 255
+            image = image_file.read(window=window, out_dtype=np.float32)
+            image = torch.from_numpy(image).contiguous() / 255
 
         with rasterio.open(self.label_path) as label_file:
             label = label_file.read(window=window, out_dtype=np.float32)
             mask = self.labels_formatter(label)
+            mask = torch.from_numpy(mask).contiguous()
 
         if self.transforms is not None:
-            image, mask = self.transforms(img=image, label=mask)
+            end_image, end_mask = self.transforms(img=image, label=mask)
+        else:
+            end_image, end_mask = image, mask
 
-        return {'image': image, 'window': window, 'mask': mask}
+        return {'orig_image': image, 'orig_mask': mask, 'image': end_image, 'window': window, 'mask': end_mask}
+

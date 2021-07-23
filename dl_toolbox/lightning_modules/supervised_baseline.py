@@ -88,7 +88,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Train_IoU_1', IoU[1])
         self.log('Train_IoU', torch.mean(IoU))
 
-        return {"loss": loss}
+        return {'preds': outputs, "loss": loss}
 
     def validation_step(self, batch, batch_idx):
 

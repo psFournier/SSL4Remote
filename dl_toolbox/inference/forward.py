@@ -3,27 +3,29 @@ from pytorch_lightning import Trainer
 from torch.utils.data import DataLoader
 import torch
 import imagesize
-from hydra.utils import instantiate
 from omegaconf import OmegaConf
 import numpy as np
 import rasterio
 from albumentations.pytorch import ToTensorV2
-import albumentations as A
 from torch import nn
-from dl_toolbox.torch_datasets import OneImage
+from dl_toolbox.torch_datasets import OneImage, miniworld_label_formatter
 from dl_toolbox.torch_collate import CollateDefault
+from dl_toolbox.lightning_modules import SupervisedBaseline
+from dl_toolbox.utils import worker_init_function
+from dl_toolbox.inference import apply_tta
+import torchmetrics.functional as  M
 
-class DummyModule(nn.Module):
-    def __init__(self, model, config_loss):
-        super().__init__()
-        self.model = model
-        # https://discuss.pytorch.org/t/what-is-the-difference-between-register-buffer-and-register-parameter-of-nn-module/32723/8
-        self.train_loss = instantiate(config_loss)
-        self.val_loss = instantiate(config_loss)
-        self.test_loss = instantiate(config_loss)
-
-    def forward(self, x):
-        return self.model.forward(x)
+# class DummyModule(nn.Module):
+#     def __init__(self, model, config_loss):
+#         super().__init__()
+#         self.model = model
+#         # https://discuss.pytorch.org/t/what-is-the-difference-between-register-buffer-and-register-parameter-of-nn-module/32723/8
+#         self.train_loss = instantiate(config_loss)
+#         self.val_loss = instantiate(config_loss)
+#         self.test_loss = instantiate(config_loss)
+#
+#     def forward(self, x):
+#         return self.model.forward(x)
 
 def main():
 
@@ -36,7 +38,7 @@ def main():
 
     # Required arguments
     parser.add_argument("--ckpt_path", type=str)
-    parser.add_argument("--config_path", type=str)
+    parser.add_argument("--config_path", type=str, default=None)
     parser.add_argument("--image_path", type=str)
     parser.add_argument("--output_path", type=str)
 
@@ -57,24 +59,20 @@ def main():
     # Loading the module used for training with the weights from the checkpoint.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt = torch.load(args.ckpt_path, map_location=device)
-    module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
+
+    module = SupervisedBaseline()
+    # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
 
-    # Creating a dataloader for the image-based dataset we want to test on.
-    transform = A.Compose(
-        [instantiate(transfo) for transfo in config['transforms']['val']]
-        + [ToTensorV2()]
-    )
-    # Could be PHR_PAN, PHR_PAN_NDVI...
     dataset = OneImage(
         image_path=args.image_path,
         label_path=args.label_path,
         tile_size=args.tile_size,
         tile_step=args.tile_step,
         crop_size=args.tile_size,
-        transforms=transform
     )
+
     # The collate function is needed to process the read windows from
     # the dataset __get_item__ method.
     dataloader = DataLoader(
@@ -88,8 +86,9 @@ def main():
     )
 
     # The full matrix used to cumulate results from overlapping tiles or tta
-    height, width = imagesize.get(args.image_path)
-    pred_sum = torch.zeros(size=(config.model.classes, height, width))
+    width, height = imagesize.get(args.image_path)
+    pred_sum = torch.zeros(size=(module.num_classes, height, width))
+    metrics = {}
 
     for batch in dataloader:
 
@@ -103,36 +102,35 @@ def main():
         window_list = windows[:]
 
         if args.tta:
-            tta_preds, tta_windows = utils.apply_tta(
-                args.tta, device, module.network, batch
-            )
+            tta_preds, tta_windows = apply_tta(args.tta, device, module.network, batch)
             pred_list += tta_preds
             window_list += tta_windows
 
         for pred, window in zip(pred_list, window_list):
             pred_sum[:, window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] += pred
 
-    # We retrieve the geodata from the profile of the input to keep it in the output
+        break
+
+    avg_probs = pred_sum.softmax(dim=0)
+    labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
+    labels = miniworld_label_formatter(labels, city='vienna')
+    labels_one_hot = torch.from_numpy(labels)
+    test_labels = torch.argmax(labels_one_hot, dim=0).long()
+    IoU = M.iou(torch.unsqueeze(avg_probs, 0),
+                      torch.unsqueeze(test_labels, 0),
+                      reduction='none',
+                      num_classes=module.num_classes)
+    metrics['IoU_0'] = IoU[0]
+    metrics['IoU_1'] = IoU[1]
+    metrics['IoU'] = IoU.mean()
+    print(metrics)
+
     if args.output_path is not None:
         pred_profile = rasterio.open(args.image_path).profile
         pred_profile.update(count=1)
         pred_profile.update(nodata=None)
         with rasterio.open(args.output_path, 'w', **pred_profile) as dst:
             dst.write(np.uint8(np.argmax(pred_sum, axis=0)), indexes=1)
-
-    # metrics = {}
-    # avg_probs = pred_sum.softmax(dim=0)
-    # labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
-    # labels_one_hot = torch.from_numpy(to_labels(labels))
-    # test_labels = torch.argmax(labels_one_hot, dim=0).long()
-    # IoU = M.iou(torch.unsqueeze(avg_probs, 0),
-    #             torch.unsqueeze(test_labels, 0),
-    #             reduction='none',
-    #             num_classes=module.num_classes)
-    # metrics['IoU_0'] = IoU[0]
-    # metrics['IoU_1'] = IoU[1]
-    # metrics['IoU'] = IoU.mean()
-    # print(metrics)
 
 
 if __name__ == "__main__":

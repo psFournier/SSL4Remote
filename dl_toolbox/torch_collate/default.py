@@ -11,7 +11,7 @@ class CollateDefault():
     def __call__(self, batch, *args, **kwargs):
 
         windows = [elem['window'] for elem in batch]
-        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'mask']} for elem in batch]
+        to_collate = [{k: v for k, v in elem.items() if k in ['image', 'orig_image', 'mask']} for elem in batch]
         batch = default_collate(to_collate)
         if 'mask' not in batch.keys():
             batch['mask'] = None

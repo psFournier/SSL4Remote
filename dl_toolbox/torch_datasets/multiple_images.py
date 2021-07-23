@@ -50,9 +50,12 @@ class MultipleImages(Dataset):
             image = torch.from_numpy(image).contiguous() / 255
 
         if self.transforms is not None:
-            image = self.transforms(img=image)
+            end_image = self.transforms(img=image)
+        else:
+            end_image = image
 
-        return {'image': image, 'window': window}
+        return {'orig_image': image, 'image': end_image, 'window': window}
+
 
 class MultipleImagesLabeled(MultipleImages):
 
@@ -79,7 +82,8 @@ class MultipleImagesLabeled(MultipleImages):
             mask = torch.from_numpy(mask).contiguous()
 
         if self.transforms is not None:
+            end_image, end_mask = self.transforms(img=image, label=mask)
+        else:
+            end_image, end_mask = image, mask
 
-            image, mask = self.transforms(img=image, label=mask)
-
-        return {'image': image, 'window': window, 'mask': mask}
+        return {'orig_image': image, 'orig_mask': mask, 'image': end_image, 'window': window, 'mask': end_mask}

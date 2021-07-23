@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 def inria_label_formatter(labels):
     '''
@@ -45,6 +46,15 @@ def semcity_label_formatter(labels):
     labels = np.stack([labels0, labels1], axis=0)
 
     return labels
+
+def binary_labels_to_rgb(labels):
+
+    labels = labels.cpu().numpy()
+    colors = np.zeros(shape=(labels.shape[0], labels.shape[1], labels.shape[2], 3), dtype=np.uint8)
+    idx = np.array(labels == 1)
+    colors[idx] = np.array([255,255,255])
+    res = np.transpose(colors, axes=(0, 3, 1, 2))
+    return torch.from_numpy(res).float()
 
 def miniworld_label_formatter(labels, city):
 

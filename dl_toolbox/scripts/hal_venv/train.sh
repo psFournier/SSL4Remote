@@ -5,9 +5,9 @@
 
 module load python/3.7.2
 cd "${TMPDIR}"
-mkdir miniworld_tif
-CITY=austin
-cp -r /work/OT/ai4geo/users/fournip/miniworld_tif/"${CITY}" miniworld_tif/
+#mkdir miniworld_tif
+#CITY=austin
+#cp -r /work/OT/ai4geo/users/fournip/miniworld_tif/"${CITY}" miniworld_tif/
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
 SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dlcooker_pfournie/train.py
@@ -19,9 +19,9 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dlcooker_pfournie/train.py
 --max_epochs 500 \
 --gpus 1 \
 --module sup \
---datamodule mw \
---city "${CITY}" \
---train_val 31 5 \
+--datamodule mw2 \
+--cities christchurch \
+--train_dataset_transforms_strat hard \
 --exp_name "${PBS_JOBNAME}"
 
 module unload python/3.7.2

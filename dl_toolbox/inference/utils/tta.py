@@ -1,5 +1,5 @@
 import numpy as np
-from dlcooker.forward.utils.d4 import D4
+from dl_toolbox.augmentations import D4
 
 def apply_tta(
         tta,

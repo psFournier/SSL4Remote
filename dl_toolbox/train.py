@@ -103,7 +103,7 @@ def main():
             # best_val_loss_ckpt,
             lr_monitor,
             # swa,
-            # image_visu
+            image_visu
         ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,

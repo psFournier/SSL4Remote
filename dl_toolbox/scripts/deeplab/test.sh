@@ -2,7 +2,7 @@
 
 HOME=/d/pfournie/semi-supervised-learning
 PYTHON="$HOME"/venv/bin/python
-SCRIPT="$HOME"/dlcooker_pfournie/test.py
+SCRIPT="$HOME"/dl_toolbox/test.py
 
 "${PYTHON}" "${SCRIPT}" \
 --ckpt_path "$HOME"/outputs/sup_mw_austin_31-5/version_0/checkpoints/epoch=418-step=131146.ckpt \
