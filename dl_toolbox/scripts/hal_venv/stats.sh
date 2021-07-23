@@ -3,7 +3,7 @@
 module load python/3.7.2
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
-SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dlcooker_pfournie/stat_scores_image.py
+SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/utils/stat_scores_image.py
 
 "${PYTHON}" "${SCRIPT}" \
 --label_path /work/OT/ai4geo/users/fournip/miniworld_tif/vienna/train/0_y.tif \

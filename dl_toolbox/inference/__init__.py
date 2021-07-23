@@ -1,1 +1,1 @@
-from .utils import apply_tta
+from .test_time_augment import apply_tta

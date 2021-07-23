@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PYTHON=/d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/venv/bin/python
-SCRIPT=/d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/dlcooker_pfournie/train.py
+SCRIPT=/d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/dl_toolbox/examples/miniworld/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module sup \

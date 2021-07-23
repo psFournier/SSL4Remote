@@ -38,7 +38,7 @@ class MeanTeacher(SupervisedBaseline):
     def training_step(self, batch, batch_idx):
 
         sup_data, unsup_data = batch["sup"], batch["unsup"]
-        sup_inputs, sup_labels_onehot = sup_data['image'], sup_data['mask']
+        sup_inputs, sup_labels_onehot = sup_data['image'], sup_data['mask ']
         sup_labels = torch.argmax(sup_labels_onehot, dim=1).long()
 
         student_outputs = self.network(sup_inputs)

@@ -10,7 +10,7 @@ cd "${TMPDIR}"
 #cp -r /work/OT/ai4geo/users/fournip/miniworld_tif/"${CITY}" miniworld_tif/
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
-SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dlcooker_pfournie/train.py
+SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/miniworld/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --data_dir "${TMPDIR}"/miniworld_tif \

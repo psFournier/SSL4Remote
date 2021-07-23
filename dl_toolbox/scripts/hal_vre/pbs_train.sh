@@ -24,5 +24,5 @@ echo "${PARAMS}"
 echo "##################################"
 
 module load singularity
-$SING_CMD ~/SemiSupervised/SSL4Remote/dlcooker_pfournie/scripts/vre/train.sh ${PARAMS}
+$SING_CMD ~/SemiSupervised/SSL4Remote/dl_toolbox/scripts/vre/train.sh ${PARAMS}
 

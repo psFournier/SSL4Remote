@@ -6,14 +6,15 @@
 module load python/3.7.2
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
-SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/miniworld/test.py
+SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/miniworld/predict.py
 
 "${PYTHON}" "${SCRIPT}" \
---module sup \
 --ckpt_path /work/OT/ai4geo/users/fournip/outputs/christchurch/christchurch_aug/version_0/epoch=400-step=125200.ckpt \
 --gpus 1 \
+--image_path /work/OT/ai4geo/users/fournip/miniworld_tif/vienna/train/0_x.tif \
+--label_path /work/OT/ai4geo/users/fournip/miniworld_tif/vienna/train/0_y.tif \
+--output_path /work/OT/ai4geo/users/fournip/miniworld_tif/vienna/train/0_x_pred.tif \
 --workers 6 \
---data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \
---city vienna \
+--batch_size 16 \
 --tile_size 128 \
---batch_size 32
+--tile_step 128

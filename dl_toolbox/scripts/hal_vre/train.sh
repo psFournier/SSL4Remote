@@ -8,4 +8,4 @@ echo "$@"
 echo "#############################################################"
 
 
-python ~/SemiSupervised/SSL4Remote/dlcooker_pfournie/main.py "$@"
+python ~/SemiSupervised/SSL4Remote/dl_toolbox/main.py "$@"

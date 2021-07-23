@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PYTHON=/home/pierre/PycharmProjects/RemoteSensing/venv/bin/python
-SCRIPT=/home/pierre/PycharmProjects/RemoteSensing/dlcooker_pfournie/train.py
+SCRIPT=/home/pierre/PycharmProjects/RemoteSensing/dl_toolbox/examples/miniworld/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module sup \

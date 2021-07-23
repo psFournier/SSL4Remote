@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PYTHON=/d/pfournie/semi-supervised-learning/venv/bin/python
-SCRIPT=/d/pfournie/semi-supervised-learning/dl_toolbox/train.py
+SCRIPT=/d/pfournie/semi-supervised-learning/dl_toolbox/examples/miniworld/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module sup \
