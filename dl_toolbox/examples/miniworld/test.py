@@ -38,8 +38,8 @@ def main():
     pl_module.load_state_dict(ckpt['state_dict'])
     pl_module.eval()
 
-    image_list = sorted(glob.glob(f'{args.data_dir}/{args.city}/train/*_x.tif'))
-    label_list = sorted(glob.glob(f'{args.data_dir}/{args.city}/train/*_y.tif'))
+    image_list = sorted(glob.glob(f'{args.data_dir}/{args.city}/test/*_x.tif'))
+    label_list = sorted(glob.glob(f'{args.data_dir}/{args.city}/test/*_y.tif'))
     test_set_transforms = NoOp()
 
     test_set = MultipleImagesLabeled(

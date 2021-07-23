@@ -1,9 +1,8 @@
 from argparse import ArgumentParser
-from pytorch_lightning import Trainer
 from torch.utils.data import DataLoader
 import torch
 import imagesize
-from omegaconf import OmegaConf
+# from omegaconf import OmegaConf
 import numpy as np
 import rasterio
 from albumentations.pytorch import ToTensorV2
@@ -50,11 +49,10 @@ def main():
     parser.add_argument("--tile_size", type=int, default=128)
     parser.add_argument("--tile_step", type=int, default=64)
 
-    parser = Trainer.add_argparse_args(parser)
     args = parser.parse_args()
 
     # Retrieving the full configuration
-    config = OmegaConf.load(args.config_path)
+    # config = OmegaConf.load(args.config_path)
 
     # Loading the module used for training with the weights from the checkpoint.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -64,6 +62,7 @@ def main():
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
+    module.to(device)
 
     dataset = OneImage(
         image_path=args.image_path,
@@ -91,7 +90,7 @@ def main():
     metrics = {}
 
     for batch in dataloader:
-
+        break
         inputs, _, windows = batch['image'], batch['mask'], batch['window']
 
         with torch.no_grad():
@@ -111,25 +110,35 @@ def main():
 
         break
 
-    avg_probs = pred_sum.softmax(dim=0)
-    labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
-    labels = miniworld_label_formatter(labels, city='vienna')
-    labels_one_hot = torch.from_numpy(labels)
-    test_labels = torch.argmax(labels_one_hot, dim=0).long()
-    IoU = M.iou(torch.unsqueeze(avg_probs, 0),
-                      torch.unsqueeze(test_labels, 0),
-                      reduction='none',
-                      num_classes=module.num_classes)
-    metrics['IoU_0'] = IoU[0]
-    metrics['IoU_1'] = IoU[1]
-    metrics['IoU'] = IoU.mean()
-    print(metrics)
+    # avg_probs = pred_sum.softmax(dim=0)
+    # labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
+    # labels = miniworld_label_formatter(labels, city='vienna')
+    # labels_one_hot = torch.from_numpy(labels)
+    # test_labels = torch.argmax(labels_one_hot, dim=0).long()
+    # IoU = M.iou(torch.unsqueeze(avg_probs, 0),
+    #                   torch.unsqueeze(test_labels, 0),
+    #                   reduction='none',
+    #                   num_classes=module.num_classes)
+    # metrics['IoU_0'] = IoU[0]
+    # metrics['IoU_1'] = IoU[1]
+    # metrics['IoU'] = IoU.mean()
+    # print(metrics)
 
     if args.output_path is not None:
         pred_profile = rasterio.open(args.image_path).profile
-        pred_profile.update(count=1)
-        pred_profile.update(nodata=None)
-        with rasterio.open(args.output_path, 'w', **pred_profile) as dst:
+        profile = {
+            'driver': 'GTiff',
+            'dtype': 'uint8',
+            'nodata': None,
+            'width': pred_profile['width'],
+            'height': pred_profile['height'],
+            'count': 1,
+            'crs': pred_profile['crs'],
+            'transform': pred_profile['transform'],
+            'tiled': False,
+            'interleave': 'pixel'
+        }
+        with rasterio.open(args.output_path, 'w', **profile) as dst:
             dst.write(np.uint8(np.argmax(pred_sum, axis=0)), indexes=1)
 
 
