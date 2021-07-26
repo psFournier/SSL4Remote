@@ -10,10 +10,12 @@ import torch
 class OneImage(Dataset, ABC):
 
     def __init__(self,
-                 image_path=None,
+                 image_path,
+                 label_path=None,
+                 label_formatter=None,
                  idxs=None,
-                 tile_size = None,
-                 tile_step = None,
+                 tile_size=None,
+                 tile_step=None,
                  crop_size=None,
                  transforms=None,
                  *args,
@@ -23,6 +25,8 @@ class OneImage(Dataset, ABC):
         super().__init__()
 
         self.image_path = image_path
+        self.label_path = label_path
+        self.label_formatter=label_formatter
         width, height = imagesize.get(self.image_path)
         self.tile_size = tile_size
         self.tile_step = tile_size if tile_step is None else tile_step
@@ -59,16 +63,24 @@ class OneImage(Dataset, ABC):
 
         tile_idx = self.idxs[idx]
         window = self.get_window(tile_idx)
+
         with rasterio.open(self.image_path) as image_file:
             image = image_file.read(window=window, out_dtype=np.float32)
             image = torch.from_numpy(image).contiguous() / 255
 
-        if self.transforms is not None:
-            end_image = self.transforms(img=image)
-        else:
-            end_image = image
+        mask = None
+        if self.label_path is not None:
+            with rasterio.open(self.label_path) as label_file:
+                label = label_file.read(window=window, out_dtype=np.float32)
+                mask = self.label_formatter(label)
+                mask = torch.from_numpy(mask).contiguous()
 
-        return {'orig_image': image, 'image': end_image, 'window': window}
+        if self.transforms is not None:
+            end_image, end_mask = self.transforms(img=image, label=mask)
+        else:
+            end_image, end_mask = image, mask
+
+        return {'orig_image': image, 'orig_mask': mask, 'image': end_image, 'window': window, 'mask': end_mask}
 
 
 class OneLabeledImage(OneImage):
@@ -77,7 +89,7 @@ class OneLabeledImage(OneImage):
 
         super(OneLabeledImage, self).__init__(*args, **kwargs)
         self.label_path = label_path
-        self.labels_formatter = formatter
+        self.label_formatter = formatter
 
     def __getitem__(self, idx):
 
@@ -90,7 +102,7 @@ class OneLabeledImage(OneImage):
 
         with rasterio.open(self.label_path) as label_file:
             label = label_file.read(window=window, out_dtype=np.float32)
-            mask = self.labels_formatter(label)
+            mask = self.label_formatter(label)
             mask = torch.from_numpy(mask).contiguous()
 
         if self.transforms is not None:

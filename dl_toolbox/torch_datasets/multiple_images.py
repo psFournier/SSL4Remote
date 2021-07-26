@@ -64,7 +64,7 @@ class MultipleImagesLabeled(MultipleImages):
         super(MultipleImagesLabeled, self).__init__(*args, **kwargs)
         assert len(labels_paths) == len(self.images_paths)
         self.labels_paths = labels_paths
-        self.labels_formatter = formatter
+        self.label_formatter = formatter
 
     def __getitem__(self, idx):
 
@@ -78,7 +78,7 @@ class MultipleImagesLabeled(MultipleImages):
 
         with rasterio.open(label_path) as label_file:
             label = label_file.read(window=window, out_dtype=np.float32)
-            mask = self.labels_formatter(label)
+            mask = self.label_formatter(label)
             mask = torch.from_numpy(mask).contiguous()
 
         if self.transforms is not None:
