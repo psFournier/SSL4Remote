@@ -12,7 +12,6 @@ from dl_toolbox.augmentations import get_transforms
 class BaseSupervisedDatamodule(LightningDataModule):
 
     def __init__(self,
-                 data_dir,
                  crop_size,
                  epoch_len,
                  sup_batch_size,
@@ -30,7 +29,6 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         super().__init__()
 
-        self.data_dir = data_dir
         self.crop_size = crop_size
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
@@ -56,7 +54,6 @@ class BaseSupervisedDatamodule(LightningDataModule):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--epoch_len", type=int, default=10000)
-        parser.add_argument("--data_dir", type=str)
         parser.add_argument("--sup_batch_size", type=int, default=32)
         parser.add_argument("--crop_size", type=int, default=256)
         parser.add_argument("--workers", default=8, type=int)

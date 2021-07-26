@@ -13,15 +13,17 @@ class MiniworldV2(BaseSupervisedDatamodule):
     test folders of all cities in param --cities.
     """
 
-    def __init__(self, cities, *args, **kwargs):
+    def __init__(self, data_dir, cities, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.data_dir = data_dir
         self.cities = cities
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument("--data_dir", type=str)
         parser.add_argument("--cities", nargs='+', type=str, default=[])
 
         return parser

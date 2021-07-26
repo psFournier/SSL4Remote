@@ -13,9 +13,10 @@ class MiniworldV3(BaseSupervisedDatamodule):
     cities in param --val_cities.
     """
 
-    def __init__(self, train_cities, val_cities, *args, **kwargs):
+    def __init__(self, data_dir, train_cities, val_cities, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.data_dir = data_dir
         self.train_cities = train_cities
         self.val_cities = val_cities
 
@@ -23,6 +24,7 @@ class MiniworldV3(BaseSupervisedDatamodule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument("--data_dir", type=str)
         parser.add_argument("--train_cities", nargs='+', type=str, default=[])
         parser.add_argument("--val_cities", nargs='+', type=str, default=[])
 
