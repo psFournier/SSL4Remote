@@ -4,7 +4,7 @@ import torch
 import torchvision
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.utilities import rank_zero_warn
-from dl_toolbox.torch_datasets import binary_labels_to_rgb
+import numpy as np
 
 # def decode_segmentation_maps(tensor: torch.Tensor, pl_module: BaseModule = None) -> torch.Tensor:
 #     """Decode model outputs to RGB segmentation maps.
@@ -36,6 +36,16 @@ from dl_toolbox.torch_datasets import binary_labels_to_rgb
 #
 #     rgb = np.stack([r, g, b], axis=1)
 #     return torch.from_numpy(rgb).float()
+
+
+def binary_labels_to_rgb(labels):
+
+    labels = labels.cpu().numpy()
+    colors = np.zeros(shape=(labels.shape[0], labels.shape[1], labels.shape[2], 3), dtype=np.uint8)
+    idx = np.array(labels == 1)
+    colors[idx] = np.array([255,255,255])
+    res = np.transpose(colors, axes=(0, 3, 1, 2))
+    return torch.from_numpy(res).float()
 
 
 class SegmentationImagesVisualisation(pl.Callback):

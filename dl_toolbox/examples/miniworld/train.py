@@ -13,12 +13,12 @@ modules = {
 
 datamodules = {
     'mw2': {
-        'sup': MiniworldV2,
-        'mt': MiniworldV2Semisup
+        'sup': MiniworldDmV2,
+        'mt': MiniworldDmV2Semisup
     },
     'mw3': {
-        'sup': MiniworldV3,
-        'mt': MiniworldV3Semisup
+        'sup': MiniworldDmV3,
+        'mt': MiniworldDmV3Semisup
     },
 }
 

@@ -1,12 +1,12 @@
 from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
-from dl_toolbox.torch_datasets import MultipleImages, MultipleImagesLabeled, miniworld_label_formatter
+from dl_toolbox.torch_datasets import MiniworldCityDs
 import glob
 from torch.utils.data import ConcatDataset
 import numpy as np
 from functools import partial
 
 
-class MiniworldV3(BaseSupervisedDatamodule):
+class MiniworldDmV3(BaseSupervisedDatamodule):
 
     """
     MiniworldV3 trainset contains all images from cities in param --train_cities, the val set contains all images from
@@ -42,12 +42,12 @@ class MiniworldV3(BaseSupervisedDatamodule):
             label_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_y.tif')) + \
                          sorted(glob.glob(f'{self.data_dir}/{city}/test/*_y.tif'))
 
-            sup_train_set = MultipleImagesLabeled(
+            sup_train_set = MiniworldCityDs(
+                city=city,
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
                 transforms=self.train_dataset_transforms,
-                formatter=partial(miniworld_label_formatter, city=city)
             )
             city_sup_train_sets.append(sup_train_set)
 
@@ -58,12 +58,12 @@ class MiniworldV3(BaseSupervisedDatamodule):
             label_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_y.tif')) + \
                          sorted(glob.glob(f'{self.data_dir}/{city}/test/*_y.tif'))
 
-            sup_val_set = MultipleImagesLabeled(
+            sup_val_set = MiniworldCityDs(
+                city=city,
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
                 transforms=self.train_dataset_transforms,
-                formatter=partial(miniworld_label_formatter, city=city)
             )
             city_val_sets.append(sup_val_set)
 
@@ -71,7 +71,7 @@ class MiniworldV3(BaseSupervisedDatamodule):
         self.val_set = ConcatDataset(city_val_sets)
 
 
-class MiniworldV3Semisup(MiniworldV3, BaseSemisupDatamodule):
+class MiniworldDmV3Semisup(MiniworldDmV3, BaseSemisupDatamodule):
 
     def __init__(self, *args, **kwargs):
 
@@ -79,7 +79,7 @@ class MiniworldV3Semisup(MiniworldV3, BaseSemisupDatamodule):
 
     def setup(self, stage=None):
 
-        super(MiniworldV3Semisup, self).setup(stage=stage)
+        super(MiniworldDmV3Semisup, self).setup(stage=stage)
 
         city_unsup_train_sets = []
 
@@ -87,7 +87,8 @@ class MiniworldV3Semisup(MiniworldV3, BaseSemisupDatamodule):
 
             image_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_x.tif')) + \
                          sorted(glob.glob(f'{self.data_dir}/{city}/test/*_x.tif'))
-            unsup_train_set = MultipleImages(
+            unsup_train_set = MiniworldCityDs(
+                city=city,
                 images_paths=image_list,
                 crop_size=self.crop_size,
                 transforms=self.train_dataset_transforms

@@ -1,5 +1,7 @@
-import numpy as np
+from dl_toolbox.torch_datasets import MultipleImages
 import torch
+import numpy as np
+
 
 def inria_label_formatter(labels):
     '''
@@ -17,6 +19,7 @@ def inria_label_formatter(labels):
 
     return labels
 
+
 def isprs_label_formatter(labels):
 
     labels0 = np.zeros(shape=labels.shape[1:], dtype=float)
@@ -25,12 +28,13 @@ def isprs_label_formatter(labels):
         labels[0, :, :] == 0,
         labels[1, :, :] == 0,
         labels[2, :, :] == 255,
-    )
+        )
     np.putmask(labels0, ~mask, 1.)
     np.putmask(labels1, mask, 1.)
     labels = np.stack([labels0, labels1], axis=0)
 
     return labels
+
 
 def semcity_label_formatter(labels):
 
@@ -40,29 +44,32 @@ def semcity_label_formatter(labels):
         labels[0, :, :] == 238,
         labels[1, :, :] == 118,
         labels[2, :, :] == 33,
-    )
+        )
     np.putmask(labels0, ~mask, 1.)
     np.putmask(labels1, mask, 1.)
     labels = np.stack([labels0, labels1], axis=0)
 
     return labels
 
-def binary_labels_to_rgb(labels):
+class MiniworldCityDs(MultipleImages):
+        
+    def __init__(self, city, *args, **kwargs):
+        
+        super(MiniworldCityDs, self).__init__(*args, **kwargs)
+        self.city = city
 
-    labels = labels.cpu().numpy()
-    colors = np.zeros(shape=(labels.shape[0], labels.shape[1], labels.shape[2], 3), dtype=np.uint8)
-    idx = np.array(labels == 1)
-    colors[idx] = np.array([255,255,255])
-    res = np.transpose(colors, axes=(0, 3, 1, 2))
-    return torch.from_numpy(res).float()
+    def process_label(self, label):
 
-def miniworld_label_formatter(labels, city):
+        if self.city in ['chicago', 'vienna', 'tyrol-w', 'austin', 'kitsap', 'christchurch']:
+            label = inria_label_formatter(label)
 
-    if city in ['chicago', 'vienna', 'tyrol-w', 'austin', 'kitsap', 'christchurch']:
-        return inria_label_formatter(labels)
+        if self.city in ['toulouse']:
+            label = semcity_label_formatter(label)
 
-    if city in ['toulouse']:
-        return semcity_label_formatter(labels)
+        if self.city in ['potsdam']:
+            label = isprs_label_formatter(label)
 
-    if city in ['potsdam']:
-        return isprs_label_formatter(labels)
+        mask = torch.from_numpy(label).contiguous()
+
+        return mask
+
