@@ -8,3 +8,4 @@ from dl_toolbox.augmentations.cutmix import Cutmix
 from dl_toolbox.augmentations.merge_label import MergeLabels
 from dl_toolbox.augmentations.getters import get_image_level_aug, get_batch_level_aug, image_level_aug
 from dl_toolbox.augmentations.strategies import get_transforms
+from dl_toolbox.augmentations.crop import RandomCrop2

@@ -55,7 +55,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--sup_batch_size", type=int, default=32)
-        parser.add_argument("--crop_size", type=int, default=256)
+        parser.add_argument("--crop_size", type=int, default=1000)
         parser.add_argument("--workers", default=8, type=int)
         parser.add_argument('--train_val', nargs=2, type=int, default=(0, 0))
         parser.add_argument('--train_idxs', nargs='+', type=int, default=[])
