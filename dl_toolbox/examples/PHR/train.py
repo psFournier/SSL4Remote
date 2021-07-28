@@ -11,15 +11,12 @@ modules = {
     'MT': MeanTeacher
 }
 
+
 datamodules = {
-    'mw2': {
-        'sup': MiniworldV2,
-        'mt': MiniworldV2Semisup
-    },
-    'mw3': {
-        'sup': MiniworldV3,
-        'mt': MiniworldV3Semisup
-    },
+    'pan': {
+        'sup': PhrPanDm,
+        'mt': PhrPanDmSemisup
+    }
 }
 
 def main():

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import albumentations as A
 import cv2
 
-src = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif/toulouse/train/1_x.tif')
+src = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/PHR/window.tif')
 img = src.read(out_dtype=np.float32)
 img = np.uint8(img[[4,3,2], :, :]/16).transpose(1,2,0)
 # img = np.uint8(img).transpose(1,2,0)

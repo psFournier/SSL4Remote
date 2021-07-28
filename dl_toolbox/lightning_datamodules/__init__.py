@@ -2,3 +2,5 @@ from dl_toolbox.lightning_datamodules.base_supervised_datamodule import BaseSupe
 from dl_toolbox.lightning_datamodules.base_semisup_datamodule import BaseSemisupDatamodule
 from dl_toolbox.lightning_datamodules.miniworld.miniworld_v2 import MiniworldDmV2, MiniworldDmV2Semisup
 from dl_toolbox.lightning_datamodules.miniworld.miniworld_v3 import MiniworldDmV3, MiniworldDmV3Semisup
+from dl_toolbox.lightning_datamodules.PHR.phr_pan_dm import PhrPanDm, PhrPanDmSemisup
+from dl_toolbox.lightning_datamodules.PHR.phr_pan_ndvi_dm import PhrPanNdviDm, PhrPanNdviDmSemisup

@@ -11,13 +11,13 @@ class PhrPanDs(OneImage):
 
     def process_image(self, image):
 
-        return torch.from_numpy(image).contiguous()
+        return torch.from_numpy(image[[0,1,2], :, :]).contiguous()
 
     def process_label(self, label):
 
         labels0 = np.zeros(shape=label.shape[1:], dtype=float)
         labels1 = np.zeros(shape=label.shape[1:], dtype=float)
-        mask = label[0, :, :] == 5
+        mask = label[0, :, :] == 3
         np.putmask(labels0, ~mask, 1.)
         np.putmask(labels1, mask, 1.)
         label = np.stack([labels0, labels1], axis=0)

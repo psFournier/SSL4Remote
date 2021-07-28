@@ -42,12 +42,12 @@ def main():
     label_list = sorted(glob.glob(f'{args.data_dir}/{args.city}/test/*_y.tif'))
     test_set_transforms = NoOp()
 
-    test_set = MultipleImagesLabeled(
+    test_set = MiniworldCityDs(
+        city=args.city,
         images_paths=image_list,
         labels_paths=label_list,
         crop_size=args.tile_size,
         transforms=test_set_transforms,
-        formatter=partial(miniworld_label_formatter, city=args.city)
     )
 
     test_sampler = RandomSampler(

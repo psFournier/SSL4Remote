@@ -90,7 +90,7 @@ def main():
     metrics = {}
 
     with torch.no_grad():
-        
+
         for batch in dataloader:
 
             inputs, _, windows = batch['image'], batch['mask'], batch['window']

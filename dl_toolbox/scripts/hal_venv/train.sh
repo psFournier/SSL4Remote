@@ -13,15 +13,14 @@ PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
 SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/miniworld/train.py
 
 "${PYTHON}" "${SCRIPT}" \
---data_dir "${TMPDIR}"/miniworld_tif \
 --output_dir /work/OT/ai4geo/users/fournip/outputs \
 --workers 6 \
---max_epochs 500 \
+--max_epochs 50 \
 --gpus 1 \
 --module sup \
---datamodule mw2 \
---cities christchurch \
---train_dataset_transforms_strat hard \
+--datamodule pan \
+--image_path /work/OT/ai4geo/DATA/ZONES_EC2/Toulouse/normalized_mergedTO.tif \
+--label_path /work/OT/ai4geo/DATA/ZONES_EC2/Toulouse/GT/Cos9_GT_TLS.tif \
 --exp_name "${PBS_JOBNAME}"
 
 module unload python/3.7.2

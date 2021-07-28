@@ -6,7 +6,7 @@ import numpy as np
 from functools import partial
 from dl_toolbox.torch_datasets import PhrPanNdviDs
 
-class PhrPan(BaseSupervisedDatamodule):
+class PhrPanNdviDm(BaseSupervisedDatamodule):
 
     def __init__(self, image_path, ndvi_path, label_path, *args, **kwargs):
 
@@ -47,7 +47,7 @@ class PhrPan(BaseSupervisedDatamodule):
         val_set.idxs = val_set.idxs[2::3]
 
 
-class MiniworldV2Semisup(PhrPan, BaseSemisupDatamodule):
+class PhrPanNdviDmSemisup(PhrPanNdviDm, BaseSemisupDatamodule):
 
     def __init__(self, *args, **kwargs):
 
@@ -55,7 +55,7 @@ class MiniworldV2Semisup(PhrPan, BaseSemisupDatamodule):
 
     def setup(self, stage=None):
 
-        super(MiniworldV2Semisup, self).setup(stage=stage)
+        super(PhrPanNdviDmSemisup, self).setup(stage=stage)
 
         self.unsup_train_set = PhrPanNdviDs(
             image_path=self.image_path,
