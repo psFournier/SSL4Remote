@@ -6,12 +6,13 @@ import imagesize
 import numpy as np
 import rasterio
 from torch import nn
-from dl_toolbox.torch_datasets import OneImage, miniworld_label_formatter
+from dl_toolbox.torch_datasets import OneImage
 from dl_toolbox.torch_collate import CollateDefault
 from dl_toolbox.lightning_modules import SupervisedBaseline
 from dl_toolbox.utils import worker_init_function
 from dl_toolbox.inference import apply_tta
 import torchmetrics.functional as  M
+from dl_toolbox.torch_datasets import inria_label_formatter
 
 # class DummyModule(nn.Module):
 #     def __init__(self, model, config_loss):
@@ -88,29 +89,32 @@ def main():
     pred_sum = torch.zeros(size=(module.num_classes, height, width))
     metrics = {}
 
-    for batch in dataloader:
+    with torch.no_grad():
+        
+        for batch in dataloader:
 
-        inputs, _, windows = batch['image'], batch['mask'], batch['window']
+            inputs, _, windows = batch['image'], batch['mask'], batch['window']
 
-        with torch.no_grad():
-            outputs = module.forward(inputs.to(device)).cpu()
+            with torch.no_grad():
+                outputs = module.forward(inputs.to(device)).cpu()
 
-        split_pred = np.split(outputs, outputs.shape[0], axis=0)
-        pred_list = [np.squeeze(e, axis=0) for e in split_pred]
-        window_list = windows[:]
+            split_pred = np.split(outputs, outputs.shape[0], axis=0)
+            pred_list = [np.squeeze(e, axis=0) for e in split_pred]
+            window_list = windows[:]
 
-        if args.tta:
-            tta_preds, tta_windows = apply_tta(args.tta, device, module.network, batch)
-            pred_list += tta_preds
-            window_list += tta_windows
+            if args.tta:
+                tta_preds, tta_windows = apply_tta(args.tta, device, module, batch)
+                pred_list += tta_preds
+                window_list += tta_windows
 
-        for pred, window in zip(pred_list, window_list):
-            pred_sum[:, window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] += pred
+            for pred, window in zip(pred_list, window_list):
+                pred_sum[:, window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] += pred
+            # break
 
 
     avg_probs = pred_sum.softmax(dim=0)
     labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
-    labels = miniworld_label_formatter(labels, city='vienna')
+    labels = inria_label_formatter(labels)
     labels_one_hot = torch.from_numpy(labels)
     test_labels = torch.argmax(labels_one_hot, dim=0).long()
     IoU = M.iou(torch.unsqueeze(avg_probs, 0),

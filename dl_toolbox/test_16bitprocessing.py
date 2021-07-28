@@ -4,22 +4,23 @@ import matplotlib.pyplot as plt
 import albumentations as A
 import cv2
 
-src = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif/kitsap/train/10_x.tif')
+src = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif/toulouse/train/1_x.tif')
 img = src.read(out_dtype=np.float32)
-# img = np.uint8(img[[4,3,2], :, :]/16).transpose(1,2,0)
-img = np.uint8(img).transpose(1,2,0)
-# img1 = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-# m, M = np.percentile(img1[:, :, 2], [0, 100])
-# out = np.copy(img1).astype(np.float32)
-# out[:, :, 2] = np.clip(((img1[:, :, 2] - m) / (M - m)), 0, 1) * 255
-# img1 = cv2.cvtColor(np.uint8(out), cv2.COLOR_HSV2RGB)
-# img1 = A.functional.adjust_brightness_torchvision(img1, 2)
+img = np.uint8(img[[4,3,2], :, :]/16).transpose(1,2,0)
+# img = np.uint8(img).transpose(1,2,0)
+img1 = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+m, M = np.percentile(img1[:, :, 2], [0, 100])
+out = np.copy(img1).astype(np.float32)
+out[:, :, 2] = np.clip(((img1[:, :, 2] - m) / (M - m)), 0, 1) * 255
+img1 = cv2.cvtColor(np.uint8(out), cv2.COLOR_HSV2RGB)
+img1 = A.functional.adjust_brightness_torchvision(img1, 1.5)
 # plt.imshow(np.uint8(img1))
 
 img2 = A.functional.clahe(img)
-f, ax = plt.subplots(1, 2, figsize=(15, 15))
+f, ax = plt.subplots(1, 3, figsize=(15, 15))
 ax[0].imshow(img)
-ax[1].imshow(img2)
+ax[1].imshow(img1)
+ax[2].imshow(img2)
 
 
 def histogramnormalization(

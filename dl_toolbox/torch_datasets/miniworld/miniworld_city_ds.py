@@ -73,3 +73,10 @@ class MiniworldCityDs(MultipleImages):
 
         return mask
 
+    def process_image(self, image):
+
+        if self.city in ['toulouse']:
+            return np.uint8(image[[4,3,2], :, :]/16)/255
+        else:
+            return super(MiniworldCityDs, self).process_image(image)
+

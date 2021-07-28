@@ -15,6 +15,10 @@ class PhrPanNdviDs(OneImage):
         self.pan_path = self.image_path
         self.ndvi_path = ndvi_path
 
+    def process_image(self, image):
+
+        return torch.from_numpy(image).contiguous()
+
     def process_label(self, label):
 
         labels0 = np.zeros(shape=label.shape[1:], dtype=float)
