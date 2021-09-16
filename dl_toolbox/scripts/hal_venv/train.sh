@@ -16,6 +16,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/PHR/train.
 --output_dir /work/OT/ai4geo/users/fournip/outputs \
 --workers 6 \
 --max_epochs 50 \
+--num_classes 10 \
 --gpus 1 \
 --module sup \
 --datamodule pan \
