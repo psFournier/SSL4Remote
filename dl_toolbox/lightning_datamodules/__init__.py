@@ -4,3 +4,4 @@ from dl_toolbox.lightning_datamodules.miniworld.miniworld_v2 import MiniworldDmV
 from dl_toolbox.lightning_datamodules.miniworld.miniworld_v3 import MiniworldDmV3, MiniworldDmV3Semisup
 from dl_toolbox.lightning_datamodules.PHR.phr_pan_dm import PhrPanDm, PhrPanDmSemisup
 from dl_toolbox.lightning_datamodules.PHR.phr_pan_ndvi_dm import PhrPanNdviDm, PhrPanNdviDmSemisup
+from dl_toolbox.lightning_datamodules.semCity.semcity_bdsd_dm import SemcityBdsdDm

@@ -3,3 +3,4 @@ from dl_toolbox.torch_datasets.multiple_images import MultipleImages
 from dl_toolbox.torch_datasets.PHR.phr_pan_ndvi_ds import PhrPanNdviDs
 from dl_toolbox.torch_datasets.PHR.phr_pan_ds import PhrPanDs
 from dl_toolbox.torch_datasets.miniworld.miniworld_city_ds import MiniworldCityDs, inria_label_formatter
+from dl_toolbox.torch_datasets.semcity.semcity_bdsd_ds import SemcityBdsdDs

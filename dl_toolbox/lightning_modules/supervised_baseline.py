@@ -84,8 +84,8 @@ class SupervisedBaseline(pl.LightningModule):
                           labels,
                           reduction='none',
                           num_classes=self.num_classes)
-        self.log('Train_IoU_0', IoU[0])
-        self.log('Train_IoU_1', IoU[1])
+        for i in range(self.num_classes):
+            self.log('Train_IoU_{}'.format(i), IoU[i])
         self.log('Train_IoU', torch.mean(IoU))
 
         return {'preds': outputs, "loss": loss}
@@ -112,8 +112,8 @@ class SupervisedBaseline(pl.LightningModule):
                           val_labels,
                           reduction='none',
                           num_classes=self.num_classes)
-        self.log('Val_IoU_0', IoU[0])
-        self.log('Val_IoU_1', IoU[1])
+        for i in range(self.num_classes):
+            self.log('Val_IoU_{}'.format(i), IoU[i])
         self.log('Val_IoU', torch.mean(IoU))
 
         self.log('epoch', self.trainer.current_epoch)
@@ -138,9 +138,7 @@ class SupervisedBaseline(pl.LightningModule):
     def test_epoch_end(self, outputs):
 
         avg_IoU = torch.stack([output['IoU'] for output in outputs]).mean(dim=0)
-        self.test_results = {'IoU_0': avg_IoU[0],
-                             'IoU_1': avg_IoU[1],
-                             'IoU': avg_IoU.mean()}
+        self.test_results = {'IoU': avg_IoU.mean()}
 
         return avg_IoU
 
