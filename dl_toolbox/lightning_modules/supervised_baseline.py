@@ -30,6 +30,7 @@ class SupervisedBaseline(pl.LightningModule):
             decoder_use_batchnorm=True
         )
         self.num_classes = num_classes
+        self.in_channels = in_channels
         self.network = network
         self.learning_rate = learning_rate
         self.bce = nn.BCEWithLogitsLoss()

@@ -32,10 +32,10 @@ class OneImage(Dataset, ABC):
             w for w in get_tiles(
                 nols=width,
                 nrows=height,
-                width=self.tile_size,
-                height=self.tile_size,
-                col_step=self.tile_step,
-                row_step=self.tile_step
+                width=self.tile_size[1],
+                height=self.tile_size[0],
+                col_step=self.tile_step[1],
+                row_step=self.tile_step[0]
             )
         ]
         self.idxs = list(range(len(self.tile_windows))) if idxs is None else idxs
@@ -47,8 +47,8 @@ class OneImage(Dataset, ABC):
         tile_window = self.tile_windows[idx]
         col_offset = tile_window.col_off
         row_offset = tile_window.row_off
-        cx = np.random.randint(col_offset, col_offset + self.tile_size - self.crop_size + 1)
-        cy = np.random.randint(row_offset, row_offset + self.tile_size - self.crop_size + 1)
+        cx = np.random.randint(col_offset, col_offset + self.tile_size[1] - self.crop_size + 1)
+        cy = np.random.randint(row_offset, row_offset + self.tile_size[0] - self.crop_size + 1)
         window = Window(cx, cy, self.crop_size, self.crop_size)
 
         return window

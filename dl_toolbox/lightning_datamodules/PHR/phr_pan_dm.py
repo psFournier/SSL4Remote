@@ -24,16 +24,16 @@ class PhrPanDm(BaseSupervisedDatamodule):
         self.sup_train_set = PhrPanDs(
             image_path=self.image_path,
             label_path=self.label_path,
-            tile_size=2300,
-            tile_step=2300,
+            tile_size=(2300, 2300),
+            tile_step=(2300, 2300),
             crop_size=self.crop_size
         )
         self.sup_train_set.idxs = self.sup_train_set.idxs[::3] + self.sup_train_set.idxs[1::3]
         self.val_set = PhrPanDs(
             image_path=self.image_path,
             label_path=self.label_path,
-            tile_size=2300,
-            tile_step=2300,
+            tile_size=(2300, 2300),
+            tile_step=(2300, 2300),
             crop_size=self.crop_size
         )
         self.val_set.idxs = self.val_set.idxs[2::3]
@@ -51,7 +51,7 @@ class PhrPanDmSemisup(PhrPanDm, BaseSemisupDatamodule):
 
         self.unsup_train_set = PhrPanDs(
             image_path=self.image_path,
-            tile_size=2300,
-            tile_step=2300,
+            tile_size=(2300, 2300),
+            tile_step=(2300, 2300),
             crop_size=self.crop_size
         )

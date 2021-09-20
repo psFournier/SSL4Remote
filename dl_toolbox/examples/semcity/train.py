@@ -4,7 +4,7 @@ from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 from dl_toolbox.lightning_modules import *
 from dl_toolbox.lightning_datamodules import *
-from dl_toolbox.callbacks import SegmentationImagesVisualisation, CustomSwa
+from dl_toolbox.callbacks import SegmentationImagesVisualisation, CustomSwa, ConfMatLogger
 
 modules = {
     'sup': SupervisedBaseline,
@@ -13,9 +13,9 @@ modules = {
 
 
 datamodules = {
-    'pan': {
-        'sup': PhrPanDm,
-        'mt': PhrPanDmSemisup
+    'bdsd': {
+        'sup': SemcityBdsdDm,
+        # 'mt': SemcityBdsdDmSemisup
     }
 }
 
@@ -42,6 +42,14 @@ def main():
 
     args = parser.parse_args()
     args_dict = vars(args)
+
+    # The lightning datamodule deals with instantiating the proper dataloaders.
+    pl_datamodule = datamodules[args.datamodule][args.module](**args_dict)
+
+    # The lightning module is where the training schema is implemented. Class
+    # weights are a property of the dataset being processed, given by its class.
+    # args_dict['class_weights'] = datamodules[args.datamodule][args.module].class_weights
+    pl_module = modules[args.module](**args_dict)
 
     # Logs will be stored in the directory 'tensorboard' of the output
     # directory, and the individual log of each new run will be stored in a
@@ -88,6 +96,8 @@ def main():
     profiler = SimpleProfiler()
 
     image_visu = SegmentationImagesVisualisation()
+    # Confusion matrix on tensorboard callback
+    confmat_logger = ConfMatLogger()
 
     # Using from_argparse_args enables to use any standard parameter of the
     # lightning Trainer class without having to manually add them to the parser.
@@ -100,7 +110,8 @@ def main():
             # best_val_loss_ckpt,
             lr_monitor,
             # swa,
-            image_visu
+            image_visu,
+            confmat_logger
         ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,
@@ -110,13 +121,7 @@ def main():
         stochastic_weight_avg=True
    )
 
-    # The lightning datamodule deals with instantiating the proper dataloaders.
-    pl_datamodule = datamodules[args.datamodule][args.module](**args_dict)
 
-    # The lightning module is where the training schema is implemented. Class
-    # weights are a property of the dataset being processed, given by its class.
-    # args_dict['class_weights'] = datamodules[args.datamodule][args.module].class_weights
-    pl_module = modules[args.module](**args_dict)
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)
 

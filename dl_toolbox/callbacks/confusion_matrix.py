@@ -1,6 +1,6 @@
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.metrics import ConfusionMatrix
+from torchmetrics import ConfusionMatrix
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
@@ -41,29 +41,31 @@ def plot_confusion_matrix(cm, class_names):
 
 
 class ConfMatLogger(pl.Callback):
-    def __init__(self, num_classes):
 
+    def on_fit_start(self, trainer, pl_module):
+
+        num_classes = len(trainer.datamodule.val_set.labels_desc)
         self.conf_mat = ConfusionMatrix(
-            num_classes=num_classes, normalize="true", compute_on_step=False
+            num_classes=num_classes,
+            normalize="true",
+            compute_on_step=False
         )
 
     def on_validation_batch_end(
             self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
 
-        image, target = batch
-        image = image.to(pl_module.device)
-        target = target.to(pl_module.device)
-        predictions = pl_module(image)
+        img, mask = batch['image'], batch['mask']
 
-        predictions = torch.argmax(predictions, dim=1)
+        labels = torch.argmax(mask, dim=1)
+        preds = torch.argmax(outputs['preds'], dim=1)
 
-        self.conf_mat(predictions.cpu(), target.cpu())
+        self.conf_mat(preds.cpu(), labels.cpu())
 
     def on_validation_epoch_end(self, trainer, pl_module):
 
         cm = self.conf_mat.compute()
-        figure = plot_confusion_matrix(cm.numpy(), class_names=["0", "1"])
+        figure = plot_confusion_matrix(cm.numpy(), class_names=[label[2] for label in trainer.datamodule.val_set.labels_desc])
         trainer.logger.experiment.add_figure(
             "Confusion matrix", figure, global_step=trainer.global_step
         )

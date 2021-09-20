@@ -1,3 +1,2 @@
-from dl_toolbox.utils.confusion_matrix_plot import plot_confusion_matrix
 from dl_toolbox.utils.tiles import get_tiles
 from dl_toolbox.utils.worker_init_function import worker_init_function

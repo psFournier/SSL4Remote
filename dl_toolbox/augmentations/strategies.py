@@ -1,4 +1,3 @@
-import albumentations as A
 from dl_toolbox.augmentations import *
 
 def hard_transformation():
