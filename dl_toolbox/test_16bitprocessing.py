@@ -3,37 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import albumentations as A
 import cv2
+import torch
 
-src = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif/chicago/train/0_x.tif')
-img = src.read(out_dtype=np.float32)[[0,1,2], 0:1000, 0:1000].transpose(1,2,0)
-
-src2 = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif/vienna/train/0_x.tif')
-img2 = src2.read(out_dtype=np.float32)[[0,1,2], 0:1000, 0:1000].transpose(1,2,0)
-
-histo_match = A.HistogramMatching(
-    reference_images=[img2],
-    read_fn=lambda x: x,
-    p=1)
-img3 = histo_match(image=img)['image']
-
-# img = np.uint8(img).transpose(1,2,0)
-# # img = np.uint8(img).transpose(1,2,0)
-# img1 = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-# m, M = np.percentile(img1[:, :, 2], [0, 100])
-# out = np.copy(img1).astype(np.float32)
-# out[:, :, 2] = np.clip(((img1[:, :, 2] - m) / (M - m)), 0, 1) * 255
-# img1 = cv2.cvtColor(np.uint8(out), cv2.COLOR_HSV2RGB)
-# img1 = A.functional.adjust_brightness_torchvision(img1, 1.5)
-# plt.imshow(np.uint8(img1))
-
-# img2 = A.functional.clahe(img)
-f, ax = plt.subplots(1, 3, figsize=(15, 15))
-ax[1].imshow(img/255)
-ax[0].imshow(img2/255)
-ax[2].imshow(img3/255)
-# ax[1,0].imshow(img[0:500,0:500,:])
-# ax[1,1].imshow(img1[0:500,0:500,:])
-# ax[1,2].imshow(img2[0:500,0:500,:])
+from dl_toolbox.augmentations import *
 
 
 def histogramnormalization(
@@ -79,48 +51,52 @@ def histogramnormalization(
     if verbose:
         print("normalization succeed")
     return np.uint8(out)
-#
-# r = histogramnormalization(np.int16(src.read(4)*16))
-# g = histogramnormalization(np.int16(src.read(3)*16))
-# b = histogramnormalization(np.int16(src.read(2)*16))
-# x = np.stack([r, g, b], axis=2)
-# plt.imshow(x)
 
+# src = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif/toulouse/train/0_x.tif')
+src = rasterio.open('/d/pfournie/Documents/ai4geo/data/SemcityTLS_DL/BDSD_M_3_4_7_8.tif')
+img = src.read(out_dtype=np.uint16)
+# print(np.unique(img.reshape(img.shape[0], -1), axis=1, return_counts=True))
 
-# flat = img.flatten()
-# hist = get_histogram(flat,65536)
-# #plt.plot(hist)
-#
-# cs = cumsum(hist)
-# # re-normalize cumsum values to be between 0-255
-#
-# # numerator & denomenator
-# nj = (cs - cs.min()) * 65535
-# N = cs.max() - cs.min()
-#
-# # re-normalize the cdf
-# cs = nj / N
-# cs = cs.astype('uint16')
-# img_new = cs[flat]
-# #plt.hist(img_new, bins=65536)
-# #plt.show(block=True)
-# img_new = np.reshape(img_new, img.shape)
-# cv2.imwrite("contrast.tif",img_new)
-# eq = A.Equalize(p=1)
-# equalized = eq(image=rgb)['image']
+# src2 = rasterio.open('/home/pierre/Documents/ONERA/ai4geo/miniworld_tif/vienna/train/0_x.tif')
+# img2 = src2.read(out_dtype=np.float32)[[0,1,2], 0:1000, 0:1000].transpose(1,2,0)
 
-# out = np.zeros_like(hsv).astype(np.float32)
-# for i in range(3):
-#     m, M = np.percentile(rgb[i, :, :], [2, 98])
-#     m = rgb[i, :, :].min()
-#     M = rgb[i, :, :].max()
-#
-#     t = np.clip((rgb[i, :, :] - m) / (M - m), 0, 1)
-#     out[i, :, :] = t
-# out = out*(2**8-1)
-#
-# out = rgb_t / 255
-# hsv
-# out = A.functional._equalize_cv(np.uint8(out))
-# plt.imshow(img)
+# histo_match = A.HistogramMatching(
+#     reference_images=[img2],
+#     read_fn=lambda x: x,
+#     p=1)
+# img3 = histo_match(image=img)['image']
+
+# Stretch to minmax
+out1 = np.copy(img).astype(np.float32)
+for i in range(3):
+    m, M = np.percentile(img[:, :, i], [2, 98])
+    out1[:, :, i] = np.clip(((img[:, :, i] - m) / (M - m)), 0, 1) * 255
+# out1 = np.uint8(out1)
+## Attempt to stretch to min max in HSV space; abandonned
+# out2 = np.copy(img/255).astype(np.uint8)
+# out2 = cv2.cvtColor(out2, cv2.COLOR_RGB2HSV)
+# m, M = np.percentile(out2[:, :, 2], [2, 98])
+# out2[:, :, 2] = np.clip(((out2[:, :, 2] - m) / (M - m)), 0, 1) * 255
+# out2 = cv2.cvtColor(np.uint8(out2), cv2.COLOR_HSV2RGB)
+
+## Histogram eq
+
+# r = histogramnormalization(np.int16(src.read(3)))
+# g = histogramnormalization(np.int16(src.read(2)))
+# b = histogramnormalization(np.int16(src.read(1)))
+# out3 = np.stack([r, g, b], axis=2)
+
+# out3 = A.functional.clahe(img)
+
+f, ax = plt.subplots(1, 3, figsize=(25, 25))
+ax[0].imshow(out1)
+# ax[1].imshow(np.uint8(out2))
+# ax[2].imshow(np.uint8(out3))
+
+t = Brightness(bounds=(1.15, 1.2), p=1)
+out2, _ = t(img=torch.from_numpy(out1.transpose(2,0,1)))
+out2 = out2.numpy().transpose(1,2,0)
+print(out1 == out2)
+ax[1].imshow(out2)
+
 plt.show()

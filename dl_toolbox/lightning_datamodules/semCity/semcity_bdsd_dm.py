@@ -22,7 +22,8 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
             label_path=self.label_path,
             tile_size=(863,876),
             tile_step=(863,876),
-            crop_size=self.crop_size
+            crop_size=self.crop_size,
+            transforms=self.train_dataset_transforms
         )
         self.sup_train_set.idxs = self.sup_train_set.idxs[::3] + self.sup_train_set.idxs[1::3]
         self.val_set = SemcityBdsdDs(
@@ -30,7 +31,8 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
             label_path=self.label_path,
             tile_size=(863,876),
             tile_step=(863,876),
-            crop_size=self.crop_size
+            crop_size=self.crop_size,
+            transforms=self.val_dataset_transforms
         )
         self.val_set.idxs = self.val_set.idxs[2::3]
 

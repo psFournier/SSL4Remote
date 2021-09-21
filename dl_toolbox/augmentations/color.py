@@ -28,7 +28,7 @@ class Saturation(torch.nn.Module):
         self.bounds = bounds
         self.p = p
 
-    def forward(self, img, label):
+    def forward(self, img, label=None):
 
         factor = float(torch.empty(1).uniform_(self.bounds[0], self.bounds[1]))
         if torch.rand(1).item() < self.p:
@@ -43,7 +43,7 @@ class Hue(torch.nn.Module):
         self.bounds = bounds
         self.p = p
 
-    def forward(self, img, label):
+    def forward(self, img, label=None):
 
         factor = float(torch.empty(1).uniform_(self.bounds[0], self.bounds[1]))
         if torch.rand(1).item() < self.p:
@@ -58,7 +58,7 @@ class Brightness(torch.nn.Module):
         self.bounds = bounds
         self.p = p
 
-    def forward(self, img, label):
+    def forward(self, img, label=None):
 
         factor = float(torch.empty(1).uniform_(self.bounds[0], self.bounds[1]))
         if torch.rand(1).item() < self.p:
@@ -73,7 +73,7 @@ class Contrast(torch.nn.Module):
         self.bounds = bounds
         self.p = p
 
-    def forward(self, img, label):
+    def forward(self, img, label=None):
 
         factor = float(torch.empty(1).uniform_(self.bounds[0], self.bounds[1]))
         if torch.rand(1).item() < self.p:
