@@ -56,7 +56,7 @@ class DiceLoss(_Loss):
             from_logits=True,
             smooth: float = 0.0,
             ignore_index=None,
-            eps=1e-7,
+            eps=1e-7
     ):
         """
 

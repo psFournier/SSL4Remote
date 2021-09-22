@@ -35,7 +35,6 @@ def main():
     parser = modules[args.module].add_model_specific_args(parser)
     parser = datamodules[args.datamodule][args.module].add_model_specific_args(parser)
 
-
     # The Trainer class also enables to add many arguments to customize the
     # training process (see Lightning Doc)
     parser = Trainer.add_argparse_args(parser)
@@ -61,11 +60,7 @@ def main():
         default_hp_metric=False
     )
 
-    # Callback to log the learning rate
-    lr_monitor = LearningRateMonitor()
-
-    # Callback that saves the weight of the epoch with the minimal val_loss
-    # (questionable) at the end of training.
+    # Callback that saves the weights of the last two epochs
     last_2_epoch_ckpt = ModelCheckpoint(
         monitor='epoch',
         mode='max',
@@ -73,31 +68,9 @@ def main():
         verbose=True
     )
 
-    # best_val_loss_ckpt = ModelCheckpoint(
-    #     monitor='Val_loss',
-    #     mode='min',
-    #     save_top_k=1,
-    #     verbose=True,
-    #     filename='{epoch}-{val_loss:.2f}'
-    # )
-
-    # Callback that performs Stochastic Weight Averaging at the end of
-    # training
-    # swa = StochasticWeightAveraging(
-    #     device=None,
-    #     # swa_epoch_start=1
-    # )
-    swa = CustomSwa(
-        device=None
-    )
-
     # Monitoring time spent in each call. Difficult to understand the data
     # loading part when multiple workers are at use.
     profiler = SimpleProfiler()
-
-    image_visu = SegmentationImagesVisualisation()
-    # Confusion matrix on tensorboard callback
-    confmat_logger = ConfMatLogger()
 
     # Using from_argparse_args enables to use any standard parameter of the
     # lightning Trainer class without having to manually add them to the parser.
@@ -107,11 +80,9 @@ def main():
         profiler=profiler,
         callbacks=[
             last_2_epoch_ckpt,
-            # best_val_loss_ckpt,
-            lr_monitor,
-            # swa,
-            image_visu,
-            confmat_logger
+            CustomSwa(device=None),
+            SegmentationImagesVisualisation(),
+            ConfMatLogger()
         ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,
@@ -119,9 +90,7 @@ def main():
         check_val_every_n_epoch=1,
         benchmark=True,
         stochastic_weight_avg=True
-   )
-
-
+    )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)
 

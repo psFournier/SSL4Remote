@@ -6,7 +6,7 @@ import imagesize
 import numpy as np
 import rasterio
 from torch import nn
-from dl_toolbox.torch_datasets import OneImage
+from dl_toolbox.torch_datasets import SemcityBdsdDs
 from dl_toolbox.torch_collate import CollateDefault
 from dl_toolbox.lightning_modules import SupervisedBaseline
 from dl_toolbox.utils import worker_init_function
@@ -45,8 +45,9 @@ def main():
     parser.add_argument("--tta", nargs='+', type=str, default=[])
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--workers", default=8, type=int)
-    parser.add_argument("--tile_size", type=int, default=128)
-    parser.add_argument("--tile_step", type=int, default=64)
+    parser.add_argument("--tile_size", default=(128, 128))
+    parser.add_argument("--crop_size", type=int, default=128)
+    parser.add_argument("--tile_step", default=(128, 128))
 
     args = parser.parse_args()
 
@@ -57,18 +58,21 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt = torch.load(args.ckpt_path, map_location=device)
 
-    module = SupervisedBaseline()
+    module = SupervisedBaseline(
+        in_channels=3,
+        num_classes=7
+    )
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
     module.to(device)
 
-    dataset = OneImage(
+    dataset = SemcityBdsdDs(
         image_path=args.image_path,
         label_path=args.label_path,
         tile_size=args.tile_size,
         tile_step=args.tile_step,
-        crop_size=args.tile_size,
+        crop_size=args.crop_size,
     )
 
     # The collate function is needed to process the read windows from
@@ -109,16 +113,19 @@ def main():
 
 
     avg_probs = pred_sum.softmax(dim=0)
+
     labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
-    labels = miniworld_label_formatter(labels, city='vienna')
-    labels_one_hot = torch.from_numpy(labels)
-    test_labels = torch.argmax(labels_one_hot, dim=0).long()
+    labels_onehot = SemcityBdsdDs.rgb_to_onehot(labels)
+    test_labels = torch.argmax(labels_onehot, dim=0).long()
+
     IoU = M.iou(torch.unsqueeze(avg_probs, 0),
-                      torch.unsqueeze(test_labels, 0),
-                      reduction='none',
-                      num_classes=module.num_classes)
-    metrics['IoU_0'] = IoU[0]
-    metrics['IoU_1'] = IoU[1]
+                torch.unsqueeze(test_labels, 0),
+                reduction='none',
+                num_classes=module.num_classes+1,
+                ignore_index=0)
+    for i in range(module.num_classes):
+        class_name = SemcityBdsdDs.labels_desc[i+1][2]
+        metrics['Train_IoU_{}'.format(class_name)] = IoU[i]
     metrics['IoU'] = IoU.mean()
     print(metrics)
 

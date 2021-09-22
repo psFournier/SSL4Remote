@@ -35,7 +35,12 @@ class SupervisedBaseline(pl.LightningModule):
         self.in_channels = in_channels
         self.network = network
         self.learning_rate = learning_rate
-        self.bce = nn.BCELoss()
+        # Reduction = none is necessary to compute properly the mean when using
+        # a masked loss ; we do not use BCEWithLogits because the masking must
+        # be done after the computation of probabilities
+        self.bce = nn.BCELoss(reduction='none')
+        # The Dice loss is not a pixel-wise loss, so it seems that the masked
+        # loss works properly by just masking preds and labels
         self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=False)
         self.save_hyperparameters()
 
@@ -69,13 +74,20 @@ class SupervisedBaseline(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         inputs, labels_onehot = batch['image'], batch['mask']
+
+        # Granted that the first label is the void/unknown label, this extracts
+        # from labels the mask to use to ignore this class
         labels_onehot_ignore_unknown = labels_onehot[:, 1:, :, :]
         loss_mask = 1. - labels_onehot[:, [0], :, :]
 
         outputs = self.network(inputs)
+
+        # Computing manually the activations just before masking and not after
         outputs = F.logsigmoid(outputs).exp()
 
-        loss1 = self.bce(outputs * loss_mask, labels_onehot_ignore_unknown * loss_mask)
+        loss1_noreduce = self.bce(outputs * loss_mask, labels_onehot_ignore_unknown * loss_mask)
+        # The mean over all pixels is replaced with a mean over unmasked ones
+        loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice(outputs * loss_mask, labels_onehot_ignore_unknown * loss_mask)
 
         loss = loss1 + loss2
@@ -84,6 +96,8 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
 
+        # The +1 is necessary for predicted labels to correspond to the named
+        # labels when including void/unknown class
         preds = outputs.argmax(dim=1) + 1
         labels = torch.argmax(labels_onehot, dim=1).long()
         IoU = metrics.iou(preds,
@@ -135,7 +149,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         self.log('epoch', self.trainer.current_epoch)
 
-        return {'preds': outputs, 'IoU': IoU}
+        return {'preds': outputs, 'IoU': IoU, 'accuracy' : accuracy}
 
     def test_step(self, batch, batch_idx):
 
