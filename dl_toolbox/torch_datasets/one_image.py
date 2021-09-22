@@ -41,31 +41,6 @@ class OneImage(Dataset, ABC):
         self.idxs = list(range(len(self.tile_windows))) if idxs is None else idxs
         self.crop_size = crop_size
         self.transforms = transforms
-        self.label_stats = {}
-        self.image_stats = {}
-
-    def get_image_stats(self):
-
-        with rasterio.open(self.image_path) as image_file:
-            image = image_file.read(out_dtype=np.float32)
-            num_channels = image.shape[0]
-            self.image_stats['num_channels'] = num_channels
-            self.image_stats['min'] = np.zeros(shape=(num_channels))
-            self.image_stats['max'] = np.zeros(shape=(num_channels))
-            for i in range(num_channels):
-                m, M = np.percentile(image[i, :, :], [1, 99])
-                self.image_stats['min'][i] = m
-                self.image_stats['max'][i] = M
-
-    def get_label_stats(self):
-
-        with rasterio.open(self.label_path) as label_file:
-            label = label_file.read(out_dtype=np.float32)
-            _, counts = np.unique(label.reshape(label.shape[0], -1), axis=1, return_counts=True)
-
-
-
-
 
     def get_window(self, idx):
 
@@ -86,7 +61,7 @@ class OneImage(Dataset, ABC):
 
         label = torch.from_numpy(label).contiguous()
 
-        return label
+        return label, None
 
     def __len__(self):
 
@@ -108,10 +83,12 @@ class OneImage(Dataset, ABC):
                 label = self.process_label(label)
 
         if self.transforms is not None:
+            # image needs to be either [0, 255] ints or [0,1] floats
             end_image, end_mask = self.transforms(img=image, label=label)
         else:
             end_image, end_mask = image, label
 
+        # end_image needs to be float for the nn
         return {'orig_image': image, 'orig_mask': label, 'image': end_image, 'window': window, 'mask': end_mask}
 
 #

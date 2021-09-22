@@ -140,7 +140,7 @@ class D4(torch.nn.Module):
     def __init__(self, p=1):
         super().__init__()
         self.transforms = [
-            NoOp(),
+            # NoOp(),
             Hflip(p=1),
             Vflip(p=1),
             Transpose1(p=1),

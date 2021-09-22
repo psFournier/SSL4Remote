@@ -53,7 +53,7 @@ class SemcityBdsdDs(OneImage):
         min = self.image_stats['min']
         max = self.image_stats['max']
         for i, channel in enumerate([3,2,1]):
-            out[i, :, :] = np.clip(((out[i, :, :] - min[channel]) / (max[channel] - min[channel])), 0, 1) * 255
+            out[i, :, :] = np.clip(((out[i, :, :] - min[channel]) / (max[channel] - min[channel])), 0, 1)
         out = torch.from_numpy(out).contiguous()
 
         return out

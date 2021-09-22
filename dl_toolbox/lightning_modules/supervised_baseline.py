@@ -8,6 +8,8 @@ import torch
 import torchmetrics.functional as metrics
 from dl_toolbox.losses import DiceLoss
 from copy import deepcopy
+import torch.nn.functional as F
+
 
 class SupervisedBaseline(pl.LightningModule):
 
@@ -33,8 +35,8 @@ class SupervisedBaseline(pl.LightningModule):
         self.in_channels = in_channels
         self.network = network
         self.learning_rate = learning_rate
-        self.bce = nn.BCEWithLogitsLoss()
-        self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
+        self.bce = nn.BCELoss()
+        self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=False)
         self.save_hyperparameters()
 
     @classmethod
@@ -58,7 +60,7 @@ class SupervisedBaseline(pl.LightningModule):
         optimizer = Adam(self.parameters(), lr=self.learning_rate)
         scheduler = MultiStepLR(
             optimizer,
-            milestones=[100, 300],
+            milestones=[100],
             gamma=0.3
         )
 
@@ -67,12 +69,14 @@ class SupervisedBaseline(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         inputs, labels_onehot = batch['image'], batch['mask']
-
-        labels = torch.argmax(labels_onehot, dim=1).long()
+        labels_onehot_ignore_unknown = labels_onehot[:, 1:, :, :]
+        loss_mask = 1. - labels_onehot[:, [0], :, :]
 
         outputs = self.network(inputs)
-        loss1 = self.bce(outputs, labels_onehot)
-        loss2 = self.dice(outputs, labels_onehot)
+        outputs = F.logsigmoid(outputs).exp()
+
+        loss1 = self.bce(outputs * loss_mask, labels_onehot_ignore_unknown * loss_mask)
+        loss2 = self.dice(outputs * loss_mask, labels_onehot_ignore_unknown * loss_mask)
 
         loss = loss1 + loss2
 
@@ -80,42 +84,54 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
 
-        probas = outputs.softmax(dim=1)
-        IoU = metrics.iou(probas,
+        preds = outputs.argmax(dim=1) + 1
+        labels = torch.argmax(labels_onehot, dim=1).long()
+        IoU = metrics.iou(preds,
                           labels,
                           reduction='none',
-                          num_classes=self.num_classes)
+                          num_classes=self.num_classes+1,
+                          ignore_index=0)
         for i in range(self.num_classes):
-            self.log('Train_IoU_{}'.format(i), IoU[i])
+            class_name = self.trainer.datamodule.sup_train_set.labels_desc[i+1][2]
+            self.log('Train_IoU_{}'.format(class_name), IoU[i])
         self.log('Train_IoU', torch.mean(IoU))
 
         return {'preds': outputs, "loss": loss}
 
     def validation_step(self, batch, batch_idx):
 
-        val_inputs, val_labels_one_hot = batch['image'], batch['mask']
-        val_labels = torch.argmax(val_labels_one_hot, dim=1).long()
+        inputs, labels_onehot = batch['image'], batch['mask']
+        labels_onehot_ignore_unknown = labels_onehot[:, 1:, :, :]
+        loss_mask = 1. - labels_onehot[:, [0], :, :]
 
-        outputs = self.network(val_inputs)
-        val_loss1 = self.bce(outputs, val_labels_one_hot)
-        val_loss2 = self.dice(outputs, val_labels_one_hot)
-        val_loss = val_loss1 + val_loss2
+        outputs = self.network(inputs)
+        outputs = F.logsigmoid(outputs).exp()
 
-        self.log('Val_BCE', val_loss1)
-        self.log('Val_Dice', val_loss2)
-        self.log('Val_loss', val_loss)
+        loss1 = self.bce(outputs * loss_mask, labels_onehot_ignore_unknown * loss_mask)
+        loss2 = self.dice(outputs * loss_mask, labels_onehot_ignore_unknown * loss_mask)
+        loss = loss1 + loss2
 
-        probas = outputs.softmax(dim=1)
-        accuracy = metrics.accuracy(probas, val_labels)
-        self.log('Val_acc', accuracy)
+        self.log('Val_BCE', loss1)
+        self.log('Val_Dice', loss2)
+        self.log('Val_loss', loss)
 
-        IoU = metrics.iou(probas,
-                          val_labels,
+        preds = outputs.argmax(dim=1) + 1
+        labels = torch.argmax(labels_onehot, dim=1).long()
+
+        IoU = metrics.iou(preds,
+                          labels,
                           reduction='none',
-                          num_classes=self.num_classes)
+                          num_classes=self.num_classes+1,
+                          ignore_index=0)
         for i in range(self.num_classes):
-            self.log('Val_IoU_{}'.format(i), IoU[i])
+            class_name = self.trainer.datamodule.val_set.labels_desc[i+1][2]
+            self.log('Val_IoU_{}'.format(class_name), IoU[i])
         self.log('Val_IoU', torch.mean(IoU))
+
+        accuracy = metrics.accuracy(preds,
+                                    labels,
+                                    ignore_index=0)
+        self.log('Val_acc', accuracy)
 
         self.log('epoch', self.trainer.current_epoch)
 
@@ -123,16 +139,22 @@ class SupervisedBaseline(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        test_inputs, test_labels_one_hot = batch['image'], batch['mask']
-        test_labels = torch.argmax(test_labels_one_hot, dim=1).long()
+        inputs, labels_onehot = batch['image'], batch['mask']
 
-        outputs = self.network(test_inputs)
-        probas = outputs.softmax(dim=1)
-        accuracy = metrics.accuracy(probas, test_labels)
-        IoU = metrics.iou(probas,
-                          test_labels,
+        outputs = self.network(inputs)
+
+        preds = outputs.argmax(dim=1) + 1
+        labels = torch.argmax(labels_onehot, dim=1).long()
+
+        IoU = metrics.iou(preds,
+                          labels,
                           reduction='none',
-                          num_classes=self.num_classes)
+                          num_classes=self.num_classes+1,
+                          ignore_index=0)
+
+        accuracy = metrics.accuracy(preds,
+                                    labels,
+                                    ignore_index=0)
 
         return {'preds': outputs, 'accuracy': accuracy, 'IoU': IoU}
 

@@ -94,7 +94,7 @@ class SegmentationImagesVisualisation(pl.Callback):
 
                 trainer.logger.experiment.add_image(f'Images/Train_batch {idx}', final_grid, global_step=trainer.global_step)
 
-                break
+
 
     def on_validation_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
@@ -132,4 +132,4 @@ class SegmentationImagesVisualisation(pl.Callback):
 
             trainer.logger.experiment.add_image(f'Images/Val_batch {idx}', final_grid, global_step=trainer.global_step)
 
-            break
+

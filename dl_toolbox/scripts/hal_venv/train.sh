@@ -16,7 +16,8 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/semcity/tr
 --output_dir /work/OT/ai4geo/users/fournip/outputs \
 --workers 6 \
 --max_epochs 100 \
---num_classes 8 \
+--num_classes 7 \
+--train_dataset_transforms_strat hard \
 --gpus 1 \
 --module sup \
 --datamodule bdsd \
