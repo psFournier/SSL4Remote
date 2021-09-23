@@ -12,6 +12,7 @@ from dl_toolbox.lightning_modules import SupervisedBaseline
 from dl_toolbox.utils import worker_init_function
 from dl_toolbox.inference import apply_tta
 import torchmetrics.functional as  M
+from dl_toolbox.utils import get_tiles
 
 # class DummyModule(nn.Module):
 #     def __init__(self, model, config_loss):
@@ -45,9 +46,9 @@ def main():
     parser.add_argument("--tta", nargs='+', type=str, default=[])
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--workers", default=8, type=int)
-    parser.add_argument("--tile_size", default=(128, 128))
+    parser.add_argument("--tile_size", nargs=2, type=int, default=[128, 128])
     parser.add_argument("--crop_size", type=int, default=128)
-    parser.add_argument("--tile_step", default=(128, 128))
+    parser.add_argument("--tile_step", nargs=2, type=int,default=[128, 128])
 
     args = parser.parse_args()
 
@@ -90,15 +91,15 @@ def main():
     # The full matrix used to cumulate results from overlapping tiles or tta
     width, height = imagesize.get(args.image_path)
     pred_sum = torch.zeros(size=(module.num_classes, height, width))
-    metrics = {}
+    metrics = {'accuracy': []}
 
-    for batch in dataloader:
+    for i, batch in enumerate(dataloader):
 
         inputs, _, windows = batch['image'], batch['mask'], batch['window']
 
         with torch.no_grad():
             outputs = module.forward(inputs.to(device)).cpu()
-
+        print('batch {}'.format(i))
         split_pred = np.split(outputs, outputs.shape[0], axis=0)
         pred_list = [np.squeeze(e, axis=0) for e in split_pred]
         window_list = windows[:]
@@ -111,40 +112,79 @@ def main():
         for pred, window in zip(pred_list, window_list):
             pred_sum[:, window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] += pred
 
+        # if i==10: break
 
-    avg_probs = pred_sum.softmax(dim=0)
+    preds = pred_sum.argmax(dim=0) + 1
 
-    labels = rasterio.open(args.label_path).read(out_dtype=np.float32)
-    labels_onehot = SemcityBdsdDs.rgb_to_onehot(labels)
-    test_labels = torch.argmax(labels_onehot, dim=0).long()
+    if args.label_path is not None:
 
-    IoU = M.iou(torch.unsqueeze(avg_probs, 0),
-                torch.unsqueeze(test_labels, 0),
-                reduction='none',
-                num_classes=module.num_classes+1,
-                ignore_index=0)
-    for i in range(module.num_classes):
-        class_name = SemcityBdsdDs.labels_desc[i+1][2]
-        metrics['Train_IoU_{}'.format(class_name)] = IoU[i]
-    metrics['IoU'] = IoU.mean()
-    print(metrics)
+        # test_labels = torch.zeros(size=(height, width), dtype=torch.int)
+        windows = get_tiles(
+            nols=width,
+            nrows=height,
+            width=128,
+            height=128,
+            col_step=128,
+            row_step=128
+        )
+        for window in list(windows)[2::3]:
+            labels_rgb = rasterio.open(args.label_path).read(window=window, out_dtype=np.float32)
+            labels_onehot = torch.from_numpy(SemcityBdsdDs.rgb_to_onehot(labels_rgb)).contiguous()
+            window_labels = torch.argmax(labels_onehot, dim=0).long()
+            # test_labels[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] = labels
+
+            window_preds = preds[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height]
+            accuracy = M.accuracy(torch.unsqueeze(window_preds, 0),
+                                  torch.unsqueeze(window_labels, 0),
+                                  ignore_index=0)
+            metrics['accuracy'].append(accuracy)
+
+        # IoU = M.iou(torch.unsqueeze(avg_probs, 0),
+        #             torch.unsqueeze(test_labels, 0),
+        #             reduction='none',
+        #             num_classes=module.num_classes+1,
+        #             ignore_index=0)
+        # for i in range(module.num_classes):
+        #     class_name = SemcityBdsdDs.labels_desc[i+1][2]
+        #     metrics['Train_IoU_{}'.format(class_name)] = IoU[i]
+        # metrics['IoU'] = IoU.mean()
+
+        print(np.mean(metrics['accuracy']))
 
     if args.output_path is not None:
-        pred_profile = rasterio.open(args.image_path).profile
+
+        preds_rgb = torch.zeros(size=(height, width, 3), dtype=torch.int)
+        for window in get_tiles(
+                nols=width,
+                nrows=height,
+                width=128,
+                height=128,
+                col_step=128,
+                row_step=128
+        ):
+            pred = preds[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height]
+            for val, color, _, _ in SemcityBdsdDs.labels_desc:
+                mask = pred == val
+                preds_rgb[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height, :][mask] = torch.tensor(color, dtype=torch.int)
+        preds_rgb = preds_rgb.numpy().astype(np.uint8)
+
+        pred_profile = rasterio.open(args.label_path).profile
         profile = {
             'driver': 'GTiff',
             'dtype': 'uint8',
             'nodata': None,
             'width': pred_profile['width'],
             'height': pred_profile['height'],
-            'count': 1,
+            'count': 3,
             'crs': pred_profile['crs'],
             'transform': pred_profile['transform'],
             'tiled': False,
             'interleave': 'pixel'
         }
         with rasterio.open(args.output_path, 'w', **profile) as dst:
-            dst.write(np.uint8(np.argmax(pred_sum, axis=0)), indexes=1)
+            dst.write(preds_rgb[:,:,0], indexes=1)
+            dst.write(preds_rgb[:,:,1], indexes=2)
+            dst.write(preds_rgb[:,:,2], indexes=3)
 
 
 if __name__ == "__main__":

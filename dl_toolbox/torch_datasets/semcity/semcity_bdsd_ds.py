@@ -41,11 +41,11 @@ class SemcityBdsdDs(OneImage):
     @classmethod
     def label_to_rgb(cls, label):
 
-        rgb_label = np.zeros(shape=(*label.shape, 3), dtype=float)
+        rgb_label = torch.zeros(size=(*label.shape, 3), device=label.device)
         for val, color, _, _ in cls.labels_desc:
-            mask = np.array(label == val)
-            rgb_label[mask] = np.array(color)
-        rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
+            mask = label == val
+            rgb_label[mask] = torch.tensor(color, device=label.device, dtype=torch.float32)
+        rgb_label = rgb_label.permute(0, 3, 1, 2)
 
         return rgb_label
 
@@ -58,6 +58,7 @@ class SemcityBdsdDs(OneImage):
             out[i, :, :] = np.clip(((out[i, :, :] - min[channel]) / (max[channel] - min[channel])), 0, 1)
         out = torch.from_numpy(out).contiguous()
 
+        # return torch.from_numpy(image[[3, 2, 1], :, :]).contiguous()
         return out
 
     def process_label(self, label):

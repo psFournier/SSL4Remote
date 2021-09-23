@@ -40,3 +40,4 @@ class CustomSwa(StochasticWeightAveraging):
             class_name = trainer.datamodule.val_set.labels_desc[i+1][2]
             pl_module.log('Swa_Val_IoU_{}'.format(class_name), swa_IoU[i])
         pl_module.log('Swa_Val_IoU', torch.mean(swa_IoU))
+        pl_module.log('Swa_Val_accuracy', swa_accuracy)
