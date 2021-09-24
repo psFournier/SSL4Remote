@@ -65,7 +65,7 @@ class SupervisedBaseline(pl.LightningModule):
         optimizer = Adam(self.parameters(), lr=self.learning_rate)
         scheduler = MultiStepLR(
             optimizer,
-            milestones=[100],
+            milestones=[30,50],
             gamma=0.3
         )
 
