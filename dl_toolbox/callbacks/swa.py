@@ -27,16 +27,24 @@ class CustomSwa(StochasticWeightAveraging):
             inputs, labels_onehot = batch['image'], batch['mask']
             labels = torch.argmax(labels_onehot, dim=1).long()
             swa_outputs = self._average_model.network(inputs.to(pl_module.device)).cpu()
-            swa_preds = swa_outputs.argmax(dim=1) + 1
-            swa_IoU = metrics.iou(swa_preds,
-                                  labels,
-                                  reduction='none',
-                                  num_classes=pl_module.num_classes + 1,
-                                  ignore_index=0)
-            swa_accuracy = metrics.accuracy(swa_preds,
-                                            labels,
-                                            ignore_index=0)
-        for i in range(pl_module.num_classes):
-            class_name = trainer.datamodule.val_set.labels_desc[i+1][2]
-            pl_module.log('Swa_Val_IoU_{}'.format(class_name), swa_IoU[i])
+            swa_preds = swa_outputs.argmax(dim=1)
+
+            ignore_index = 0 if pl_module.ignore_void else None
+            swa_IoU = metrics.iou(
+                swa_preds + int(pl_module.ignore_void),
+                labels,
+                reduction='none',
+                num_classes=pl_module.num_classes + int(pl_module.ignore_void),
+                ignore_index=ignore_index
+            )
+            swa_accuracy = metrics.accuracy(
+                swa_preds + int(pl_module.ignore_void),
+                labels,
+                ignore_index=ignore_index
+            )
+
+        class_names = trainer.datamodule.class_names[int(pl_module.ignore_void):]
+        for i, name in enumerate(class_names):
+            pl_module.log('Swa_Val_IoU_{}'.format(name), swa_IoU[i])
         pl_module.log('Swa_Val_IoU', torch.mean(swa_IoU))
+        pl_module.log('Swa_Val_acc', swa_accuracy)
