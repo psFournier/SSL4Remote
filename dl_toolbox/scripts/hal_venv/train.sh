@@ -5,24 +5,20 @@
 
 module load python/3.7.2
 cd "${TMPDIR}"
-#mkdir miniworld_tif
-#CITY=austin
-#cp -r /work/OT/ai4geo/users/fournip/miniworld_tif/"${CITY}" miniworld_tif/
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
-SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/semcity/train.py
+SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --output_dir /work/OT/ai4geo/users/fournip/outputs \
 --workers 6 \
---max_epochs 75 \
---num_classes 7 \
---train_dataset_transforms_strat d4 \
+--max_epochs 300 \
+--num_classes 2 \
 --gpus 1 \
 --module sup \
---datamodule bdsd \
---image_path /work/OT/ai4geo/users/fournip/semcity_merged/BDSD_M_3_4_7_8.tif \
---label_path /work/OT/ai4geo/users/fournip/semcity_merged/GT_3_4_7_8.tif \
+--datamodule miniworld_generalisation \
+--cities christchurch \
+--data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \
 --exp_name "${PBS_JOBNAME}"
 
 module unload python/3.7.2

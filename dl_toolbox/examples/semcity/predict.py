@@ -114,7 +114,6 @@ def main():
         for pred, window in zip(pred_list, window_list):
             pred_sum[:, window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] += pred
 
-
     preds = pred_sum.argmax(dim=0) + 1
 
     if args.label_path is not None:
@@ -130,7 +129,7 @@ def main():
         )
         for window in list(windows)[2::3]:
             labels_rgb = rasterio.open(args.label_path).read(window=window, out_dtype=np.float32)
-            labels_onehot = torch.from_numpy(SemcityBdsdDs.rgb_to_onehot(labels_rgb)).contiguous()
+            labels_onehot = torch.from_numpy(SemcityBdsdDs.to_onehot(labels_rgb)).contiguous()
             window_labels = torch.argmax(labels_onehot, dim=0).long()
             # test_labels[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] = labels
 
