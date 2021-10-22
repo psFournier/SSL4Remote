@@ -43,7 +43,7 @@ class MiniworldDmV2(BaseSupervisedDatamodule):
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
-                transforms=self.train_dataset_transforms,
+                img_aug=self.img_aug,
             )
             city_sup_train_sets.append(sup_train_set)
 
@@ -54,13 +54,25 @@ class MiniworldDmV2(BaseSupervisedDatamodule):
                 images_paths=image_list,
                 labels_paths=label_list,
                 crop_size=self.crop_size,
-                transforms=self.val_dataset_transforms,
+                img_aug=self.img_aug,
             )
             city_val_sets.append(val_set)
 
         self.sup_train_set = ConcatDataset(city_sup_train_sets)
         self.val_set = ConcatDataset(city_val_sets)
 
+    @property
+    def class_names(self):
+        return ['non building', 'building']
+
+    def label_to_rgb(self, labels):
+
+        rgb_label = np.zeros(shape=(*labels.shape, 3), dtype=float)
+        mask = np.array(labels == 1)
+        rgb_label[mask] = np.array([255,255,255])
+        rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
+
+        return rgb_label
 
 class MiniworldDmV2Semisup(MiniworldDmV2, BaseSemisupDatamodule):
 
@@ -82,7 +94,7 @@ class MiniworldDmV2Semisup(MiniworldDmV2, BaseSemisupDatamodule):
                 city=city,
                 images_paths=image_list,
                 crop_size=self.crop_size,
-                transforms=self.train_dataset_transforms
+                img_aug=self.img_aug
             )
             city_unsup_train_sets.append(unsup_train_set)
 

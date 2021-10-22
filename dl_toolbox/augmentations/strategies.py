@@ -28,4 +28,6 @@ def get_transforms(name: str):
 
     if name == 'hard':
         return hard_transformation()
+    if name == 'mixup':
+        return Mixup()
     return NoOp()

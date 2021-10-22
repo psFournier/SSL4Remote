@@ -17,7 +17,7 @@ class SemcityBdsdDs(OneImage):
     # Min and max are 1 and 99 percentiles
     image_stats = {
         'num_channels': 8,
-        'min' : np.array([245,166,167,107,42,105,60,48]),
+        'min' : np.array([245, 166, 167, 107, 42, 105, 60, 48]),
         'max' : np.array([615, 681, 1008, 1087, 732, 1065, 1126, 1046])
     }
 
@@ -26,7 +26,7 @@ class SemcityBdsdDs(OneImage):
         super(SemcityBdsdDs, self).__init__(*args, **kwargs)
 
     @classmethod
-    def rgb_to_onehot(cls, rgb_label):
+    def to_onehot(cls, rgb_label):
 
         onehot_masks = []
         for _, color, _, _ in cls.labels_desc:
@@ -37,17 +37,6 @@ class SemcityBdsdDs(OneImage):
         onehot = np.stack(onehot_masks, axis=0)
 
         return onehot
-
-    @classmethod
-    def label_to_rgb(cls, label):
-
-        rgb_label = np.zeros(shape=(*label.shape, 3), dtype=float)
-        for val, color, _, _ in cls.labels_desc:
-            mask = np.array(label == val)
-            rgb_label[mask] = np.array(color)
-        rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
-
-        return rgb_label
 
     def process_image(self, image):
 
@@ -62,4 +51,4 @@ class SemcityBdsdDs(OneImage):
 
     def process_label(self, label):
 
-        return torch.from_numpy(self.rgb_to_onehot(label)).contiguous()
+        return torch.from_numpy(self.to_onehot(label)).contiguous()

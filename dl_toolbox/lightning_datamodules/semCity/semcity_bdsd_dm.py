@@ -1,6 +1,7 @@
 from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
 from dl_toolbox.torch_datasets import SemcityBdsdDs
 import os
+import numpy as np
 
 class SemcityBdsdDm(BaseSupervisedDatamodule):
 
@@ -23,7 +24,7 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
             tile_size=(863,876),
             tile_step=(863,876),
             crop_size=self.crop_size,
-            transforms=self.train_dataset_transforms
+            img_aug=self.img_aug
         )
         self.sup_train_set.idxs = self.sup_train_set.idxs[::3] + self.sup_train_set.idxs[1::3]
         self.val_set = SemcityBdsdDs(
@@ -32,9 +33,22 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
             tile_size=(863,876),
             tile_step=(863,876),
             crop_size=self.crop_size,
-            transforms=self.val_dataset_transforms
         )
         self.val_set.idxs = self.val_set.idxs[2::3]
+
+    @property
+    def class_names(self):
+        return [label[2] for label in self.sup_train_set.labels_desc]
+
+    def label_to_rgb(self, labels):
+
+        rgb_label = np.zeros(shape=(*labels.shape, 3), dtype=float)
+        for val, color, _, _ in self.sup_train_set.labels_desc:
+            mask = np.array(labels == val)
+            rgb_label[mask] = np.array(color)
+        rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
+
+        return rgb_label
 
 class SemcityBdsdDmSemisup:
     pass

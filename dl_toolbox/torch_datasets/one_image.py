@@ -6,6 +6,8 @@ from abc import ABC
 from dl_toolbox.utils import get_tiles
 import imagesize
 import torch
+import dl_toolbox.augmentations as aug
+
 
 class OneImage(Dataset, ABC):
 
@@ -16,7 +18,7 @@ class OneImage(Dataset, ABC):
                  tile_size=None,
                  tile_step=None,
                  crop_size=None,
-                 transforms=None,
+                 img_aug=None,
                  *args,
                  **kwargs
                  ):
@@ -40,7 +42,7 @@ class OneImage(Dataset, ABC):
         ]
         self.idxs = list(range(len(self.tile_windows))) if idxs is None else idxs
         self.crop_size = crop_size
-        self.transforms = transforms
+        self.img_aug = aug.get_transforms(img_aug)
 
     def get_window(self, idx):
 
@@ -82,9 +84,9 @@ class OneImage(Dataset, ABC):
                 label = label_file.read(window=window, out_dtype=np.float32)
                 label = self.process_label(label)
 
-        if self.transforms is not None:
+        if self.img_aug is not None:
             # image needs to be either [0, 255] ints or [0,1] floats
-            end_image, end_mask = self.transforms(img=image, label=label)
+            end_image, end_mask = self.img_aug(img=image, label=label)
         else:
             end_image, end_mask = image, label
 

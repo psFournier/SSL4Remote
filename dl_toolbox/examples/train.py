@@ -11,15 +11,24 @@ modules = {
     'MT': MeanTeacher
 }
 
+
 datamodules = {
-    'mw2': {
+    'semcity_bdsd': {
+        'sup': SemcityBdsdDm,
+        # 'mt': SemcityBdsdDmSemisup
+    },
+    'miniworld_generalisation': {
         'sup': MiniworldDmV2,
         'mt': MiniworldDmV2Semisup
     },
-    'mw3': {
+    'miniworld_transfert': {
         'sup': MiniworldDmV3,
         'mt': MiniworldDmV3Semisup
     },
+    'phr_pan': {
+        'sup': PhrPanDm,
+        'mt': PhrPanDmSemisup
+    }
 }
 
 def main():
@@ -27,7 +36,7 @@ def main():
     # Reading parameters
     parser = ArgumentParser()
 
-    parser.add_argument("--datamodule", type=str, default='mw2')
+    parser.add_argument("--datamodule", type=str, default='semcity_bdsd')
     parser.add_argument("--module", type=str, default="sup")
     parser.add_argument("--output_dir", type=str, default="./outputs")
     parser.add_argument("--exp_name", type=str)

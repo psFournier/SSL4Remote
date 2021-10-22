@@ -1,12 +1,12 @@
 from torch.utils.data._utils.collate import default_collate
 import torch
+import dl_toolbox.augmentations as aug
 
 class CustomCollate():
 
-    def __init__(self, img_aug='', batch_aug=''):
+    def __init__(self, batch_aug=None):
 
-        self.img_aug = img_aug
-        self.batch_aug = batch_aug
+        self.batch_aug = aug.get_transforms(batch_aug)
 
     def __call__(self, batch, *args, **kwargs):
 
@@ -15,11 +15,7 @@ class CustomCollate():
         batch = default_collate(to_collate)
         if 'mask' not in batch.keys():
             batch['mask'] = None
-        # batch = self.img_aug(img=batch['image'], label=batch['mask'])
-        # batch = self.batch_aug(*batch)
-        # if len(batch) < 3:
-        #     s = batch[0].size()
-        #     batch = (*batch, torch.ones(size=(s[0], s[2], s[3])))
+        batch['image'], batch['mask'] = self.batch_aug(batch['image'], batch['mask'])
         batch['window'] = windows
         batch['loss_mask'] = torch.ones_like(batch['mask'])
 

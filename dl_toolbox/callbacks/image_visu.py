@@ -70,8 +70,8 @@ class SegmentationImagesVisualisation(pl.Callback):
             # Segmentation maps
             labels = torch.argmax(mask, dim=1)
             preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
-            mask_rgb = torch.from_numpy(trainer.datamodule.val_set.label_to_rgb(labels.cpu().numpy())).float()
-            out_rgb = torch.from_numpy(trainer.datamodule.val_set.label_to_rgb(preds.cpu().numpy())).float()
+            mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
+            out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
 
             # Number of grids to log depends on the batch size
             quotient, remainder = divmod(img.shape[0], self.NB_COL)
@@ -108,8 +108,8 @@ class SegmentationImagesVisualisation(pl.Callback):
         # Segmentation maps
         labels = torch.argmax(mask, dim=1)
         preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
-        mask_rgb = torch.from_numpy(trainer.datamodule.val_set.label_to_rgb(labels.cpu().numpy())).float()
-        out_rgb = torch.from_numpy(trainer.datamodule.val_set.label_to_rgb(preds.cpu().numpy())).float()
+        mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
+        out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
 
         # Number of grids to log depends on the batch size
         quotient, remainder = divmod(img.shape[0], self.NB_COL)

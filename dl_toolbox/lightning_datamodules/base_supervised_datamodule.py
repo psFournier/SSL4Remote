@@ -16,14 +16,11 @@ class BaseSupervisedDatamodule(LightningDataModule):
                  epoch_len,
                  sup_batch_size,
                  workers,
-                 img_aug,
-                 batch_aug,
                  train_val,
                  train_idxs,
                  val_idxs,
-                 train_dataset_transforms_strat,
-                 val_dataset_transforms_strat,
-                 train_collate_transforms_strat,
+                 img_aug,
+                 batch_aug,
                  ignore_void=False,
                  *args,
                  **kwargs):
@@ -40,10 +37,8 @@ class BaseSupervisedDatamodule(LightningDataModule):
         self.sup_train_set = None
         self.val_set = None
         self.ignore_void = ignore_void
-
-        self.train_dataset_transforms = get_transforms(train_dataset_transforms_strat)
-        self.val_dataset_transforms = get_transforms(val_dataset_transforms_strat)
-        self.train_collate_transforms = get_transforms(train_collate_transforms_strat)
+        self.img_aug = img_aug
+        self.batch_aug = batch_aug
 
     def prepare_data(self, *args, **kwargs):
 
@@ -62,11 +57,9 @@ class BaseSupervisedDatamodule(LightningDataModule):
         parser.add_argument('--train_val', nargs=2, type=int, default=(0, 0))
         parser.add_argument('--train_idxs', nargs='+', type=int, default=[])
         parser.add_argument('--val_idxs', nargs='+', type=int, default=[])
-        parser.add_argument('--img_aug', nargs='+', type=str, default=[])
+        parser.add_argument('--img_aug', type=str, default='no')
+        # parser.add_argument('--val_dataset_transforms_strat', type=str, default='no')
         parser.add_argument('--batch_aug', type=str, default='no')
-        parser.add_argument('--train_dataset_transforms_strat', type=str, default='no')
-        parser.add_argument('--val_dataset_transforms_strat', type=str, default='no')
-        parser.add_argument('--train_collate_transforms_strat', type=str, default='no')
         parser.add_argument("--ignore_void", action='store_true')
 
         return parser
@@ -82,9 +75,7 @@ class BaseSupervisedDatamodule(LightningDataModule):
         sup_train_dataloader = DataLoader(
             dataset=self.sup_train_set,
             batch_size=self.sup_batch_size,
-            collate_fn=CustomCollate(
-                self.train_collate_transforms,
-            ),
+            collate_fn=CustomCollate(self.batch_aug),
             sampler=sup_train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -106,7 +97,3 @@ class BaseSupervisedDatamodule(LightningDataModule):
         )
 
         return val_dataloader
-
-    @property
-    def class_names(self):
-        return [label[2] for label in self.sup_train_set.labels_desc]
