@@ -62,7 +62,7 @@ class SegmentationImagesVisualisation(pl.Callback):
     ) -> None:
         """Called when the validation batch ends."""
 
-        if trainer.global_step % 1 == 0:
+        if trainer.global_step % 100 == 0:
             # Forward
             img, mask = batch['image'], batch['mask']
             orig_img = batch['orig_image']
@@ -101,10 +101,11 @@ class SegmentationImagesVisualisation(pl.Callback):
         """Called when the validation batch ends."""
 
         # Forward
-        img, orig_img = outputs['batch']['image'], outputs['batch']['orig_image']
+        img, mask = batch['image'], batch['mask']
+        orig_img = batch['orig_image']
 
         # Segmentation maps
-        labels = torch.argmax(outputs['batch']['mask'], dim=1)
+        labels = torch.argmax(mask, dim=1)
         preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
         mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
         out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
