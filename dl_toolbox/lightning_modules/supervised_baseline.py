@@ -98,7 +98,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Train_sup_loss', loss)
 
         preds = outputs.argmax(dim=1)
-        labels = torch.argmax(labels_onehot, dim=1).long()
+        labels = torch.argmax(batch['mask'], dim=1).long()
 
         ignore_index = 0 if self.ignore_void else None
         IoU = metrics.iou(preds + int(self.ignore_void),
@@ -137,7 +137,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_loss', loss)
 
         preds = outputs.argmax(dim=1)
-        labels = torch.argmax(labels_onehot, dim=1).long()
+        labels = torch.argmax(batch['mask'], dim=1).long()
 
         ignore_index = 0 if self.ignore_void else None
         IoU = metrics.iou(preds + int(self.ignore_void),
