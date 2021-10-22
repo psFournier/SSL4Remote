@@ -82,7 +82,8 @@ def main():
             last_2_epoch_ckpt,
             CustomSwa(device=None),
             SegmentationImagesVisualisation(),
-            ConfMatLogger()
+            ConfMatLogger(),
+            LearningRateMonitor()
         ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,

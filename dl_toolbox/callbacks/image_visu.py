@@ -95,21 +95,20 @@ class SegmentationImagesVisualisation(pl.Callback):
                 trainer.logger.experiment.add_image(f'Images/Train_batch {idx}', final_grid, global_step=trainer.global_step)
 
 
-
     def on_validation_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
         """Called when the validation batch ends."""
 
         # Forward
-        img, mask = batch['image'], batch['mask']
-        orig_img = batch['orig_image']
+        img, orig_img = outputs['batch']['image'], outputs['batch']['orig_image']
 
         # Segmentation maps
-        labels = torch.argmax(mask, dim=1)
+        labels = torch.argmax(outputs['batch']['mask'], dim=1)
         preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
         mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
         out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
+
 
         # Number of grids to log depends on the batch size
         quotient, remainder = divmod(img.shape[0], self.NB_COL)
@@ -131,5 +130,3 @@ class SegmentationImagesVisualisation(pl.Callback):
             final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
 
             trainer.logger.experiment.add_image(f'Images/Val_batch {idx}', final_grid, global_step=trainer.global_step)
-
-
