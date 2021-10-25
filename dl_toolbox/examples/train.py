@@ -100,8 +100,7 @@ def main():
         flush_logs_every_n_steps=1000,
         num_sanity_val_steps=0,
         check_val_every_n_epoch=1,
-        benchmark=True,
-        stochastic_weight_avg=True
+        benchmark=True
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)

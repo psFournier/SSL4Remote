@@ -36,12 +36,11 @@ class SupervisedBaseline(pl.LightningModule):
         self.network = network
         self.learning_rate = learning_rate
         # Reduction = none is necessary to compute properly the mean when using
-        # a masked loss ; we do not use BCEWithLogits because the masking must
-        # be done after the computation of probabilities
-        self.bce = nn.BCELoss(reduction='none')
+        # a masked loss
+        self.ce_loss = nn.BCEWithLogitsLoss(reduction='none')
         # The Dice loss is not a pixel-wise loss, so it seems that the masked
         # loss works properly by just masking preds and labels
-        self.dice = DiceLoss(mode="multilabel", log_loss=False, from_logits=False)
+        self.dice_loss = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
         self.save_hyperparameters()
 
     @classmethod
@@ -83,15 +82,12 @@ class SupervisedBaseline(pl.LightningModule):
         else:
             labels_onehot, loss_mask = batch['mask'], batch['loss_mask']
 
-        outputs = self.network(inputs)
+        logits = self.network(inputs)
 
-        # Computing manually the activations just before masking and not after
-        outputs = F.logsigmoid(outputs).exp()
-
-        loss1_noreduce = self.bce(outputs * loss_mask, labels_onehot * loss_mask)
+        loss1_noreduce = self.ce_loss(logits, labels_onehot)
         # The mean over all pixels is replaced with a mean over unmasked ones
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
-        loss2 = self.dice(outputs * loss_mask, labels_onehot * loss_mask)
+        loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
         loss = loss1 + loss2
 
@@ -99,7 +95,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
 
-        preds = outputs.argmax(dim=1)
+        preds = logits.argmax(dim=1)
         labels = torch.argmax(batch['mask'], dim=1).long()
 
         ignore_index = 0 if self.ignore_void else None
@@ -114,7 +110,7 @@ class SupervisedBaseline(pl.LightningModule):
             self.log('Train_IoU_{}'.format(name), IoU[i])
         self.log('Train_IoU', torch.mean(IoU))
 
-        return {'batch': batch, 'preds': outputs, "loss": loss}
+        return {'batch': batch, 'logits': logits, "loss": loss}
 
     def validation_step(self, batch, batch_idx):
 
@@ -128,19 +124,18 @@ class SupervisedBaseline(pl.LightningModule):
         else:
             labels_onehot, loss_mask = batch['mask'], batch['loss_mask']
 
-        outputs = self.network(inputs)
-        outputs = F.logsigmoid(outputs).exp()
+        logits = self.network(inputs)
 
-        loss1_noreduce = self.bce(outputs * loss_mask, labels_onehot * loss_mask)
+        loss1_noreduce = self.ce_loss(logits, labels_onehot)
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
-        loss2 = self.dice(outputs * loss_mask, labels_onehot * loss_mask)
+        loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
         loss = loss1 + loss2
 
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
 
-        preds = outputs.argmax(dim=1)
+        preds = logits.argmax(dim=1)
         labels = torch.argmax(batch['mask'], dim=1).long()
 
         ignore_index = 0 if self.ignore_void else None
@@ -162,7 +157,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         self.log('epoch', self.trainer.current_epoch)
 
-        return {'batch': batch, 'preds': outputs, 'IoU': IoU, 'accuracy' : accuracy}
+        return {'batch': batch, 'logits': logits, 'IoU': IoU, 'accuracy' : accuracy}
 
     # def test_step(self, batch, batch_idx):
     #

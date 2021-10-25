@@ -57,7 +57,7 @@ class ConfMatLogger(pl.Callback):
         inputs, labels_onehot = batch['image'], batch['mask']
 
         labels = torch.argmax(labels_onehot, dim=1)
-        preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
+        preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
 
         self.conf_mat(preds.cpu(), labels.cpu())
 

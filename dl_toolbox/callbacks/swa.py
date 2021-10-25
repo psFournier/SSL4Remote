@@ -26,8 +26,8 @@ class CustomSwa(StochasticWeightAveraging):
         else:
             inputs, labels_onehot = batch['image'], batch['mask']
             labels = torch.argmax(labels_onehot, dim=1).long()
-            swa_outputs = self._average_model.network(inputs.to(pl_module.device)).cpu()
-            swa_preds = swa_outputs.argmax(dim=1)
+            swa_logits = self._average_model.network(inputs.to(pl_module.device))
+            swa_preds = swa_logits.argmax(dim=1)
 
             ignore_index = 0 if pl_module.ignore_void else None
             swa_IoU = metrics.iou(

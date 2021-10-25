@@ -69,7 +69,7 @@ class SegmentationImagesVisualisation(pl.Callback):
 
             # Segmentation maps
             labels = torch.argmax(mask, dim=1)
-            preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
+            preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
             # mask_rgb = trainer.datamodule.label_to_rgb(labels).float()
             # out_rgb = trainer.datamodule.label_to_rgb(preds).float()
             mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
@@ -108,7 +108,7 @@ class SegmentationImagesVisualisation(pl.Callback):
 
         # Segmentation maps
         labels = torch.argmax(mask, dim=1)
-        preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
+        preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
         mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
         out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
 
