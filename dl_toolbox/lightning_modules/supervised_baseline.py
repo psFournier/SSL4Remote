@@ -73,13 +73,15 @@ class SupervisedBaseline(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        inputs, labels_onehot, loss_mask = batch['image'], batch['mask'], batch['loss_mask']
+        inputs = batch['image']
 
         if self.ignore_void:
             # Granted that the first label is the void/unknown label, this extracts
             # from labels the mask to use to ignore this class
-            labels_onehot = labels_onehot[:, 1:, :, :]
-            loss_mask = 1. - labels_onehot[:, [0], :, :]
+            labels_onehot = batch['mask'][:, 1:, :, :]
+            loss_mask = 1. - batch['mask'][:, [0], :, :]
+        else:
+            labels_onehot, loss_mask = batch['mask'], batch['loss_mask']
 
         outputs = self.network(inputs)
 
@@ -116,13 +118,15 @@ class SupervisedBaseline(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        inputs, labels_onehot, loss_mask = batch['image'], batch['mask'], batch['loss_mask']
+        inputs = batch['image']
 
         if self.ignore_void:
             # Granted that the first label is the void/unknown label, this extracts
             # from labels the mask to use to ignore this class
-            labels_onehot = labels_onehot[:, 1:, :, :]
-            loss_mask = 1. - labels_onehot[:, [0], :, :]
+            labels_onehot = batch['mask'][:, 1:, :, :]
+            loss_mask = 1. - batch['mask'][:, [0], :, :]
+        else:
+            labels_onehot, loss_mask = batch['mask'], batch['loss_mask']
 
         outputs = self.network(inputs)
         outputs = F.logsigmoid(outputs).exp()
