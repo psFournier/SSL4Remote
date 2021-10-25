@@ -70,6 +70,8 @@ class SegmentationImagesVisualisation(pl.Callback):
             # Segmentation maps
             labels = torch.argmax(mask, dim=1)
             preds = torch.argmax(outputs['preds'], dim=1) + int(pl_module.ignore_void)
+            # mask_rgb = trainer.datamodule.label_to_rgb(labels).float()
+            # out_rgb = trainer.datamodule.label_to_rgb(preds).float()
             mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
             out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
 
@@ -85,8 +87,8 @@ class SegmentationImagesVisualisation(pl.Callback):
                 else:
                     end = start + remainder
 
-                img_grid = torchvision.utils.make_grid(img[start:end, :, :, :], padding=10, normalize=True)
-                orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :], padding=10, normalize=True)
+                img_grid = torchvision.utils.make_grid(img[start:end, :, :, :].cpu(), padding=10, normalize=True)
+                orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :].cpu(), padding=10, normalize=True)
                 mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
                 out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
 
@@ -123,8 +125,8 @@ class SegmentationImagesVisualisation(pl.Callback):
             else:
                 end = start + remainder
 
-            img_grid = torchvision.utils.make_grid(img[start:end, :, :, :], padding=10, normalize=True)
-            orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :], padding=10, normalize=True)
+            img_grid = torchvision.utils.make_grid(img[start:end, :, :, :].cpu(), padding=10, normalize=True)
+            orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :].cpu(), padding=10, normalize=True)
             mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
             out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
 
