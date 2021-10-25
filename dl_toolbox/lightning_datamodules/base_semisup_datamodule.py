@@ -1,22 +1,23 @@
 from torch.utils.data import DataLoader, RandomSampler
 from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule
 from dl_toolbox.utils import worker_init_function
+from dl_toolbox.torch_collate import CustomCollate
 
 class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
-    def __init__(self, unsup_train, unsup_train_idxs, *args, **kwargs):
+    def __init__(self, unsup_train, unsup_batch_size, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.unsup_train_set = None
         self.unsup_train = unsup_train
-        self.unsup_train_idxs = list(unsup_train_idxs)
+        self.unsup_batch_size = unsup_batch_size
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument('--unsup_batch_size', type=int, default=16)
         parser.add_argument('--unsup_train', type=int, default=0)
-        parser.add_argument('--unsup_train_idxs', nargs='+', type=int, default=[])
 
         return parser
 
@@ -39,7 +40,7 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
             dataset=self.unsup_train_set,
             batch_size=self.unsup_batch_size,
             sampler=unsup_train_sampler,
-            collate_fn=self.val_collate,
+            collate_fn=CustomCollate(),
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=worker_init_function

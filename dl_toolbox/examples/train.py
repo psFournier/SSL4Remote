@@ -8,14 +8,14 @@ from dl_toolbox.callbacks import SegmentationImagesVisualisation, CustomSwa, Con
 
 modules = {
     'sup': SupervisedBaseline,
-    'MT': MeanTeacher
+    'mean_teacher': MeanTeacher
 }
 
 
 datamodules = {
     'semcity_bdsd': {
         'sup': SemcityBdsdDm,
-        # 'mt': SemcityBdsdDmSemisup
+        'mean_teacher': SemcityBdsdDmSemisup
     },
     'miniworld_generalisation': {
         'sup': MiniworldDmV2,

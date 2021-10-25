@@ -2,6 +2,8 @@ from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemis
 from dl_toolbox.torch_datasets import SemcityBdsdDs
 import os
 import numpy as np
+from torch.utils.data import ConcatDataset
+
 
 class SemcityBdsdDm(BaseSupervisedDatamodule):
 
@@ -50,20 +52,34 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
 
         return rgb_label
 
-class SemcityBdsdDmSemisup:
-    pass
+class SemcityBdsdDmSemisup(SemcityBdsdDm, BaseSemisupDatamodule):
 
-# class PhrPanDmSemisup(SemcityBdsdDm, BaseSemisupDatamodule):
-#
-#     def __init__(self, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#
-#     def setup(self, stage=None):
-#         super(PhrPanDmSemisup, self).setup(stage=stage)
-#
-#         self.unsup_train_set = SemcityBdsdDs(
-#             image_path=self.image_path,
-#             tile_size=2300,
-#             tile_step=2300,
-#             crop_size=self.crop_size
-#         )
+    def __init__(self, data_dir, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.data_dir = data_dir
+
+    @classmethod
+    def add_model_specific_args(cls, parent_parser):
+
+        parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument('--data_dir', type=str)
+
+        return parser
+
+    def setup(self, stage=None):
+
+        super(SemcityBdsdDmSemisup, self).setup(stage=stage)
+        nums = ['09','12','06','01','05','11','10','02','14','15','13','16']
+        image_paths = [f'{self.data_dir}/TLS_BDSD_M_{num}.tif' for num in nums]
+        unsup_train_sets = []
+        for image_path in image_paths:
+            set = SemcityBdsdDs(
+                image_path=image_path,
+                tile_size=(863, 876),
+                tile_step=(863, 876),
+                crop_size=self.crop_size
+            )
+            unsup_train_sets.append(set)
+        self.unsup_train_set = ConcatDataset(unsup_train_sets)
+
