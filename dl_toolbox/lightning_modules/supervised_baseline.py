@@ -19,6 +19,7 @@ class SupervisedBaseline(pl.LightningModule):
                  in_channels=3,
                  num_classes=2,
                  learning_rate=0.001,
+                 lr_milestones=(100,),
                  *args,
                  **kwargs):
 
@@ -42,6 +43,7 @@ class SupervisedBaseline(pl.LightningModule):
         # loss works properly by just masking preds and labels
         self.dice_loss = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
         self.save_hyperparameters()
+        self.lr_milestones = lr_milestones
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -52,6 +54,7 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str, default='efficientnet-b0')
         parser.add_argument("--learning-rate", type=float, default=1e-3)
+        parser.add_argument("--lr_milestones", nargs='+', type=int, default=[100])
 
         return parser
 
@@ -64,7 +67,7 @@ class SupervisedBaseline(pl.LightningModule):
         optimizer = Adam(self.parameters(), lr=self.learning_rate)
         scheduler = MultiStepLR(
             optimizer,
-            milestones=[100],
+            milestones=self.lr_milestones,
             gamma=0.3
         )
 
@@ -80,7 +83,7 @@ class SupervisedBaseline(pl.LightningModule):
             labels_onehot = batch['mask'][:, 1:, :, :]
             loss_mask = 1. - batch['mask'][:, [0], :, :]
         else:
-            labels_onehot, loss_mask = batch['mask'], batch['loss_mask']
+            labels_onehot, loss_mask = batch['mask'], torch.ones_like(batch['mask'])
 
         logits = self.network(inputs)
 
@@ -122,7 +125,7 @@ class SupervisedBaseline(pl.LightningModule):
             labels_onehot = batch['mask'][:, 1:, :, :]
             loss_mask = 1. - batch['mask'][:, [0], :, :]
         else:
-            labels_onehot, loss_mask = batch['mask'], batch['loss_mask']
+            labels_onehot, loss_mask = batch['mask'], torch.ones_like(batch['mask'])
 
         logits = self.network(inputs)
 
