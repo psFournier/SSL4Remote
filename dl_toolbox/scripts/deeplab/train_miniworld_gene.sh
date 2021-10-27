@@ -5,14 +5,13 @@ SCRIPT=/d/pfournie/semi-supervised-learning/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 10 \
---max_epochs 50 \
---lr_milestones 20 30 40 \
---num_classes 7 \
---ignore_void \
+--max_epochs 150 \
+--lr_milestones 75 100 125 \
+--num_classes 2 \
 --gpus 1 \
 --module sup \
---datamodule semcity_bdsd \
---image_path /scratch_ai4geo/semcity_merged/BDSD_M_3_4_7_8.tif \
---label_path /scratch_ai4geo/semcity_merged/GT_3_4_7_8.tif \
+--datamodule miniworld_generalisation \
+--cities christchurch \
+--data_dir /scratch_ai4geo/miniworld_tif \
 --output_dir /d/pfournie/semi-supervised-learning/outputs \
---exp_name semcity_novoid
+--exp_name airs
