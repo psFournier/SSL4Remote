@@ -5,8 +5,9 @@ SCRIPT=/d/pfournie/semi-supervised-learning/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 10 \
+--epoch_len 2000 \
 --max_epochs 50 \
---lr_milestones 20 30 40 \
+--lr_milestones 25 35 45 \
 --num_classes 7 \
 --ignore_void \
 --gpus 1 \
