@@ -19,7 +19,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 --datamodule miniworld_generalisation \
 --cities christchurch \
 --data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \
---lr_milestones 75 100 125
+--lr_milestones 75 100 125 \
 --exp_name "${PBS_JOBNAME}"
 
 module unload python/3.7.2

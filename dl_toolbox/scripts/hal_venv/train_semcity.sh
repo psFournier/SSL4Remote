@@ -12,7 +12,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 "${PYTHON}" "${SCRIPT}" \
 --workers 6 \
 --max_epochs 50 \
---lr_milestones 20 30 40
+--lr_milestones 20 30 40 \
 --num_classes 7 \
 --ignore_void \
 --gpus 1 \
