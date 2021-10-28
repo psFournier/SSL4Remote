@@ -62,7 +62,7 @@ class SegmentationImagesVisualisation(pl.Callback):
     ) -> None:
         """Called when the validation batch ends."""
 
-        if trainer.global_step % 100 == 0:
+        if trainer.global_step % 10000 == 0:
             # Forward
             img, mask = batch['image'], batch['mask']
             orig_img = batch['orig_image']
@@ -102,34 +102,35 @@ class SegmentationImagesVisualisation(pl.Callback):
     ) -> None:
         """Called when the validation batch ends."""
 
-        # Forward
-        img, mask = batch['image'], batch['mask']
-        orig_img = batch['orig_image']
+        if trainer.global_step % 10000 == 0:
+            # Forward
+            img, mask = batch['image'], batch['mask']
+            orig_img = batch['orig_image']
 
-        # Segmentation maps
-        labels = torch.argmax(mask, dim=1)
-        preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
-        mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
-        out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
+            # Segmentation maps
+            labels = torch.argmax(mask, dim=1)
+            preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
+            mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
+            out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
 
 
-        # Number of grids to log depends on the batch size
-        quotient, remainder = divmod(img.shape[0], self.NB_COL)
-        nb_grids = quotient + int(remainder > 0)
+            # Number of grids to log depends on the batch size
+            quotient, remainder = divmod(img.shape[0], self.NB_COL)
+            nb_grids = quotient + int(remainder > 0)
 
-        for idx in range(nb_grids):
+            for idx in range(nb_grids):
 
-            start = self.NB_COL * idx
-            if start + self.NB_COL <= img.shape[0]:
-                end = start + self.NB_COL
-            else:
-                end = start + remainder
+                start = self.NB_COL * idx
+                if start + self.NB_COL <= img.shape[0]:
+                    end = start + self.NB_COL
+                else:
+                    end = start + remainder
 
-            img_grid = torchvision.utils.make_grid(img[start:end, :, :, :].cpu(), padding=10, normalize=True)
-            orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :].cpu(), padding=10, normalize=True)
-            mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
-            out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
+                img_grid = torchvision.utils.make_grid(img[start:end, :, :, :].cpu(), padding=10, normalize=True)
+                orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :].cpu(), padding=10, normalize=True)
+                mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
+                out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
 
-            final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
+                final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
 
-            trainer.logger.experiment.add_image(f'Images/Val_batch {idx}', final_grid, global_step=trainer.global_step)
+                trainer.logger.experiment.add_image(f'Images/Val_batch {idx}', final_grid, global_step=trainer.global_step)
