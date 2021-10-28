@@ -2,8 +2,8 @@ from argparse import ArgumentParser
 import segmentation_models_pytorch as smp
 import torch.nn as nn
 import pytorch_lightning as pl
-from torch.optim import Adam
-from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim import Adam, SGD
+from torch.optim.lr_scheduler import MultiStepLR, LambdaLR
 import torch
 import torchmetrics.functional as metrics
 from dl_toolbox.losses import DiceLoss
@@ -53,7 +53,7 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("--in_channels", type=int, default=3)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str, default='efficientnet-b0')
-        parser.add_argument("--learning-rate", type=float, default=1e-3)
+        parser.add_argument("--learning-rate", type=float, default=5e-2)
         parser.add_argument("--lr_milestones", nargs='+', type=int, default=[100])
 
         return parser
@@ -64,11 +64,32 @@ class SupervisedBaseline(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        optimizer = Adam(self.parameters(), lr=self.learning_rate)
-        scheduler = MultiStepLR(
+        # optimizer = Adam(self.parameters(), lr=self.learning_rate)
+        # scheduler = MultiStepLR(
+        #     optimizer,
+        #     milestones=self.lr_milestones,
+        #     gamma=0.3
+        # )
+
+        optimizer = SGD(
+            self.parameters(),
+            lr=self.learning_rate,
+            momentum=0.9
+        )
+
+        def lambda_lr(epoch):
+
+            m = self.trainer.max_epochs
+            if epoch < 0.4*m:
+                return 1
+            elif 0.4*m <= epoch <= 0.9*m:
+                return 1 + ((epoch - 0.4*m) / (0.9*m - 0.4*m)) * (0.01 - 1)
+            else:
+                return 0.01
+
+        scheduler = LambdaLR(
             optimizer,
-            milestones=self.lr_milestones,
-            gamma=0.3
+            lr_lambda=lambda_lr
         )
 
         return [optimizer], [scheduler]

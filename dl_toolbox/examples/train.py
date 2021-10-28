@@ -92,7 +92,12 @@ def main():
         profiler=profiler,
         callbacks=[
             last_2_epoch_ckpt,
-            CustomSwa(device=None),
+            # CustomSwa(
+            #     swa_epoch_start=0.2,
+            #     swa_lrs=0.1,
+            #     device=None,
+            #     annealing_epochs=2
+            # ),
             SegmentationImagesVisualisation(),
             ConfMatLogger(),
             LearningRateMonitor()
@@ -101,7 +106,8 @@ def main():
         flush_logs_every_n_steps=1000,
         num_sanity_val_steps=0,
         check_val_every_n_epoch=1,
-        benchmark=True
+        benchmark=True,
+        stochastic_weight_avg=True
     )
 
     trainer.fit(model=pl_module, datamodule=pl_datamodule)
