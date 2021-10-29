@@ -53,7 +53,7 @@ class SupervisedBaseline(pl.LightningModule):
         parser.add_argument("--in_channels", type=int, default=3)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str, default='efficientnet-b0')
-        parser.add_argument("--learning-rate", type=float, default=5e-2)
+        parser.add_argument("--learning_rate", type=float, default=5e-2)
         parser.add_argument("--lr_milestones", nargs='+', type=int, default=[100])
 
         return parser
