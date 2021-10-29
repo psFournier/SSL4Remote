@@ -64,8 +64,8 @@ class SegmentationImagesVisualisation(pl.Callback):
 
         if trainer.current_epoch % 10 == 0 and trainer.global_step % 1000 == 0:
             # Forward
-            img, mask = batch['image'], batch['mask']
-            orig_img = batch['orig_image']
+            img, mask = outputs['batch']['image'], outputs['batch']['mask']
+            orig_img = outputs['batch']['orig_image']
 
             # Segmentation maps
             labels = torch.argmax(mask, dim=1)
@@ -104,8 +104,8 @@ class SegmentationImagesVisualisation(pl.Callback):
 
         if trainer.current_epoch % 10 == 0:
             # Forward
-            img, mask = batch['image'], batch['mask']
-            orig_img = batch['orig_image']
+            img, mask = outputs['batch']['image'], outputs['batch']['mask']
+            orig_img = outputs['batch']['orig_image']
 
             # Segmentation maps
             labels = torch.argmax(mask, dim=1)

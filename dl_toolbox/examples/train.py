@@ -92,12 +92,12 @@ def main():
         profiler=profiler,
         callbacks=[
             last_2_epoch_ckpt,
-            CustomSwa(
-                swa_epoch_start=0.8,
-                swa_lrs=0.01,
-                device=None,
-                annealing_epochs=2
-            ),
+            # CustomSwa(
+            #     swa_epoch_start=0.8,
+            #     swa_lrs=0.01,
+            #     device=None,
+            #     annealing_epochs=2
+            # ),
             SegmentationImagesVisualisation(),
             ConfMatLogger(),
             LearningRateMonitor()

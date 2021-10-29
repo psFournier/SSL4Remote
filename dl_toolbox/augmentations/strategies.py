@@ -60,6 +60,8 @@ def get_transforms(name: str):
 
     if name == 'mixup':
         return Mixup()
+    if name == 'cutmix':
+        return Cutmix()
     if name == 'd4_color':
         return d4_color_transformation()
     elif name == 'd4':

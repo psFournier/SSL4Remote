@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import MultiStepLR, LambdaLR
 import torch
-import torchmetrics.functional as metrics
+import torchmetrics.functional as torchmetrics
 from dl_toolbox.losses import DiceLoss
 from copy import deepcopy
 import torch.nn.functional as F
@@ -64,13 +64,6 @@ class SupervisedBaseline(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        # optimizer = Adam(self.parameters(), lr=self.learning_rate)
-        # scheduler = MultiStepLR(
-        #     optimizer,
-        #     milestones=self.lr_milestones,
-        #     gamma=0.3
-        # )
-
         optimizer = SGD(
             self.parameters(),
             lr=self.learning_rate,
@@ -94,123 +87,89 @@ class SupervisedBaseline(pl.LightningModule):
 
         return [optimizer], [scheduler]
 
-    def training_step(self, batch, batch_idx):
-
-        inputs = batch['image']
+    def get_masked_labels(self, mask):
 
         if self.ignore_void:
             # Granted that the first label is the void/unknown label, this extracts
             # from labels the mask to use to ignore this class
-            labels_onehot = batch['mask'][:, 1:, :, :]
-            loss_mask = 1. - batch['mask'][:, [0], :, :]
+            labels_onehot = mask[:, 1:, :, :]
+            loss_mask = 1. - mask[:, [0], :, :]
         else:
-            labels_onehot, loss_mask = batch['mask'], torch.ones_like(batch['mask'])
+            labels_onehot, loss_mask = mask, torch.ones_like(mask)
 
-        logits = self.network(inputs)
+        return labels_onehot, loss_mask
+
+    def compute_sup_loss(self, logits, labels_onehot, loss_mask):
 
         loss1_noreduce = self.ce_loss(logits, labels_onehot)
         # The mean over all pixels is replaced with a mean over unmasked ones
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
-        loss = loss1 + loss2
+        return loss1, loss2, loss1 + loss2
 
-        self.log('Train_sup_BCE', loss1)
-        self.log('Train_sup_Dice', loss2)
-        self.log('Train_sup_loss', loss)
-
-        preds = logits.argmax(dim=1)
-        labels = torch.argmax(batch['mask'], dim=1).long()
+    def compute_metrics(self, preds, labels):
 
         ignore_index = 0 if self.ignore_void else None
-        IoU = metrics.iou(preds + int(self.ignore_void),
+
+        IoU = torchmetrics.iou(preds + int(self.ignore_void),
                           labels,
                           reduction='none',
                           num_classes=self.num_classes + int(self.ignore_void),
                           ignore_index=ignore_index)
 
+        accuracy = torchmetrics.accuracy(preds + int(self.ignore_void),
+                                    labels,
+                                    average='none',
+                                    num_classes=self.num_classes + int(self.ignore_void),
+                                    ignore_index=ignore_index)
+
+        return IoU, accuracy[self.ignore_void:]
+
+    def log_metrics(self, mode, metrics):
+
         class_names = self.trainer.datamodule.class_names[int(self.ignore_void):]
-        for i, name in enumerate(class_names):
-            self.log('Train_IoU_{}'.format(name), IoU[i])
-        self.log('Train_IoU', torch.mean(IoU))
+
+        for metric_name, vals in metrics.items():
+            for val, class_name in zip(vals, class_names):
+                self.log(f'{mode}_{metric_name}_{class_name}', val)
+            self.log(f'{mode}_{metric_name}', torch.mean(vals))
+
+    def training_step(self, batch, batch_idx):
+
+        inputs = batch['image']
+        labels_onehot, loss_mask = self.get_masked_labels(batch['mask'])
+        logits = self.network(inputs)
+        loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
+        preds = logits.argmax(dim=1)
+        labels = torch.argmax(batch['mask'], dim=1).long()
+        iou, accuracy = self.compute_metrics(preds, labels)
+
+        self.log('Train_sup_BCE', loss1)
+        self.log('Train_sup_Dice', loss2)
+        self.log('Train_sup_loss', loss)
+        self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
 
         return {'batch': batch, 'logits': logits, "loss": loss}
 
     def validation_step(self, batch, batch_idx):
 
         inputs = batch['image']
-
-        if self.ignore_void:
-            # Granted that the first label is the void/unknown label, this extracts
-            # from labels the mask to use to ignore this class
-            labels_onehot = batch['mask'][:, 1:, :, :]
-            loss_mask = 1. - batch['mask'][:, [0], :, :]
-        else:
-            labels_onehot, loss_mask = batch['mask'], torch.ones_like(batch['mask'])
-
+        labels_onehot, loss_mask = self.get_masked_labels(batch['mask'])
         logits = self.network(inputs)
-
-        loss1_noreduce = self.ce_loss(logits, labels_onehot)
-        loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
-        loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
-        loss = loss1 + loss2
+        loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
+        preds = logits.argmax(dim=1)
+        labels = torch.argmax(batch['mask'], dim=1).long()
+        iou, accuracy = self.compute_metrics(preds, labels)
 
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
-
-        preds = logits.argmax(dim=1)
-        labels = torch.argmax(batch['mask'], dim=1).long()
-
-        ignore_index = 0 if self.ignore_void else None
-        IoU = metrics.iou(preds + int(self.ignore_void),
-                          labels,
-                          reduction='none',
-                          num_classes=self.num_classes + int(self.ignore_void),
-                          ignore_index=ignore_index)
-        accuracy = metrics.accuracy(preds + int(self.ignore_void),
-                                    labels,
-                                    ignore_index=ignore_index)
-
-        class_names = self.trainer.datamodule.class_names[int(self.ignore_void):]
-        for i, name in enumerate(class_names):
-            self.log('Val_IoU_{}'.format(name), IoU[i])
-        self.log('Val_IoU', torch.mean(IoU))
-
-        self.log('Val_acc', accuracy)
-
+        self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
         self.log('epoch', self.trainer.current_epoch)
 
-        return {'batch': batch, 'logits': logits, 'IoU': IoU, 'accuracy' : accuracy}
+        return {'batch': batch, 'logits': logits, 'IoU': iou, 'accuracy' : accuracy}
 
-    # def test_step(self, batch, batch_idx):
-    #
-    #     inputs, labels_onehot = batch['image'], batch['mask']
-    #
-    #     outputs = self.network(inputs)
-    #
-    #     preds = outputs.argmax(dim=1) + 1
-    #     labels = torch.argmax(labels_onehot, dim=1).long()
-    #
-    #     IoU = metrics.iou(preds,
-    #                       labels,
-    #                       reduction='none',
-    #                       num_classes=self.num_classes+1,
-    #                       ignore_index=0)
-    #
-    #     accuracy = metrics.accuracy(preds,
-    #                                 labels,
-    #                                 ignore_index=0)
-    #
-    #     return {'preds': outputs, 'accuracy': accuracy, 'IoU': IoU}
-    #
-    # def test_epoch_end(self, outputs):
-    #
-    #     avg_IoU = torch.stack([output['IoU'] for output in outputs]).mean(dim=0)
-    #     self.test_results = {'IoU': avg_IoU.mean()}
-    #
-    #     return avg_IoU
-    #
     @property
     def ignore_void(self):
         return self.trainer.datamodule.ignore_void

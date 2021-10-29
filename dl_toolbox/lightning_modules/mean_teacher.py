@@ -2,82 +2,81 @@ import torch.nn as nn
 import copy
 from dl_toolbox.lightning_modules import SupervisedBaseline
 import torch
-import torchmetrics.functional as metrics
-from dl_toolbox.augmentations import Cutmix
+import dl_toolbox.augmentations as aug
 
 class MeanTeacher(SupervisedBaseline):
 
     def __init__(self,
                  ema,
                  consistency_aug,
+                 supervised_warmup,
                  *args,
                  **kwargs):
 
         super().__init__(*args, **kwargs)
 
-        # The student network is self.network
-        self.teacher_network = copy.deepcopy(self.network)
+        self.student_network = self.network
+        self.teacher_network = copy.deepcopy(self.student_network)
 
         # Exponential moving average
         self.ema = ema
-        self.consistency_aug = Cutmix()
+        self.supervised_warmup = supervised_warmup
+        self.consistency_aug = aug.get_transforms(consistency_aug)
 
         # Unsupervised leaning loss
-        self.mse = nn.MSELoss()
+        self.unsup_loss = nn.MSELoss(reduction='none')
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--ema", type=float, default=0.95)
-        parser.add_argument('--consistency_aug', nargs='+', type=str, default=[],
-                            help='list of augmentations names to perform Consistency Regularization with on unlabeled data.')
+        parser.add_argument('--consistency_aug', type=str, default='no')
+        parser.add_argument("--supervised_warmup", type=int, default=20)
 
         return parser
 
+    def update_teacher(self):
+
+        # Update teacher model in place AFTER EACH BATCH?
+        ema = min(1.0 - 1.0 / float(self.global_step + 1), self.ema)
+        for param_t, param in zip(self.teacher_network.parameters(),
+                                  self.student_network.parameters()):
+            param_t.data.mul_(ema).add_(param.data, alpha=1 - ema)
+
     def training_step(self, batch, batch_idx):
 
-        sup_data, unsup_data = batch["sup"], batch["unsup"]
-        sup_inputs, sup_labels_onehot = sup_data['image'], sup_data['mask']
-        sup_labels = torch.argmax(sup_labels_onehot, dim=1).long()
+        sup_batch, unsup_batch = batch["sup"], batch["unsup"]
 
-        student_outputs = self.network(sup_inputs)
-        sup_loss1 = self.bce(student_outputs, sup_labels_onehot)
-        sup_loss2 = self.dice(student_outputs, sup_labels_onehot)
+        sup_inputs = sup_batch['image']
+        sup_labels_onehot, sup_loss_mask = self.get_masked_labels(sup_batch['mask'])
+        sup_logits = self.student_network(sup_inputs)
+        sup_loss_1, sup_loss_2, sup_loss = self.compute_sup_loss(sup_logits, sup_labels_onehot, sup_loss_mask)
+        sup_preds = sup_logits.argmax(dim=1)
+        sup_labels = torch.argmax(sup_batch['mask'], dim=1).long()
+        iou, accuracy = self.compute_metrics(sup_preds, sup_labels)
 
-        sup_loss = sup_loss1 + sup_loss2
-
-        self.log('Train_sup_BCE', sup_loss1)
-        self.log('Train_sup_Dice', sup_loss2)
+        self.log('Train_sup_BCE', sup_loss_1)
+        self.log('Train_sup_Dice', sup_loss_2)
         self.log('Train_sup_loss', sup_loss)
+        self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
 
-        if self.trainer.current_epoch > 10:
-            unsup_inputs, _ = unsup_data
+        if self.trainer.current_epoch > self.supervised_warmup:
+
+            unsup_inputs = unsup_batch['image']
             with torch.no_grad():
-                unsup_targets = self.teacher_network(unsup_inputs)
-            unsup_inputs, unsup_targets = self.consistency_aug(unsup_inputs, unsup_targets)
-            unsup_outputs = self.network(unsup_inputs)
-            unsup_loss = self.mse(unsup_outputs.softmax(dim=1), unsup_targets.softmax(dim=1))
+                teacher_outputs = self.teacher_network(unsup_inputs)
+            consistency_inputs, consistency_targets = self.consistency_aug(unsup_inputs, teacher_outputs)
+            student_outputs = self.student_network(consistency_inputs)
+            unsup_loss_no_reduce = self.unsup_loss(student_outputs.softmax(dim=1), consistency_targets.softmax(dim=1))
+            unsup_loss = torch.mean(unsup_loss_no_reduce)
         else:
             unsup_loss = 0
 
         self.log("Train_unsup_loss", unsup_loss)
 
-        probas = student_outputs.softmax(dim=1)
-        IoU = metrics.iou(probas,
-                          sup_labels,
-                          reduction='none',
-                          num_classes=self.num_classes)
-        self.log('Train_IoU_0', IoU[0])
-        self.log('Train_IoU_1', IoU[1])
-        self.log('Train_IoU', torch.mean(IoU))
-
-        # Update teacher model in place AFTER EACH BATCH?
-        ema = min(1.0 - 1.0 / float(self.global_step + 1), self.ema)
-        for param_t, param in zip(self.teacher_network.parameters(),
-                                  self.network.parameters()):
-            param_t.data.mul_(ema).add_(param.data, alpha=1 - ema)
+        self.update_teacher()
 
         loss = sup_loss + unsup_loss
 
-        return {"loss": loss}
+        return {'batch': sup_batch, 'logits': sup_logits, "loss": loss}
