@@ -15,6 +15,10 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 --max_epochs 50 \
 --lr_milestones 25 35 45 \
 --num_classes 2 \
+--encoder efficientnet-b0 \
+--learning_rate 0.05 \
+--img_aug no \
+--batch_aug no \
 --gpus 1 \
 --module sup \
 --datamodule miniworld_generalisation \

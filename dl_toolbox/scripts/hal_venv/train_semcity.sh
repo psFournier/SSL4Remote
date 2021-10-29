@@ -13,7 +13,10 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 --workers 6 \
 --epoch_len 2000 \
 --max_epochs 50 \
---lr_milestones 25 35 45 \
+--encoder efficientnet-b0 \
+--learning_rate 0.05 \
+--img_aug d4 \
+--batch_aug no \
 --num_classes 7 \
 --ignore_void \
 --gpus 1 \

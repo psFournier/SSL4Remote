@@ -7,7 +7,10 @@ SCRIPT=/d/pfournie/semi-supervised-learning/dl_toolbox/examples/train.py
 --workers 10 \
 --epoch_len 2000 \
 --max_epochs 50 \
---lr_milestones 25 35 45 \
+--encoder efficientnet-b0 \
+--learning_rate 0.05 \
+--img_aug no \
+--batch_aug no \
 --num_classes 7 \
 --ignore_void \
 --gpus 1 \

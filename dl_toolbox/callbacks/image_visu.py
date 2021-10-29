@@ -62,7 +62,7 @@ class SegmentationImagesVisualisation(pl.Callback):
     ) -> None:
         """Called when the validation batch ends."""
 
-        if trainer.global_step % 10000 == 0:
+        if trainer.current_epoch % 10 == 0:
             # Forward
             img, mask = batch['image'], batch['mask']
             orig_img = batch['orig_image']
@@ -102,7 +102,7 @@ class SegmentationImagesVisualisation(pl.Callback):
     ) -> None:
         """Called when the validation batch ends."""
 
-        if trainer.global_step % 10000 == 0:
+        if trainer.current_epoch % 10 == 0:
             # Forward
             img, mask = batch['image'], batch['mask']
             orig_img = batch['orig_image']

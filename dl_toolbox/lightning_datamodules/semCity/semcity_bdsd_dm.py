@@ -35,6 +35,7 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
             tile_size=(863,876),
             tile_step=(863,876),
             crop_size=self.crop_size,
+            img_aug=self.img_aug
         )
         self.val_set.idxs = self.val_set.idxs[2::3]
 
