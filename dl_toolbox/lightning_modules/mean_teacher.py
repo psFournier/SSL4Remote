@@ -44,6 +44,17 @@ class MeanTeacher(SupervisedBaseline):
 
         return parser
 
+    def get_alpha(self):
+
+        w = self.supervised_warmup
+        e = self.trainer.current_epoch
+        if e <= w:
+            return 1
+        elif e <= 100:
+            return 1 + ((e - w) / (100 - w)) * (10 - 1)
+        else:
+            return 10
+
     def update_teacher(self):
 
         # Update teacher model in place AFTER EACH BATCH?
@@ -140,7 +151,8 @@ class MeanTeacher(SupervisedBaseline):
         self.log("Train_unsup_loss", unsup_loss)
 
         self.update_teacher()
-
-        loss = sup_loss + unsup_loss
+        alpha = self.get_alpha()
+        self.log('Prop unsup train', alpha)
+        loss = sup_loss + alpha * unsup_loss
 
         return {'batch': sup_batch, 'logits': sup_logits, "loss": loss}

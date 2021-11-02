@@ -23,9 +23,9 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 --gpus 1 \
 --module mean_teacher \
 --supervised_warmup 20 \
---label_decrease_factor 10 \
+--label_decrease_factor 20 \
 --ema 0.95 \
---unsup_batch_size 32 \
+--unsup_batch_size 16 \
 --crop_size 128 \
 --unsup_crop_size 160 \
 --datamodule miniworld_generalisation \
