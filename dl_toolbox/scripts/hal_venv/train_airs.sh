@@ -11,19 +11,18 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 6 \
---epoch_len 2000 \
+--epoch_len 120000 \
 --max_epochs 50 \
 --encoder efficientnet-b0 \
 --learning_rate 0.01 \
---img_aug d4 \
+--img_aug no \
 --batch_aug no \
---num_classes 7 \
---ignore_void \
+--num_classes 2 \
 --gpus 1 \
 --module sup \
---datamodule semcity_bdsd \
---image_path /work/OT/ai4geo/users/fournip/semcity_merged/BDSD_M_3_4_7_8.tif \
---label_path /work/OT/ai4geo/users/fournip/semcity_merged/GT_3_4_7_8.tif \
+--datamodule miniworld_generalisation \
+--cities christchurch \
+--data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \
 --output_dir /work/OT/ai4geo/users/fournip/outputs \
 --exp_name "${PBS_JOBNAME}"
 

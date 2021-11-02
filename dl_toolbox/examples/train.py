@@ -19,15 +19,15 @@ datamodules = {
     },
     'miniworld_generalisation': {
         'sup': MiniworldDmV2,
-        'mt': MiniworldDmV2Semisup
+        'mean_teacher': MiniworldDmV2Semisup
     },
     'miniworld_transfert': {
         'sup': MiniworldDmV3,
-        'mt': MiniworldDmV3Semisup
+        'mean_teacher': MiniworldDmV3Semisup
     },
     'phr_pan': {
         'sup': PhrPanDm,
-        'mt': PhrPanDmSemisup
+        'mean_teacher': PhrPanDmSemisup
     }
 }
 

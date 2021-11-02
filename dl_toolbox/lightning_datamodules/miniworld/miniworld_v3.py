@@ -104,7 +104,7 @@ class MiniworldDmV3Semisup(MiniworldDmV3, BaseSemisupDatamodule):
             unsup_train_set = MiniworldCityDs(
                 city=city,
                 images_paths=image_list,
-                crop_size=self.crop_size,
+                crop_size=self.unsup_crop_size,
                 img_aug=self.img_aug
             )
             city_unsup_train_sets.append(unsup_train_set)

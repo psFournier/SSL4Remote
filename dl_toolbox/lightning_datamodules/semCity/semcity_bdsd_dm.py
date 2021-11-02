@@ -79,7 +79,7 @@ class SemcityBdsdDmSemisup(SemcityBdsdDm, BaseSemisupDatamodule):
                 image_path=image_path,
                 tile_size=(863, 876),
                 tile_step=(863, 876),
-                crop_size=self.crop_size
+                crop_size=self.unsup_crop_size
             )
             unsup_train_sets.append(set)
         self.unsup_train_set = ConcatDataset(unsup_train_sets)

@@ -11,16 +11,23 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 6 \
---epoch_len 120000 \
---max_epochs 50 \
---lr_milestones 25 35 45 \
---num_classes 2 \
+--epoch_len 12000 \
+--max_epochs 500 \
+--sup_batch_size 16 \
 --encoder efficientnet-b0 \
---learning_rate 0.05 \
+--learning_rate 0.01 \
 --img_aug no \
 --batch_aug no \
+--consistency_aug cutmix \
+--num_classes 2 \
 --gpus 1 \
---module sup \
+--module mean_teacher \
+--supervised_warmup 20 \
+--label_decrease_factor 10 \
+--ema 0.95 \
+--unsup_batch_size 32 \
+--crop_size 128 \
+--unsup_crop_size 160 \
 --datamodule miniworld_generalisation \
 --cities christchurch \
 --data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \

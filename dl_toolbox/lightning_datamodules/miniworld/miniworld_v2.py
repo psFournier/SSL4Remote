@@ -13,11 +13,12 @@ class MiniworldDmV2(BaseSupervisedDatamodule):
     test folders of all cities in param --cities.
     """
 
-    def __init__(self, data_dir, cities, *args, **kwargs):
+    def __init__(self, data_dir, cities, label_decrease_factor, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.data_dir = data_dir
         self.cities = cities
+        self.label_decrease_factor = label_decrease_factor
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -25,6 +26,7 @@ class MiniworldDmV2(BaseSupervisedDatamodule):
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--data_dir", type=str)
         parser.add_argument("--cities", nargs='+', type=str, default=[])
+        parser.add_argument("--label_decrease_factor", type=int, default=1)
 
         return parser
 
@@ -40,8 +42,8 @@ class MiniworldDmV2(BaseSupervisedDatamodule):
             label_list = sorted(glob.glob(f'{self.data_dir}/{city}/train/*_y.tif'))
             sup_train_set = MiniworldCityDs(
                 city=city,
-                images_paths=image_list,
-                labels_paths=label_list,
+                images_paths=image_list[::self.label_decrease_factor],
+                labels_paths=label_list[::self.label_decrease_factor],
                 crop_size=self.crop_size,
                 img_aug=self.img_aug,
             )
@@ -93,7 +95,7 @@ class MiniworldDmV2Semisup(MiniworldDmV2, BaseSemisupDatamodule):
             unsup_train_set = MiniworldCityDs(
                 city=city,
                 images_paths=image_list,
-                crop_size=self.crop_size,
+                crop_size=self.unsup_crop_size,
                 img_aug=self.img_aug
             )
             city_unsup_train_sets.append(unsup_train_set)

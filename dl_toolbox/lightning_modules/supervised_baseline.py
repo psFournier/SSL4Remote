@@ -165,7 +165,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
-        self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
+        self.log_metrics(mode='Val', metrics={'iou': iou, 'acc': accuracy})
         self.log('epoch', self.trainer.current_epoch)
 
         return {'batch': batch, 'logits': logits, 'IoU': iou, 'accuracy' : accuracy}
