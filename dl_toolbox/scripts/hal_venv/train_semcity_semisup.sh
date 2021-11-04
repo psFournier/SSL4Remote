@@ -11,28 +11,29 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 6 \
---epoch_len 2000 \
---max_epochs 200 \
+--epoch_len 5000 \
+--max_steps 100000 \
 --sup_batch_size 16 \
 --encoder efficientnet-b0 \
 --learning_rate 0.01 \
---img_aug d4 \
---batch_aug cutmix \
+--img_aug no \
+--batch_aug no \
 --consistency_aug cutmix \
 --num_classes 7 \
 --ignore_void \
 --gpus 1 \
 --module mean_teacher \
 --supervised_warmup 20 \
+--label_decrease_factor 20 \
 --ema 0.95 \
---unsup_batch_size 32 \
+--unsup_batch_size 16 \
 --crop_size 128 \
 --unsup_crop_size 160 \
 --datamodule semcity_bdsd \
 --image_path /work/OT/ai4geo/users/fournip/semcity_merged/BDSD_M_3_4_7_8.tif \
 --label_path /work/OT/ai4geo/users/fournip/semcity_merged/GT_3_4_7_8.tif \
 --data_dir /work/OT/ai4geo/users/fournip/semcity_merged/test \
---output_dir /work/OT/ai4geo/users/fournip/outputs \
+--output_dir /work/OT/ai4geo/users/fournip/outputs/semcity/sup \
 --exp_name "${PBS_JOBNAME}"
 
 module unload python/3.7.2

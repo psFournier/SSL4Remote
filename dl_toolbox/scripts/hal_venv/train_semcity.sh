@@ -11,8 +11,8 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 6 \
---epoch_len 2000 \
---max_epochs 50 \
+--epoch_len 5000 \
+--max_steps 100000 \
 --encoder efficientnet-b0 \
 --learning_rate 0.01 \
 --img_aug d4 \

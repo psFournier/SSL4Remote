@@ -5,11 +5,10 @@ from dl_toolbox.torch_collate import CustomCollate
 
 class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
-    def __init__(self, unsup_train, unsup_batch_size, unsup_crop_size, *args, **kwargs):
+    def __init__(self, unsup_batch_size, unsup_crop_size, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.unsup_train_set = None
-        self.unsup_train = unsup_train
         self.unsup_batch_size = unsup_batch_size
         self.unsup_crop_size = unsup_crop_size
 
@@ -18,7 +17,6 @@ class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument('--unsup_batch_size', type=int, default=16)
-        parser.add_argument('--unsup_train', type=int, default=0)
         parser.add_argument('--unsup_crop_size', type=int, default=160)
 
         return parser

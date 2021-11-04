@@ -11,8 +11,8 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 6 \
---epoch_len 12000 \
---max_epochs 500 \
+--epoch_len 5000 \
+--max_steps 100000 \
 --sup_batch_size 16 \
 --encoder efficientnet-b0 \
 --learning_rate 0.01 \
@@ -31,7 +31,7 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 --datamodule miniworld_generalisation \
 --cities christchurch \
 --data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \
---output_dir /work/OT/ai4geo/users/fournip/outputs \
+--output_dir /work/OT/ai4geo/users/fournip/outputs/airs/sup \
 --exp_name "${PBS_JOBNAME}"
 
 module unload python/3.7.2

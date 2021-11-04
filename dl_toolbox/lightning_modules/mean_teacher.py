@@ -46,14 +46,15 @@ class MeanTeacher(SupervisedBaseline):
 
     def get_alpha(self):
 
-        w = self.supervised_warmup
-        e = self.trainer.current_epoch
-        if e <= w:
-            return 1
-        elif e <= 100:
-            return 1 + ((e - w) / (100 - w)) * (10 - 1)
-        else:
-            return 10
+        # w = self.supervised_warmup
+        # e = self.trainer.current_epoch
+        # if e <= w:
+        #     return 1
+        # elif e <= 100:
+        #     return 1 + ((e - w) / (100 - w)) * (10 - 1)
+        # else:
+        #     return 10
+        return 0
 
     def update_teacher(self):
 

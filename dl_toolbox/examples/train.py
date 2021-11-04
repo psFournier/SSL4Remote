@@ -91,7 +91,7 @@ def main():
         logger=tensorboard,
         profiler=profiler,
         callbacks=[
-            last_2_epoch_ckpt,
+            # last_2_epoch_ckpt,
             # CustomSwa(
             #     swa_epoch_start=0.8,
             #     swa_lrs=0.01,

@@ -58,6 +58,9 @@ class SupervisedBaseline(pl.LightningModule):
 
         return parser
 
+    def on_train_start(self):
+        self.logger.log_hyperparams(self.hparams, {"hp/Val_loss": 0})
+
     def forward(self, x):
 
         return self.network(x)
@@ -72,7 +75,10 @@ class SupervisedBaseline(pl.LightningModule):
 
         def lambda_lr(epoch):
 
-            m = self.trainer.max_epochs
+            s = self.trainer.max_steps
+            b = self.trainer.datamodule.sup_batch_size
+            e = self.trainer.datamodule.epoch_len
+            m = s * b / e
             if epoch < 0.4*m:
                 return 1
             elif 0.4*m <= epoch <= 0.9*m:
@@ -131,8 +137,8 @@ class SupervisedBaseline(pl.LightningModule):
         class_names = self.trainer.datamodule.class_names[int(self.ignore_void):]
 
         for metric_name, vals in metrics.items():
-            for val, class_name in zip(vals, class_names):
-                self.log(f'{mode}_{metric_name}_{class_name}', val)
+            # for val, class_name in zip(vals, class_names):
+            #     self.log(f'{mode}_{metric_name}_{class_name}', val)
             self.log(f'{mode}_{metric_name}', torch.mean(vals))
 
     def training_step(self, batch, batch_idx):
@@ -164,7 +170,7 @@ class SupervisedBaseline(pl.LightningModule):
 
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
-        self.log('Val_loss', loss)
+        self.log('hp/Val_loss', loss)
         self.log_metrics(mode='Val', metrics={'iou': iou, 'acc': accuracy})
         self.log('epoch', self.trainer.current_epoch)
 
