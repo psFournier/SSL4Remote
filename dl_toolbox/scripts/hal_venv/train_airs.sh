@@ -13,17 +13,29 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 --workers 6 \
 --epoch_len 5000 \
 --max_steps 100000 \
+--sup_batch_size 16 \
 --encoder efficientnet-b0 \
 --learning_rate 0.01 \
---img_aug no \
---batch_aug no \
+--img_aug d4_color \
+--batch_aug cutmix \
+--consistency_aug color \
 --num_classes 2 \
 --gpus 1 \
---module sup \
+--module mean_teacher \
+--supervised_warmup 0 \
+--label_decrease_factor 50 \
+--ema 0.95 \
+--unsup_batch_size 16 \
+--crop_size 128 \
+--unsup_crop_size 160 \
+--do_semisup \
+--consistency_training \
+--pseudo_labelling \
 --datamodule miniworld_generalisation \
 --cities christchurch \
 --data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \
---output_dir /work/OT/ai4geo/users/fournip/outputs \
+--output_dir /work/OT/ai4geo/users/fournip/outputs/airs/sup \
 --exp_name "${PBS_JOBNAME}"
+#--do_semisup \
 
 module unload python/3.7.2

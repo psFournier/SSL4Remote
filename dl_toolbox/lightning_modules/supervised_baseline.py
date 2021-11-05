@@ -118,28 +118,28 @@ class SupervisedBaseline(pl.LightningModule):
 
         ignore_index = 0 if self.ignore_void else None
 
-        IoU = torchmetrics.iou(preds + int(self.ignore_void),
-                          labels,
-                          reduction='none',
-                          num_classes=self.num_classes + int(self.ignore_void),
-                          ignore_index=ignore_index)
+        iou = torchmetrics.iou(
+            preds + int(self.ignore_void),
+            labels,
+            reduction='none',
+            num_classes=self.num_classes + int(self.ignore_void),
+            ignore_index=ignore_index
+        )
 
-        accuracy = torchmetrics.accuracy(preds + int(self.ignore_void),
-                                    labels,
-                                    average='none',
-                                    num_classes=self.num_classes + int(self.ignore_void),
-                                    ignore_index=ignore_index)
+        accuracy = torchmetrics.accuracy(
+            preds + int(self.ignore_void),
+            labels,
+            ignore_index=ignore_index
+        )
 
-        return IoU, accuracy[self.ignore_void:]
+        return iou, accuracy
 
-    def log_metrics(self, mode, metrics):
+    def log_metric_per_class(self, mode, metrics):
 
         class_names = self.trainer.datamodule.class_names[int(self.ignore_void):]
-
         for metric_name, vals in metrics.items():
             for val, class_name in zip(vals, class_names):
                 self.log(f'{mode}_{metric_name}_{class_name}', val)
-            self.log(f'{mode}_{metric_name}', torch.mean(vals))
 
     def training_step(self, batch, batch_idx):
 
@@ -147,14 +147,14 @@ class SupervisedBaseline(pl.LightningModule):
         labels_onehot, loss_mask = self.get_masked_labels(batch['mask'])
         logits = self.network(inputs)
         loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
-        preds = logits.argmax(dim=1)
-        labels = torch.argmax(batch['mask'], dim=1).long()
-        iou, accuracy = self.compute_metrics(preds, labels)
+        # preds = logits.argmax(dim=1)
+        # labels = torch.argmax(batch['mask'], dim=1).long()
+        # iou, accuracy = self.compute_metrics(preds, labels)
 
         self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
-        self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
+        # self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
 
         return {'batch': batch, 'logits': logits, "loss": loss}
 
@@ -166,15 +166,18 @@ class SupervisedBaseline(pl.LightningModule):
         loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
         preds = logits.argmax(dim=1)
         labels = torch.argmax(batch['mask'], dim=1).long()
+
         iou, accuracy = self.compute_metrics(preds, labels)
 
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
-        self.log_metrics(mode='Val', metrics={'iou': iou, 'acc': accuracy})
+        self.log_metric_per_class(mode='Val', metrics={'iou': iou})
+        self.log(f'Val_iou', torch.mean(iou))
+        self.log(f'Val_acc', accuracy)
         self.log('epoch', self.trainer.current_epoch)
 
-        return {'batch': batch, 'logits': logits, 'IoU': iou, 'accuracy' : accuracy}
+        return {'batch': batch, 'logits': logits, 'iou': iou, 'accuracy' : accuracy}
 
     @property
     def ignore_void(self):

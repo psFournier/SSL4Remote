@@ -97,14 +97,14 @@ class MeanTeacher(SupervisedBaseline):
             sup_labels_onehot,
             sup_loss_mask
         )
-        sup_preds = sup_logits.argmax(dim=1)
-        sup_labels = torch.argmax(sup_batch['mask'], dim=1).long()
-        iou, accuracy = self.compute_metrics(sup_preds, sup_labels)
+        # sup_preds = sup_logits.argmax(dim=1)
+        # sup_labels = torch.argmax(sup_batch['mask'], dim=1).long()
+        # iou, accuracy = self.compute_metrics(sup_preds, sup_labels)
 
         self.log('Train_sup_BCE', sup_loss_1)
         self.log('Train_sup_Dice', sup_loss_2)
         self.log('Train_sup_loss', sup_loss)
-        self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
+        # self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
 
         unsup_loss = 0
         if self.trainer.current_epoch > self.supervised_warmup:
