@@ -13,6 +13,7 @@ class MeanTeacher(SupervisedBaseline):
                  crop_size,
                  pseudo_labelling=False,
                  consistency_training=False,
+                 do_semisup=False,
                  *args,
                  **kwargs):
 
@@ -28,15 +29,20 @@ class MeanTeacher(SupervisedBaseline):
         self.consistency_training = consistency_training
         self.consistency_aug = aug.get_transforms(consistency_aug)
         self.crop_size = crop_size
+        self.do_semisup = do_semisup
 
         # Unsupervised leaning loss
         self.unsup_loss = nn.MSELoss(reduction='none')
+        self.save_hyperparameters()
+
+        self.alpha = 0
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--ema", type=float, default=0.95)
+        parser.add_argument("--do_semisup", action='store_true')
         parser.add_argument("--consistency_training", action='store_true')
         parser.add_argument('--consistency_aug', type=str)
         parser.add_argument('--pseudo_labelling', action='store_true')
@@ -44,17 +50,23 @@ class MeanTeacher(SupervisedBaseline):
 
         return parser
 
-    def get_alpha(self):
+    def on_train_epoch_start(self) -> None:
 
-        # w = self.supervised_warmup
-        # e = self.trainer.current_epoch
-        # if e <= w:
-        #     return 1
-        # elif e <= 100:
-        #     return 1 + ((e - w) / (100 - w)) * (10 - 1)
-        # else:
-        #     return 10
-        return 0
+        if self.do_semisup:
+            s = self.trainer.max_steps
+            b = self.trainer.datamodule.sup_batch_size
+            l = self.trainer.datamodule.epoch_len
+            m = s * b / l # max number of epochs
+            w = self.supervised_warmup
+            e = self.trainer.current_epoch
+            if e <= w:
+                self.alpha = 0
+            elif e <= 0.5 * m:
+                self.alpha = ((e - w) / (0.5 * m - w)) * 0.9
+            else:
+                self.alpha = 0.9
+        else:
+            self.alpha = 0
 
     def update_teacher(self):
 
@@ -127,9 +139,9 @@ class MeanTeacher(SupervisedBaseline):
                 student_outputs = self.student_network(student_crop)
 
                 min_i1, max_i1, min_j1, max_j1 = self.compute_intersection(i1, i2, j1, j2)
-                intersection_student = student_outputs[..., max_i1:self.crop_size+min_i1, max_j1:self.crop_size+min_j1]
+                intersection_teacher = teacher_outputs[..., max_i1:self.crop_size+min_i1, max_j1:self.crop_size+min_j1]
                 min_i2, max_i2, min_j2, max_j2 = self.compute_intersection(i2, i1, j2, j1)
-                intersection_teacher = teacher_outputs[..., max_i2:self.crop_size+min_i2, max_j2:self.crop_size+min_j2]
+                intersection_student = student_outputs[..., max_i2:self.crop_size+min_i2, max_j2:self.crop_size+min_j2]
 
                 translate_loss_no_reduce = self.unsup_loss(
                     intersection_student.softmax(dim=1),
@@ -152,8 +164,7 @@ class MeanTeacher(SupervisedBaseline):
         self.log("Train_unsup_loss", unsup_loss)
 
         self.update_teacher()
-        alpha = self.get_alpha()
-        self.log('Prop unsup train', alpha)
-        loss = sup_loss + alpha * unsup_loss
+        self.log('Prop unsup train', self.alpha)
+        loss = (1 - self.alpha) * sup_loss + self.alpha * unsup_loss
 
         return {'batch': sup_batch, 'logits': sup_logits, "loss": loss}

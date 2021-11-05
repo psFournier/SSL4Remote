@@ -77,8 +77,8 @@ class SupervisedBaseline(pl.LightningModule):
 
             s = self.trainer.max_steps
             b = self.trainer.datamodule.sup_batch_size
-            e = self.trainer.datamodule.epoch_len
-            m = s * b / e
+            l = self.trainer.datamodule.epoch_len
+            m = s * b / l
             if epoch < 0.4*m:
                 return 1
             elif 0.4*m <= epoch <= 0.9*m:
@@ -137,8 +137,8 @@ class SupervisedBaseline(pl.LightningModule):
         class_names = self.trainer.datamodule.class_names[int(self.ignore_void):]
 
         for metric_name, vals in metrics.items():
-            # for val, class_name in zip(vals, class_names):
-            #     self.log(f'{mode}_{metric_name}_{class_name}', val)
+            for val, class_name in zip(vals, class_names):
+                self.log(f'{mode}_{metric_name}_{class_name}', val)
             self.log(f'{mode}_{metric_name}', torch.mean(vals))
 
     def training_step(self, batch, batch_idx):

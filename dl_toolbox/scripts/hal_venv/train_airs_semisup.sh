@@ -16,18 +16,19 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
 --sup_batch_size 16 \
 --encoder efficientnet-b0 \
 --learning_rate 0.01 \
---img_aug no \
---batch_aug no \
---consistency_aug cutmix \
+--img_aug d4_color \
+--batch_aug cutmix \
+--consistency_aug color \
 --num_classes 2 \
 --gpus 1 \
 --module mean_teacher \
 --supervised_warmup 20 \
---label_decrease_factor 20 \
+--label_decrease_factor 50 \
 --ema 0.95 \
 --unsup_batch_size 16 \
 --crop_size 128 \
 --unsup_crop_size 160 \
+--do_semisup \
 --datamodule miniworld_generalisation \
 --cities christchurch \
 --data_dir /work/OT/ai4geo/users/fournip/miniworld_tif \
