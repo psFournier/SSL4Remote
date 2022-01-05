@@ -5,10 +5,10 @@ import rasterio
 from rasterio.windows import Window
 from torch.utils.data import Dataset
 from abc import ABC
-from dl_toolbox.utils import get_tiles
+from utils import get_tiles
 import imagesize
 import matplotlib.pyplot as plt
-import dl_toolbox.augmentations as aug
+import augmentations as aug
 
 warnings.filterwarnings("ignore", category=rasterio.errors.NotGeoreferencedWarning)
 

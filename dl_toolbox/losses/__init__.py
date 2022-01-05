@@ -1,1 +1,1 @@
-from dl_toolbox.losses.dice import DiceLoss
+from losses.dice import DiceLoss

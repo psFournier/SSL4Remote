@@ -1,4 +1,4 @@
-from dl_toolbox.torch_datasets import MultipleImages
+from torch_datasets import MultipleImages
 import torch
 import numpy as np
 

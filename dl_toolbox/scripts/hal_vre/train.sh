@@ -8,4 +8,4 @@ echo "$@"
 echo "#############################################################"
 
 
-python ~/SemiSupervised/SSL4Remote/dl_toolbox/main.py "$@"
+python ~/SemiSupervised/SSL4Remote/main.py "$@"

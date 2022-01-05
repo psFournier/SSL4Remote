@@ -1,4 +1,4 @@
-import dl_toolbox.augmentations as aug
+import augmentations as aug
 
 image_level_aug = {
     'd4': aug.D4,

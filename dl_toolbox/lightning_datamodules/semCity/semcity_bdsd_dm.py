@@ -1,5 +1,5 @@
-from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
-from dl_toolbox.torch_datasets import SemcityBdsdDs
+from lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
+from torch_datasets import SemcityBdsdDs
 import os
 import numpy as np
 from torch.utils.data import ConcatDataset

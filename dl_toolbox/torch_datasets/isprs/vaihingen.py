@@ -1,6 +1,6 @@
 import os
 import warnings
-from dl_toolbox.torch_datasets import Base, BaseLabeled, BaseUnlabeled
+from torch_datasets import Base, BaseLabeled, BaseUnlabeled
 import numpy as np
 import rasterio
 from abc import ABC

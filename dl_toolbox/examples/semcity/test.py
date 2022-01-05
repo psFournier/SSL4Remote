@@ -1,14 +1,14 @@
 from argparse import ArgumentParser
 from pytorch_lightning import Trainer
-from dl_toolbox.lightning_modules import *
-from dl_toolbox.torch_datasets import *
+from lightning_modules import *
+from torch_datasets import *
 from torch.utils.data import DataLoader, RandomSampler
 import torch
-from dl_toolbox.utils import worker_init_function
+from utils import worker_init_function
 import glob
-from dl_toolbox.augmentations import NoOp
+from augmentations import NoOp
 from functools import partial
-from dl_toolbox.torch_collate import CollateDefault
+from torch_collate import CollateDefault
 
 modules = {
     'sup': SupervisedBaseline,

@@ -1,5 +1,5 @@
 import numpy as np
-from dl_toolbox.augmentations import image_level_aug
+from augmentations import image_level_aug
 
 anti_t_dict = {
     'hflip': 'hflip',

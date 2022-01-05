@@ -5,7 +5,7 @@ import albumentations as A
 import cv2
 import torch
 
-from dl_toolbox.augmentations import *
+from augmentations import *
 
 
 def histogramnormalization(

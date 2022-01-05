@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PYTHON=/d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/venv/bin/python
-SCRIPT=/d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
+SCRIPT=/d/pfournie/Documents/ai4geo/SemiSupervised/SSL4Remote/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 0 \

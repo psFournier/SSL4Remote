@@ -1,4 +1,4 @@
-from dl_toolbox.torch_datasets import IsprsVLabeled
+from torch_datasets import IsprsVLabeled
 from torch.utils.data import DataLoader
 import albumentations as A
 from matplotlib import pyplot as plt

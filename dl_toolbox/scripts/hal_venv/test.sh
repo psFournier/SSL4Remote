@@ -6,7 +6,7 @@
 module load python/3.7.2
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
-SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/miniworld/test.py
+SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/examples/miniworld/test.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module sup \

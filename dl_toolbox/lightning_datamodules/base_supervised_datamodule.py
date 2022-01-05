@@ -5,9 +5,9 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data._utils.collate import default_collate
 import torch
 
-from dl_toolbox.utils import worker_init_function
-from dl_toolbox.torch_collate import CustomCollate
-from dl_toolbox.augmentations import get_transforms
+from utils import worker_init_function
+from torch_collate import CustomCollate
+from augmentations import get_transforms
 
 class BaseSupervisedDatamodule(LightningDataModule):
 

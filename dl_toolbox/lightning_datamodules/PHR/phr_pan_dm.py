@@ -1,5 +1,5 @@
-from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
-from dl_toolbox.torch_datasets import PhrPanDs
+from lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
+from torch_datasets import PhrPanDs
 
 
 class PhrPanDm(BaseSupervisedDatamodule):

@@ -6,7 +6,7 @@ from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import MultiStepLR, LambdaLR
 import torch
 import torchmetrics.functional as torchmetrics
-from dl_toolbox.losses import DiceLoss
+from losses import DiceLoss
 from copy import deepcopy
 import torch.nn.functional as F
 

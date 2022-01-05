@@ -2,7 +2,7 @@
 
 HOME=/d/pfournie/semi-supervised-learning
 PYTHON="$HOME"/venv/bin/python
-SCRIPT="$HOME"/dl_toolbox/examples/miniworld/test.py
+SCRIPT="$HOME"/examples/miniworld/test.py
 
 "${PYTHON}" "${SCRIPT}" \
 --module sup \

@@ -1,5 +1,5 @@
 # from abc import ABC
-# from dl_toolbox.torch_datasets import Base, BaseLabeled, BaseUnlabeled
+# from torch_datasets import Base, BaseLabeled, BaseUnlabeled
 # import glob
 # import numpy as np
 # import torch

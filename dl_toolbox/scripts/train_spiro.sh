@@ -5,7 +5,7 @@
 #SBATCH --qos=co_long_gpu       #                 => QOS choisie (obligatoire)
 
 PYTHON=${WORKDIR}/semi-supervised-learning/venv/bin/python
-SCRIPT=${WORKDIR}/semi-supervised-learning/dl_toolbox/examples/miniworld/train.py
+SCRIPT=${WORKDIR}/semi-supervised-learning/examples/miniworld/train.py
 
 cd ${WORKDIR}/semi-supervised-learning
 

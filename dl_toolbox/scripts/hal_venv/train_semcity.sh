@@ -7,7 +7,7 @@ module load python/3.7.2
 cd "${TMPDIR}"
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
-SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/train.py
+SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 6 \

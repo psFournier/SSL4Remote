@@ -1,10 +1,10 @@
-from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
-from dl_toolbox.torch_datasets import OneImage
+from lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
+from torch_datasets import OneImage
 import glob
 from torch.utils.data import ConcatDataset
 import numpy as np
 from functools import partial
-from dl_toolbox.torch_datasets import PhrPanNdviDs
+from torch_datasets import PhrPanNdviDs
 
 class PhrPanNdviDm(BaseSupervisedDatamodule):
 

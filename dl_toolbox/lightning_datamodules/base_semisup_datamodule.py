@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader, RandomSampler
-from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule
-from dl_toolbox.utils import worker_init_function
-from dl_toolbox.torch_collate import CustomCollate
+from lightning_datamodules import BaseSupervisedDatamodule
+from utils import worker_init_function
+from torch_collate import CustomCollate
 
 class BaseSemisupDatamodule(BaseSupervisedDatamodule):
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PYTHON=/d/pfournie/semi-supervised-learning/venv/bin/python
-SCRIPT=/d/pfournie/semi-supervised-learning/dl_toolbox/examples/train.py
+SCRIPT=/d/pfournie/semi-supervised-learning/examples/train.py
 
 "${PYTHON}" "${SCRIPT}" \
 --workers 10 \

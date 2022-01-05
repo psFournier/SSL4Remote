@@ -1,6 +1,6 @@
 from torch.utils.data._utils.collate import default_collate
 import torch
-import dl_toolbox.augmentations as aug
+import augmentations as aug
 
 class CustomCollate():
 

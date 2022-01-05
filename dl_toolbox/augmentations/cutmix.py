@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from dl_toolbox.augmentations import rand_bbox
+from augmentations import rand_bbox
 
 class Cutmix():
 

@@ -1,4 +1,4 @@
-from dl_toolbox.torch_datasets import OneImage
+from torch_datasets import OneImage
 import torch
 import numpy as np
 

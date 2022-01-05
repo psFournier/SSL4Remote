@@ -1,5 +1,5 @@
-from dl_toolbox.lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
-from dl_toolbox.torch_datasets import MiniworldCityDs
+from lightning_datamodules import BaseSupervisedDatamodule, BaseSemisupDatamodule
+from torch_datasets import MiniworldCityDs
 import glob
 from torch.utils.data import ConcatDataset
 import numpy as np

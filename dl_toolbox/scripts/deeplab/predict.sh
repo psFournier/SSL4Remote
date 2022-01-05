@@ -2,7 +2,7 @@
 
 HOME=/d/pfournie/semi-supervised-learning
 PYTHON="$HOME"/venv/bin/python
-SCRIPT="$HOME"/dl_toolbox/examples/miniworld/predict.py
+SCRIPT="$HOME"/examples/miniworld/predict.py
 
 "${PYTHON}" "${SCRIPT}" \
 --ckpt_path "$HOME"/outputs/christchurch/christchurch_aug/version_0/epoch=400-step=125200.ckpt \

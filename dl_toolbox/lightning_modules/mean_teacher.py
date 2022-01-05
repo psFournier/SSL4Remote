@@ -1,8 +1,8 @@
 import torch.nn as nn
 import copy
-from dl_toolbox.lightning_modules import SupervisedBaseline
+from lightning_modules import SupervisedBaseline
 import torch
-import dl_toolbox.augmentations as aug
+import augmentations as aug
 
 class MeanTeacher(SupervisedBaseline):
 

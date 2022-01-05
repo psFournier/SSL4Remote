@@ -3,7 +3,7 @@ import rasterio
 import numpy as np
 import torch
 
-from dl_toolbox.torch_datasets import OneImage
+from torch_datasets import OneImage
 
 
 class PhrPanNdviDs(OneImage):

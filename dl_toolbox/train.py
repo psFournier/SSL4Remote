@@ -5,9 +5,9 @@ from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 import sys
 print(sys.path)
 
-from dl_toolbox.lightning_modules import *
-from dl_toolbox.lightning_datamodules import *
-from dl_toolbox.callbacks import SegmentationImagesVisualisation, CustomSwa, ConfMatLogger
+from lightning_modules import *
+from lightning_datamodules import *
+from callbacks import SegmentationImagesVisualisation, CustomSwa, ConfMatLogger
 
 modules = {
     'sup': SupervisedBaseline,

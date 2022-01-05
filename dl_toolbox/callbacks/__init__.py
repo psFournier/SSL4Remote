@@ -1,3 +1,3 @@
-from dl_toolbox.callbacks.image_visu import SegmentationImagesVisualisation
-from dl_toolbox.callbacks.swa import CustomSwa
-from dl_toolbox.callbacks.confusion_matrix import ConfMatLogger
+from callbacks.image_visu import SegmentationImagesVisualisation
+from callbacks.swa import CustomSwa
+from callbacks.confusion_matrix import ConfMatLogger

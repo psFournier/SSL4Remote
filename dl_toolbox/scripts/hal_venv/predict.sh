@@ -6,7 +6,7 @@
 module load python/3.7.2
 
 PYTHON=/home/eh/fournip/SemiSupervised/SSL4Remote/venvpython37/bin/python
-SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/dl_toolbox/examples/miniworld/predict.py
+SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/examples/miniworld/predict.py
 
 "${PYTHON}" "${SCRIPT}" \
 --ckpt_path /work/OT/ai4geo/users/fournip/outputs/christchurch/christchurch_aug/version_0/epoch=400-step=125200.ckpt \

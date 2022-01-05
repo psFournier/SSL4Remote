@@ -1,7 +1,7 @@
-from dl_toolbox.torch_datasets import ChristchurchLabeled, AustinLabeled
+from torch_datasets import ChristchurchLabeled, AustinLabeled
 from torch.utils.data import DataLoader
 from matplotlib import pyplot as plt
-from dl_toolbox.utils import get_image_level_aug
+from utils import get_image_level_aug
 import torch
 from torch.utils.data._utils.collate import default_collate
 

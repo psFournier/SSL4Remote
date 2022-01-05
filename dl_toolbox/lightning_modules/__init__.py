@@ -1,2 +1,2 @@
-from dl_toolbox.lightning_modules.supervised_baseline import SupervisedBaseline
-from dl_toolbox.lightning_modules.mean_teacher import MeanTeacher
+from lightning_modules.supervised_baseline import SupervisedBaseline
+from lightning_modules.mean_teacher import MeanTeacher

@@ -6,13 +6,13 @@ import imagesize
 import numpy as np
 import rasterio
 from torch import nn
-from dl_toolbox.torch_datasets import SemcityBdsdDs
-from dl_toolbox.torch_collate import CollateDefault
-from dl_toolbox.lightning_modules import SupervisedBaseline
-from dl_toolbox.utils import worker_init_function
-from dl_toolbox.inference import apply_tta
+from torch_datasets import SemcityBdsdDs
+from torch_collate import CollateDefault
+from lightning_modules import SupervisedBaseline
+from utils import worker_init_function
+from inference import apply_tta
 import torchmetrics.functional as  M
-from dl_toolbox.utils import get_tiles
+from utils import get_tiles
 
 # class DummyModule(nn.Module):
 #     def __init__(self, model, config_loss):
