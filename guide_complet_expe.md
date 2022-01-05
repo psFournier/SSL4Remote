@@ -45,23 +45,10 @@ nécessaires. Le fichier requirements.txt est supposé à jour...
 
 ## Etape 3 : scripts de lancement d'expés
 
-Une fois que tout est en place, on peut lancer des train avec le script 
-`train.py` :
+Une fois que tout est en place, on peut lancer un entraînement de test avec scripts/train_local.sh après l'avoir rendu éxécutable (chmod +x ...)
+Les paramètres: --batch_size 4 --workers 0 --max_epochs 5 --limit_train_batches 5 
+--limit_val_batches 2 sont là pour permettre un test rapide du code, il faut évidemment les enlever pour des entraînements complets.
 
-
-`venv/bin/python src/train.py --module supervised_baseline --output_dir 
-/home/pierre/PycharmProjects/RemoteSensing/outputs --datamodule
-miniworld_sup --data_dir /home/pierre/Documents/ONERA/ai4geo/miniworld_tif 
---city austin`
-
-### Vérifier en local que le code tourne
-
-Pytorch lighting offre plusieurs manières de lancer des codes pour tester 
-que tout marche rapidement. Le plus pratique est de lancer un code en local 
-en rajoutant à la commande ci dessus les paramètres:
-
-` --batch_size 4 --workers 0 --max_epochs 5 --limit_train_batches 5 
---limit_val_batches 2` 
 
 ### Lancer des expés sur le cluster HPC
 
@@ -69,7 +56,7 @@ Il est nécessaire sur le cluster de lancer ses expés en passant au
 gestionnaire de jobs PBS un script appelant `train.py`, afin que les ressources 
 disponibles soit 
 optimisées. Pour cela, il suffit d'utiliser le script 
-`src/scripts/train_hal_venv.sh` en faisant `qsub src/scripts/train_hal_venv.sh`.
+`dl_toolbox/scripts/train_hal_venv.sh` en faisant `qsub dl_toolbox/scripts/train_hal_venv.sh`.
 
 Qsub retourne alors le numéro du job lancé N. On peut suivre son avancement 
 avec `qpeek N`, et voir la liste des jobs lancés et leur statut avec `qstat 
