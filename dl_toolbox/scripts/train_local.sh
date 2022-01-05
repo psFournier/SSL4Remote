@@ -10,7 +10,7 @@ SCRIPT=/home/pfournie/semi-supervised-learning/dl_toolbox/train.py
 --module sup \
 --datamodule semcity_bdsd \
 --sup_batch_size 4 \
---workers 0 \
+--workers 4 \
 --max_epochs 6 \
 --epoch_len 5000 \
 --num_classes 7 \

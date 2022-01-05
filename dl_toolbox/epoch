@@ -175,7 +175,7 @@ class SupervisedBaseline(pl.LightningModule):
         self.log_metric_per_class(mode='Val', metrics={'iou': iou})
         self.log(f'Val_iou', torch.mean(iou))
         self.log(f'Val_acc', accuracy)
-        # self.log('epoch', self.trainer.current_epoch)
+        self.log('epoch', self.trainer.current_epoch.type(torch.float32))
 
         return {'batch': batch, 'logits': logits, 'iou': iou, 'accuracy' : accuracy}
 
