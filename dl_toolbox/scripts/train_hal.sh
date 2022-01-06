@@ -37,6 +37,5 @@ SCRIPT=/home/eh/fournip/SemiSupervised/SSL4Remote/examples/train.py
 --data_dir /work/OT/ai4geo/users/fournip/semcity_merged/test \
 --output_dir /work/OT/ai4geo/users/fournip/outputs/semcity/sup \
 --exp_name "${PBS_JOBNAME}"
-#--do_semisup \
 
 module unload python/3.7.2
