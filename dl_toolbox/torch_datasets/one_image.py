@@ -16,8 +16,8 @@ class OneImage(Dataset, ABC):
                  label_path=None,
                  idxs=None,
                  tile_size=None,
-                 tile_step=None,
                  crop_size=None,
+                 fixed_crops=False,
                  img_aug=None,
                  *args,
                  **kwargs
@@ -29,31 +29,32 @@ class OneImage(Dataset, ABC):
         self.label_path = label_path
         width, height = imagesize.get(self.image_path)
         self.tile_size = tile_size
-        self.tile_step = tile_size if tile_step is None else tile_step
         self.tile_windows = [
             w for w in get_tiles(
                 nols=width,
                 nrows=height,
                 width=self.tile_size[1],
                 height=self.tile_size[0],
-                col_step=self.tile_step[1],
-                row_step=self.tile_step[0]
+                col_step=self.tile_size[1],
+                row_step=self.tile_size[0]
             )
         ]
+        self.fixed_crops = fixed_crops
+        if self.fixed_crops:
+            self.crop_windows = [
+                    w for w in get_tiles(
+                        nols=tile_size[1],
+                        nrows=tile_size[0],
+                        width=crop_size,
+                        height=crop_size,
+                        col_step=crop_size,
+                        row_step=crop_size
+                    )
+                ]
+
         self.idxs = list(range(len(self.tile_windows))) if idxs is None else idxs
         self.crop_size = crop_size
         self.img_aug = aug.get_transforms(img_aug)
-
-    def get_window(self, idx):
-
-        tile_window = self.tile_windows[idx]
-        col_offset = tile_window.col_off
-        row_offset = tile_window.row_off
-        cx = np.random.randint(col_offset, col_offset + self.tile_size[1] - self.crop_size + 1)
-        cy = np.random.randint(row_offset, row_offset + self.tile_size[0] - self.crop_size + 1)
-        window = Window(cx, cy, self.crop_size, self.crop_size)
-
-        return window
 
     def process_image(self, image):
 
@@ -66,13 +67,31 @@ class OneImage(Dataset, ABC):
         return label, None
 
     def __len__(self):
-
-        return len(self.idxs)
+            
+        if self.fixed_crops:
+            return len(self.idxs) * len(self.crop_windows)
+        else:
+            return len(self.idxs)
 
     def __getitem__(self, idx):
 
-        tile_idx = self.idxs[idx]
-        window = self.get_window(tile_idx)
+        if self.fixed_crops:
+            tile_idx = self.idxs[idx // len(self.idxs)]
+            tile_window = self.tile_windows[tile_idx]
+            col_offset = tile_window.col_off
+            row_offset = tile_window.row_off
+            crop_window = self.crop_windows[idx % len(self.idxs)]
+            cx = crop_window.col_off + col_offset
+            cy = crop_window.row_off + row_offset
+        else:
+            tile_idx = self.idxs[idx]
+            tile_window = self.tile_windows[tile_idx]
+            col_offset = tile_window.col_off
+            row_offset = tile_window.row_off
+            cx = np.random.randint(col_offset, col_offset + self.tile_size[1] - self.crop_size + 1)
+            cy = np.random.randint(row_offset, row_offset + self.tile_size[0] - self.crop_size + 1)
+        window = Window(cx, cy, self.crop_size, self.crop_size)
+        print(window)
 
         with rasterio.open(self.image_path) as image_file:
             image = image_file.read(window=window, out_dtype=np.float32)

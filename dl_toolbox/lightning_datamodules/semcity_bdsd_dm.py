@@ -24,7 +24,6 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
             image_path=self.image_path,
             label_path=self.label_path,
             tile_size=(863,876),
-            tile_step=(863,876),
             crop_size=self.crop_size,
             img_aug=self.img_aug
         )
@@ -33,9 +32,9 @@ class SemcityBdsdDm(BaseSupervisedDatamodule):
             image_path=self.image_path,
             label_path=self.label_path,
             tile_size=(863,876),
-            tile_step=(863,876),
             crop_size=self.crop_size,
-            img_aug=self.img_aug
+            img_aug=self.img_aug,
+            fixed_crops = True 
         )
         self.val_set.idxs = self.val_set.idxs[2::3]
 
@@ -78,7 +77,6 @@ class SemcityBdsdDmSemisup(SemcityBdsdDm, BaseSemisupDatamodule):
             set = SemcityBdsdDs(
                 image_path=image_path,
                 tile_size=(863, 876),
-                tile_step=(863, 876),
                 crop_size=self.unsup_crop_size
             )
             unsup_train_sets.append(set)
