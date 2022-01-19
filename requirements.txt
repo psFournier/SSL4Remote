@@ -1,4 +1,5 @@
 matplotlib
+imagesize
 numpy
 scipy
 Pillow
