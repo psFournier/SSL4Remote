@@ -11,7 +11,7 @@ from copy import deepcopy
 import torch.nn.functional as F
 
 
-class SupervisedBaseline(pl.LightningModule):
+class Unet(pl.LightningModule):
 
     def __init__(self,
                  encoder='efficientnet-b0',
@@ -62,7 +62,8 @@ class SupervisedBaseline(pl.LightningModule):
         self.logger.log_hyperparams(self.hparams, {"hp/Val_loss": 0})
 
     def forward(self, x):
-
+        
+        print(x.dtype)
         return self.network(x)
 
     def configure_optimizers(self):

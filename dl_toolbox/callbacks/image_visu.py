@@ -63,39 +63,39 @@ class SegmentationImagesVisualisation(pl.Callback):
         """Called when the validation batch ends."""
 
         if trainer.current_epoch % 10 == 0 and trainer.global_step % 1000 == 0:
-            # Forward
-            img, mask = outputs['batch']['image'], outputs['batch']['mask']
-            orig_img = outputs['batch']['orig_image']
 
-            # Segmentation maps
-            labels = torch.argmax(mask, dim=1)
-            preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
-            # mask_rgb = trainer.datamodule.label_to_rgb(labels).float()
-            # out_rgb = trainer.datamodule.label_to_rgb(preds).float()
-            mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
-            out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
+            self.display_batch(trainer, pl_module, outputs)
+            
+    def display_batch(self, trainer, pl_module, outputs):
 
-            # Number of grids to log depends on the batch size
-            quotient, remainder = divmod(img.shape[0], self.NB_COL)
-            nb_grids = quotient + int(remainder > 0)
+        img, mask = outputs['batch']['image'].cpu(), outputs['batch']['mask'].cpu()
+        orig_img = outputs['batch']['orig_image']
 
-            for idx in range(nb_grids):
+        labels = torch.argmax(mask, dim=1)
+        preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
+        mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels)).float()
+        out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu())).float()
 
-                start = self.NB_COL * idx
-                if start + self.NB_COL <= img.shape[0]:
-                    end = start + self.NB_COL
-                else:
-                    end = start + remainder
+        # Number of grids to log depends on the batch size
+        quotient, remainder = divmod(img.shape[0], self.NB_COL)
+        nb_grids = quotient + int(remainder > 0)
 
-                img_grid = torchvision.utils.make_grid(img[start:end, :, :, :].cpu(), padding=10, normalize=True)
-                orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :].cpu(), padding=10, normalize=True)
-                mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
-                out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
+        for idx in range(nb_grids):
 
-                final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
+            start = self.NB_COL * idx
+            if start + self.NB_COL <= img.shape[0]:
+                end = start + self.NB_COL
+            else:
+                end = start + remainder
 
-                trainer.logger.experiment.add_image(f'Images/Train_batch {idx}', final_grid, global_step=trainer.global_step)
+            img_grid = torchvision.utils.make_grid(img[start:end, :, :, :], padding=10, normalize=True)
+            orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :], padding=10, normalize=True)
+            mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
+            out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
 
+            final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
+
+            trainer.logger.experiment.add_image(f'Images/Train_batch {idx}', final_grid, global_step=trainer.global_step)
 
     def on_validation_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
@@ -103,34 +103,6 @@ class SegmentationImagesVisualisation(pl.Callback):
         """Called when the validation batch ends."""
 
         if trainer.current_epoch % 10 == 0:
-            # Forward
-            img, mask = outputs['batch']['image'], outputs['batch']['mask']
-            orig_img = outputs['batch']['orig_image']
 
-            # Segmentation maps
-            labels = torch.argmax(mask, dim=1)
-            preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
-            mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels.cpu().numpy())).float()
-            out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu().numpy())).float()
+            self.display_batch(trainer, pl_module, outputs)
 
-
-            # Number of grids to log depends on the batch size
-            quotient, remainder = divmod(img.shape[0], self.NB_COL)
-            nb_grids = quotient + int(remainder > 0)
-
-            for idx in range(nb_grids):
-
-                start = self.NB_COL * idx
-                if start + self.NB_COL <= img.shape[0]:
-                    end = start + self.NB_COL
-                else:
-                    end = start + remainder
-
-                img_grid = torchvision.utils.make_grid(img[start:end, :, :, :].cpu(), padding=10, normalize=True)
-                orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :].cpu(), padding=10, normalize=True)
-                mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
-                out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
-
-                final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
-
-                trainer.logger.experiment.add_image(f'Images/Val_batch {idx}', final_grid, global_step=trainer.global_step)

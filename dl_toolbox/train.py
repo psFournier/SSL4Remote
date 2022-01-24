@@ -3,15 +3,13 @@ from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, St
 from pytorch_lightning import Trainer, loggers
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler
 import sys
-print(sys.path)
 
 from lightning_modules import *
 from lightning_datamodules import *
 from callbacks import SegmentationImagesVisualisation, CustomSwa, ConfMatLogger
 
 modules = {
-    'sup': SupervisedBaseline,
-    'mean_teacher': MeanTeacher
+        'sup': Unet,
 }
 
 

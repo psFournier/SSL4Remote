@@ -1,2 +1,2 @@
-from lightning_modules.supervised_baseline import SupervisedBaseline
-from lightning_modules.mean_teacher import MeanTeacher
+from .supervised_baseline import Unet
+# from .mean_teacher import MeanTeacher

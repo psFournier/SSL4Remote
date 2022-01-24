@@ -159,4 +159,4 @@ outputs/
 
 # Local files
 local/
-scripts/
+bin/

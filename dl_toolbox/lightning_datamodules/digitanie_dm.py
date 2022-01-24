@@ -9,10 +9,10 @@ import numpy as np
 
 from utils import worker_init_function
 from torch_collate import CustomCollate
-from torch_datasets import SemcityBdsdDs
+from torch_datasets import DigitanieDs
 
 
-class SemcityBdsdDm(LightningDataModule):
+class DigitanieDm(LightningDataModule):
 
     def __init__(self,
                  image_path,
@@ -29,7 +29,7 @@ class SemcityBdsdDm(LightningDataModule):
 
         super().__init__()
         self.image_path = image_path
-        self.class_names = [label[2] for label in SemcityBdsdDs.labels_desc]
+        self.class_names = [label[2] for label in DigitanieDs.labels_desc]
         self.label_path = label_path
         self.crop_size = crop_size
         self.epoch_len = epoch_len
@@ -61,31 +61,26 @@ class SemcityBdsdDm(LightningDataModule):
 
     def setup(self, stage=None):
         
-        w, h = imagesize.get(self.image_path)
-        train_val_tiles = list(get_tiles(w, h, size=876, size2=863))
-        train_tiles = train_val_tiles[::3] + train_val_tiles[1::3]
-        val_tiles = train_val_tiles[2::3]
-        
-        train_tiles_datasets = [SemcityBdsdDs(
-                image_path=self.image_path,
-                label_path=self.label_path,
-                tile=tile,
-                fixed_crops=False,
-                crop_size=self.crop_size,
-                img_aug=self.img_aug
-            ) for tile in train_tiles]
-        self.sup_train_dataset = ConcatDataset(train_tiles_datasets)
+        tile_names = ['Arenes', 'Bagatelle', 'Cepiere', 'Empalot', 'Lardenne', 'Minimes', 'Mirail', 'Montaudran']
+        datasets = [DigitanieDs(
+            image_path=self.image_path,
+            label_path=os.path.join(self.label_path, 'cos11_TLS_'+tile_name+'.tif'),
+            fixed_crops=False,
+            crop_size=128,
+            img_aug=self.img_aug) for tile_name in tile_names
+            ]
+        self.sup_train_set = ConcatDataset(datasets)
 
-        val_tiles_datasets = [SemcityBdsdDs(
-                image_path=self.image_path,
-                label_path=self.label_path,
-                tile=tile,
-                fixed_crops=True,
-                crop_size=self.crop_size,
-                img_aug=self.img_aug
-            ) for tile in val_tiles]
-        self.val_dataset = ConcatDataset(val_tiles_datasets)
-
+        tile_names = ['Ramier', 'Zenith']
+        datasets = [DigitanieDs(
+            image_path=self.image_path,
+            label_path=os.path.join(self.label_path, 'cos11_TLS_'+tile_name+'.tif'),
+            fixed_crops=True,
+            crop_size=128,
+            img_aug=None) for tile_name in tile_names
+        ]
+        self.val_set = ConcatDataset(datasets)
+    
     def train_dataloader(self):
 
         sup_train_sampler = RandomSampler(
@@ -123,63 +118,10 @@ class SemcityBdsdDm(LightningDataModule):
     def label_to_rgb(self, labels):
 
         rgb_label = np.zeros(shape=(*labels.shape, 3), dtype=float)
-        for val, color, _ in SemcityBdsdDs.labels_desc:
+        for val, color, _ in DigitanieDs.labels_desc:
             mask = np.array(labels == val)
             rgb_label[mask] = np.array(color)
         rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
 
         return rgb_label
 
-def main():
-
-    datamodule = SemcityBdsdDm(
-        image_path='/home/pfournie/ai4geo/data/SemcityTLS_DL/BDSD_M_3_4_7_8.tif',
-        label_path='/home/pfournie/ai4geo/data/SemcityTLS_DL/GT_3_4_7_8.tif',
-        crop_size=128,
-        epoch_len=100,
-        sup_batch_size=16,
-        workers=0,
-        img_aug='no',
-        batch_aug='no',
-        ignore_void=True
-    )
-
-    for batch in datamodule.train_dataloader:
-
-        print(batch['image'].shape)
-
-if __name__ == '__main__':
-
-    main()
-
-
-#class SemcityBdsdDmSemisup(SemcityBdsdDm, BaseSemisupDatamodule):
-#
-#    def __init__(self, data_dir, *args, **kwargs):
-#
-#        super().__init__(*args, **kwargs)
-#        self.data_dir = data_dir
-#
-#    @classmethod
-#    def add_model_specific_args(cls, parent_parser):
-#
-#        parser = super().add_model_specific_args(parent_parser)
-#        parser.add_argument('--data_dir', type=str)
-#
-#        return parser
-#
-#    def setup(self, stage=None):
-#
-#        super(SemcityBdsdDmSemisup, self).setup(stage=stage)
-#        nums = ['09','12','06','01','05','11','10','02','14','15','13','16']
-#        image_paths = [f'{self.data_dir}/TLS_BDSD_M_{num}.tif' for num in nums]
-#        unsup_train_sets = []
-#        for image_path in image_paths:
-#            set = SemcityBdsdDs(
-#                image_path=image_path,
-#                tile_size=(863, 876),
-#                crop_size=self.unsup_crop_size
-#            )
-#            unsup_train_sets.append(set)
-#        self.unsup_train_set = ConcatDataset(unsup_train_sets)
-#
