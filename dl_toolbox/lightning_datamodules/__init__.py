@@ -4,5 +4,5 @@
 #from lightning_datamodules.miniworld_v3 import MiniworldDmV3, MiniworldDmV3Semisup
 #from lightning_datamodules.phr_pan_dm import PhrPanDm, PhrPanDmSemisup
 #from lightning_datamodules.phr_pan_ndvi_dm import PhrPanNdviDm, PhrPanNdviDmSemisup
-from lightning_datamodules.semcity_bdsd_dm import SemcityBdsdDm
-from lightning_datamodules.digitanie_dm import DigitanieDm
+from .semcity_bdsd_dm import SemcityBdsdDm
+from .digitanie_dm import DigitanieDm

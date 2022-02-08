@@ -6,10 +6,11 @@ from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
 from torch.utils.data._utils.collate import default_collate
 import torch
 import numpy as np
+import imagesize
 
-from utils import worker_init_function
-from torch_collate import CustomCollate
-from torch_datasets import SemcityBdsdDs
+from dl_toolbox.utils import worker_init_function, get_tiles
+from dl_toolbox.torch_collate import CustomCollate
+from dl_toolbox.torch_datasets import SemcityBdsdDs
 
 
 class SemcityBdsdDm(LightningDataModule):
@@ -74,7 +75,7 @@ class SemcityBdsdDm(LightningDataModule):
                 crop_size=self.crop_size,
                 img_aug=self.img_aug
             ) for tile in train_tiles]
-        self.sup_train_dataset = ConcatDataset(train_tiles_datasets)
+        self.train_set = ConcatDataset(train_tiles_datasets)
 
         val_tiles_datasets = [SemcityBdsdDs(
                 image_path=self.image_path,
@@ -84,27 +85,27 @@ class SemcityBdsdDm(LightningDataModule):
                 crop_size=self.crop_size,
                 img_aug=self.img_aug
             ) for tile in val_tiles]
-        self.val_dataset = ConcatDataset(val_tiles_datasets)
+        self.val_set = ConcatDataset(val_tiles_datasets)
 
     def train_dataloader(self):
 
-        sup_train_sampler = RandomSampler(
-            data_source=self.sup_train_set,
+        train_sampler = RandomSampler(
+            data_source=self.train_set,
             replacement=True,
             num_samples=self.epoch_len
         )
 
-        sup_train_dataloader = DataLoader(
-            dataset=self.sup_train_set,
+        train_dataloader = DataLoader(
+            dataset=self.train_set,
             batch_size=self.sup_batch_size,
             collate_fn=CustomCollate(self.batch_aug),
-            sampler=sup_train_sampler,
+            sampler=train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=worker_init_function
         )
 
-        return sup_train_dataloader
+        return train_dataloader
 
     def val_dataloader(self):
 
@@ -123,7 +124,7 @@ class SemcityBdsdDm(LightningDataModule):
     def label_to_rgb(self, labels):
 
         rgb_label = np.zeros(shape=(*labels.shape, 3), dtype=float)
-        for val, color, _ in SemcityBdsdDs.labels_desc:
+        for val, color, _, _ in SemcityBdsdDs.labels_desc:
             mask = np.array(labels == val)
             rgb_label[mask] = np.array(color)
         rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))

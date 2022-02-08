@@ -1,9 +1,9 @@
 import os
 from torch.utils.data import Dataset
 import torch
-import augmentations as aug
-from torch_datasets.commons import minmax
-from utils import get_tiles
+import dl_toolbox.augmentations as aug
+from dl_toolbox.torch_datasets.commons import minmax
+from dl_toolbox.utils import get_tiles
 import rasterio
 import imagesize
 import numpy as np
@@ -38,7 +38,7 @@ class DigitanieDs(Dataset):
 
         self.image_path = image_path
         self.label_path = label_path
-        self.tile_size = imagesize.get(label_path)
+        self.tile_size = imagesize.get(image_path)
         self.crop_windows = None if not fixed_crops else list(get_tiles(*self.tile_size, crop_size))
         self.crop_size = crop_size
         self.img_aug = aug.get_transforms(img_aug)
@@ -50,25 +50,32 @@ class DigitanieDs(Dataset):
     def __getitem__(self, idx):
         
         if self.crop_windows:
-            label_window = self.crop_windows[idx]
+            window = self.crop_windows[idx]
         else:
             cx = np.random.randint(0, self.tile_size[0] - self.crop_size + 1)
             cy = np.random.randint(0, self.tile_size[1] - self.crop_size + 1)
-            label_window = Window(cx, cy, self.crop_size, self.crop_size)
+            window = Window(cx, cy, self.crop_size, self.crop_size)
         
-        with rasterio.open(self.label_path) as label_file:
-            label = label_file.read(window=label_window, out_dtype=np.float32)
-            window_bounds = bounds(label_window, label_file.transform)
-        
+#        with rasterio.open(self.label_path) as label_file:
+#            label = label_file.read(window=label_window, out_dtype=np.float32)
+#            window_bounds = bounds(label_window, label_file.transform)
+#        
+#        with rasterio.open(self.image_path) as image_file:
+#            image_window = from_bounds(*window_bounds, transform=image_file.transform)
+#            image = image_file.read(window=image_window, out_dtype=np.float32)
+
         with rasterio.open(self.image_path) as image_file:
-            image_window = from_bounds(*window_bounds, transform=image_file.transform)
-            image = image_file.read(window=image_window, out_dtype=np.float32)
+            image = image_file.read(window=window, out_dtype=np.float32)
+
+        with rasterio.open(self.label_path) as label_file:
+            label = label_file.read(window=window, out_dtype=np.float32)
         
-        m = np.array([0.0357, 0.0551, 0.0674])
-        M = np.array([0.2945, 0.2734, 0.2662])
-        image = torch.from_numpy(minmax(image[:3,...], m, M)).float().contiguous()
+#        m = np.array([0.0357, 0.0551, 0.0674]
+#        M = np.array([0.2945, 0.2734, 0.2662])
+#        image = torch.from_numpy(minmax(image[:3,...], m, M)).float().contiguous()
+        image = torch.from_numpy(image[:3,...]).float().contiguous()
         
-        onehot_masks = [(label==color).astype(float).squeeze() for color, _, _ in self.labels_desc]
+        onehot_masks = [(label==val).astype(float).squeeze() for val, _, _ in self.labels_desc]
         label = torch.from_numpy(np.stack(onehot_masks, axis=0)).float().contiguous()
         
         if self.img_aug is not None:
@@ -79,5 +86,5 @@ class DigitanieDs(Dataset):
         return {'orig_image':image,
                 'orig_mask':label,
                 'image':end_image,
-                'window':image_window,
+                'window':window,
                 'mask':end_mask}

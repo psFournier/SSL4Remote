@@ -60,16 +60,15 @@ class SegmentationImagesVisualisation(pl.Callback):
     def on_train_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
-        """Called when the validation batch ends."""
 
-        if trainer.current_epoch % 10 == 0 and trainer.global_step % 1000 == 0:
+        if trainer.global_step % 5000 == 0:
 
-            self.display_batch(trainer, pl_module, outputs)
+            self.display_batch(trainer, pl_module, outputs, 'Train')
             
-    def display_batch(self, trainer, pl_module, outputs):
+    def display_batch(self, trainer, pl_module, outputs, prefix):
 
         img, mask = outputs['batch']['image'].cpu(), outputs['batch']['mask'].cpu()
-        orig_img = outputs['batch']['orig_image']
+        orig_img = outputs['batch']['orig_image'].cpu()
 
         labels = torch.argmax(mask, dim=1)
         preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
@@ -92,17 +91,16 @@ class SegmentationImagesVisualisation(pl.Callback):
             orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :], padding=10, normalize=True)
             mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
             out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
-
             final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
 
-            trainer.logger.experiment.add_image(f'Images/Train_batch {idx}', final_grid, global_step=trainer.global_step)
+            trainer.logger.experiment.add_image(f'Images/{prefix}_batch {idx}', final_grid, global_step=trainer.global_step)
 
     def on_validation_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
         """Called when the validation batch ends."""
 
-        if trainer.current_epoch % 10 == 0:
+        if batch_idx == 1:
 
-            self.display_batch(trainer, pl_module, outputs)
+            self.display_batch(trainer, pl_module, outputs, 'Val')
 

@@ -3,9 +3,9 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer 
 from pytorch_lightning.profiler import SimpleProfiler
 from pytorch_lightning.loggers import TensorBoardLogger
-from lightning_modules import Unet
-from lightning_datamodules import DigitanieDm
-from callbacks import SegmentationImagesVisualisation, ConfMatLogger
+from dl_toolbox.lightning_modules import Unet
+from dl_toolbox.lightning_datamodules import DigitanieDm
+from dl_toolbox.callbacks import SegmentationImagesVisualisation, ConfMatLogger
 
 
 def main():

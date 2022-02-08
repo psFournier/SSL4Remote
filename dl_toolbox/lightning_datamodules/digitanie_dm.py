@@ -7,16 +7,15 @@ from torch.utils.data._utils.collate import default_collate
 import torch
 import numpy as np
 
-from utils import worker_init_function
-from torch_collate import CustomCollate
-from torch_datasets import DigitanieDs
+from dl_toolbox.utils import worker_init_function
+from dl_toolbox.torch_collate import CustomCollate
+from dl_toolbox.torch_datasets import DigitanieDs
 
 
 class DigitanieDm(LightningDataModule):
 
     def __init__(self,
-                 image_path,
-                 label_path,
+                 data_path,
                  crop_size,
                  epoch_len,
                  sup_batch_size,
@@ -28,9 +27,8 @@ class DigitanieDm(LightningDataModule):
                  **kwargs):
 
         super().__init__()
-        self.image_path = image_path
+        self.data_path = data_path
         self.class_names = [label[2] for label in DigitanieDs.labels_desc]
-        self.label_path = label_path
         self.crop_size = crop_size
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
@@ -43,8 +41,7 @@ class DigitanieDm(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--image_path", type=str)
-        parser.add_argument("--label_path", type=str)
+        parser.add_argument("--data_path", type=str)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--sup_batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -61,45 +58,45 @@ class DigitanieDm(LightningDataModule):
 
     def setup(self, stage=None):
         
-        tile_names = ['Arenes', 'Bagatelle', 'Cepiere', 'Empalot', 'Lardenne', 'Minimes', 'Mirail', 'Montaudran']
+        tile_names = ['arenes', 'bagatelle', 'cepiere', 'empalot', 'lardenne', 'minimes', 'mirail', 'montaudran']
         datasets = [DigitanieDs(
-            image_path=self.image_path,
-            label_path=os.path.join(self.label_path, 'cos11_TLS_'+tile_name+'.tif'),
+            image_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_img_c.tif'),
+            label_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_c.tif'),
             fixed_crops=False,
             crop_size=128,
-            img_aug=self.img_aug) for tile_name in tile_names
+            img_aug=self.img_aug) for tile in tile_names
             ]
-        self.sup_train_set = ConcatDataset(datasets)
+        self.train_set = ConcatDataset(datasets)
 
-        tile_names = ['Ramier', 'Zenith']
+        tile_names = ['ramier', 'zenith']
         datasets = [DigitanieDs(
-            image_path=self.image_path,
-            label_path=os.path.join(self.label_path, 'cos11_TLS_'+tile_name+'.tif'),
+            image_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_img_c.tif'),
+            label_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_c.tif'),
             fixed_crops=True,
             crop_size=128,
-            img_aug=None) for tile_name in tile_names
+            img_aug=None) for tile in tile_names
         ]
         self.val_set = ConcatDataset(datasets)
     
     def train_dataloader(self):
 
-        sup_train_sampler = RandomSampler(
-            data_source=self.sup_train_set,
+        train_sampler = RandomSampler(
+            data_source=self.train_set,
             replacement=True,
             num_samples=self.epoch_len
         )
 
-        sup_train_dataloader = DataLoader(
-            dataset=self.sup_train_set,
+        train_dataloader = DataLoader(
+            dataset=self.train_set,
             batch_size=self.sup_batch_size,
             collate_fn=CustomCollate(self.batch_aug),
-            sampler=sup_train_sampler,
+            sampler=train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=worker_init_function
         )
 
-        return sup_train_dataloader
+        return train_dataloader
 
     def val_dataloader(self):
 

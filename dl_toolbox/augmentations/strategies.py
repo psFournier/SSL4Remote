@@ -1,4 +1,4 @@
-from augmentations import *
+from dl_toolbox.augmentations import *
 
 def d4_transformation():
 

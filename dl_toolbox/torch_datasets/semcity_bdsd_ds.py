@@ -1,9 +1,9 @@
 import os
 from torch.utils.data import Dataset
 import torch
-import augmentations as aug
-from torch_datasets.commons import minmax
-from utils import get_tiles
+import dl_toolbox.augmentations as aug
+from dl_toolbox.torch_datasets.commons import minmax
+from dl_toolbox.utils import get_tiles
 import rasterio
 import imagesize
 import numpy as np

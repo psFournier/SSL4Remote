@@ -1,7 +1,7 @@
 import torch
 import torchvision.transforms.functional as F
 import random
-from augmentations import Compose, NoOp
+from dl_toolbox.augmentations import Compose, NoOp
 
 class Vflip(torch.nn.Module):
 
