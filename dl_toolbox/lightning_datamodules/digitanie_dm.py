@@ -28,7 +28,6 @@ class DigitanieDm(LightningDataModule):
 
         super().__init__()
         self.data_path = data_path
-        self.class_names = [label[2] for label in DigitanieDs.labels_desc]
         self.crop_size = crop_size
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
@@ -58,24 +57,69 @@ class DigitanieDm(LightningDataModule):
 
     def setup(self, stage=None):
         
-        tile_names = ['arenes', 'bagatelle', 'cepiere', 'empalot', 'lardenne', 'minimes', 'mirail', 'montaudran']
+        merges = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
+        self.labels = list(range(len(merges)))
+        self.class_names = ['void','bareland', 'low vegetation', 'water', 'building',
+                       'high vegetation', 'parking',  'pedestrian', 'road', 'pool', 'railway']
+        self.label_colors = [(255,255,255), (184,141,21), (34,139,34), (0,0,238),
+                        (238,118,33), (0,222,137), (118,118,118), (48,48,48), (38,38,38), (33,203,220),
+                        (112, 53,0)]
+
+        toulouse_tile_names = ['bagatelle', 'cepiere', 'lardenne', 'minimes', 'mirail',
+                      'montaudran', 'zenith', 'ramier']
         datasets = [DigitanieDs(
             image_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_img_c.tif'),
             label_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_c.tif'),
             fixed_crops=False,
-            crop_size=128,
-            img_aug=self.img_aug) for tile in tile_names
-            ]
+            crop_size=self.crop_size,
+            img_aug=self.img_aug,
+            merge_labels=(merges, self.class_names),
+            one_hot_labels=True
+        ) for tile in toulouse_tile_names]
+        datasets += [DigitanieDs(
+            image_path=os.path.join(
+                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
+            ),
+            label_path=os.path.join(
+                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
+            ),
+            fixed_crops=False,
+            crop_size=self.crop_size,
+            img_aug=self.img_aug,
+            merge_labels=(merges, self.class_names),
+            one_hot_labels=True
+        ) for city, city_lower in [
+            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
+                                                           'strasbourg')
+        ] for i in range(1, 9)]
         self.train_set = ConcatDataset(datasets)
 
-        tile_names = ['ramier', 'zenith']
+        toulouse_tile_names = ['empalot', 'arenes']
         datasets = [DigitanieDs(
             image_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_img_c.tif'),
             label_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_c.tif'),
             fixed_crops=True,
-            crop_size=128,
-            img_aug=None) for tile in tile_names
-        ]
+            crop_size=self.crop_size,
+            img_aug=None,
+            merge_labels=(merges, self.class_names),
+            one_hot_labels=True
+        ) for tile in toulouse_tile_names]
+        datasets += [DigitanieDs(
+            image_path=os.path.join(
+                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
+            ),
+            label_path=os.path.join(
+                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
+            ),
+            fixed_crops=True,
+            crop_size=self.crop_size,
+            img_aug=self.img_aug,
+            merge_labels=(merges, self.class_names),
+            one_hot_labels=True
+        ) for city, city_lower in [
+            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
+                                                           'strasbourg')
+        ] for i in range(9, 11)]
         self.val_set = ConcatDataset(datasets)
     
     def train_dataloader(self):
@@ -115,10 +159,66 @@ class DigitanieDm(LightningDataModule):
     def label_to_rgb(self, labels):
 
         rgb_label = np.zeros(shape=(*labels.shape, 3), dtype=float)
-        for val, color, _ in DigitanieDs.labels_desc:
+        for val, color in zip(self.labels, self.label_colors):
             mask = np.array(labels == val)
             rgb_label[mask] = np.array(color)
         rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
 
         return rgb_label
 
+#class DigitanieSemisupDm(DigitanieDm):
+#
+#    def __init__(
+#        self,
+#        unsup_batch_size,
+#        *args,
+#        **kwargs
+#    ):
+#        
+#        super().__init__(*args, **kwargs)
+#        self.unsup_batch_size = unsup_batch_size
+#
+#    @classmethod
+#    def add_model_sepcific_args(cls, parent_parser):
+#
+#        parser = super().add_model_specific_args(parent_parser)
+#        parser.add_argument("--unsup_batch_size", type=int, default=16)
+#
+#        return parser
+#
+#    def setup(self, stage=None):
+#
+#        super().setup()
+#        self.unsup_train_set = DigitanieDs(
+#            image_path=os.path.join(self.data_path, 'Toulouse', 'normalized_mergedTO')
+#            fixed_crops=False,
+#            crop_size=128,
+#            img_aug=self.img_aug
+#        )
+#
+#    def train_dataloader(self):
+#
+#        train_dataloader = super().train_dataloader()
+#        unsup_train_sampler = RandomSampler(
+#            data_source=self.unsup_train_set,
+#            replacement=True,
+#            num_samples=self.epoch_len
+#        )
+#
+#        unsup_train_dataloader = DataLoader(
+#            dataset=self.unsup_train_set,
+#            batch_size=self.unsup_batch_size,
+#            sampler=unsup_train_sampler,
+#            collate_fn=CustomCollate(),
+#            num_workers=self.num_workers,
+#            pin_memory=True,
+#            worker_init_fn=worker_init_function
+#        )
+#
+#        train_dataloaders = {
+#            "sup": train_dataloader,
+#            "unsup": unsup_train_dataloader
+#        }
+#
+#        return train_dataloaders 
+#

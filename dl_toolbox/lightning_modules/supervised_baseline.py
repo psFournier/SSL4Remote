@@ -63,7 +63,6 @@ class Unet(pl.LightningModule):
 
     def forward(self, x):
         
-        print(x.dtype)
         return self.network(x)
 
     def configure_optimizers(self):
@@ -76,10 +75,11 @@ class Unet(pl.LightningModule):
 
         def lambda_lr(epoch):
 
-            s = self.trainer.max_steps
-            b = self.trainer.datamodule.sup_batch_size
-            l = self.trainer.datamodule.epoch_len
-            m = s * b / l
+            #s = self.trainer.max_steps
+            #b = self.trainer.datamodule.sup_batch_size
+            #l = self.trainer.datamodule.epoch_len
+            #m = s * b / l
+            m = self.trainer.max_epochs
             if epoch < 0.4*m:
                 return 1
             elif 0.4*m <= epoch <= 0.9*m:
@@ -113,7 +113,7 @@ class Unet(pl.LightningModule):
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
-        return loss1, loss2, loss1 + loss2
+        return loss1, loss2, loss1 + 2*loss2
 
     def compute_metrics(self, preds, labels):
 

@@ -44,8 +44,7 @@ class SemcityBdsdDm(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--image_path", type=str)
-        parser.add_argument("--label_path", type=str)
+        parser.add_argument("--data_path", type=str)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--sup_batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -55,21 +54,23 @@ class SemcityBdsdDm(LightningDataModule):
         parser.add_argument("--ignore_void", action='store_true')
 
         return parser
-   
+
     def prepare_data(self, *args, **kwargs):
 
         pass
 
     def setup(self, stage=None):
         
-        w, h = imagesize.get(self.image_path)
+        image_path = os.path.join(self.data_path, 'BDSD_M_3_4_7_8.tif')
+        label_path = os.path.join(self.data_path, 'GT_3_4_7_8.tif')
+        w, h = imagesize.get(image_path)
         train_val_tiles = list(get_tiles(w, h, size=876, size2=863))
         train_tiles = train_val_tiles[::3] + train_val_tiles[1::3]
         val_tiles = train_val_tiles[2::3]
         
         train_tiles_datasets = [SemcityBdsdDs(
-                image_path=self.image_path,
-                label_path=self.label_path,
+                image_path=image_path,
+                label_path=label_path,
                 tile=tile,
                 fixed_crops=False,
                 crop_size=self.crop_size,
@@ -78,8 +79,8 @@ class SemcityBdsdDm(LightningDataModule):
         self.train_set = ConcatDataset(train_tiles_datasets)
 
         val_tiles_datasets = [SemcityBdsdDs(
-                image_path=self.image_path,
-                label_path=self.label_path,
+                image_path=image_path,
+                label_path=label_path,
                 tile=tile,
                 fixed_crops=True,
                 crop_size=self.crop_size,
@@ -131,6 +132,36 @@ class SemcityBdsdDm(LightningDataModule):
 
         return rgb_label
 
+class SemcityBdsdDmSemisup(SemcityBdsdDm):
+
+    def __init__(self, unsup_batch_size, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.unsup_batch_size = unsup_batch_size
+
+    @classmethod
+    def add_model_specific_args(cls, parent_parser):
+
+        parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument('--unsup_batch_size', type=str)
+
+        return parser
+
+    def setup(self, stage=None):
+
+        super(SemcityBdsdDmSemisup, self).setup(stage=stage)
+        nums = ['09','12','06','01','05','11','10','02','14','15','13','16']
+        image_paths = [f'{self.data_path}/test/TLS_BDSD_M_{num}.tif' for num in nums]
+        unsup_train_sets = [
+            SemcityBdsdDs(
+                image_path=image_path,
+                fixed_crops=False,
+                crop_size=128,
+                img_aug=self.img_aug
+            ) for image_path in image_paths
+        ]
+        self.unsup_train_set = ConcatDataset(unsup_train_sets)
+
 def main():
 
     datamodule = SemcityBdsdDm(
@@ -154,33 +185,4 @@ if __name__ == '__main__':
     main()
 
 
-#class SemcityBdsdDmSemisup(SemcityBdsdDm, BaseSemisupDatamodule):
-#
-#    def __init__(self, data_dir, *args, **kwargs):
-#
-#        super().__init__(*args, **kwargs)
-#        self.data_dir = data_dir
-#
-#    @classmethod
-#    def add_model_specific_args(cls, parent_parser):
-#
-#        parser = super().add_model_specific_args(parent_parser)
-#        parser.add_argument('--data_dir', type=str)
-#
-#        return parser
-#
-#    def setup(self, stage=None):
-#
-#        super(SemcityBdsdDmSemisup, self).setup(stage=stage)
-#        nums = ['09','12','06','01','05','11','10','02','14','15','13','16']
-#        image_paths = [f'{self.data_dir}/TLS_BDSD_M_{num}.tif' for num in nums]
-#        unsup_train_sets = []
-#        for image_path in image_paths:
-#            set = SemcityBdsdDs(
-#                image_path=image_path,
-#                tile_size=(863, 876),
-#                crop_size=self.unsup_crop_size
-#            )
-#            unsup_train_sets.append(set)
-#        self.unsup_train_set = ConcatDataset(unsup_train_sets)
-#
+

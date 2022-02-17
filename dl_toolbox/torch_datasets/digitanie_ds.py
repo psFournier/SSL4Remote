@@ -8,30 +8,37 @@ import rasterio
 import imagesize
 import numpy as np
 from rasterio.windows import Window, bounds, from_bounds
+from dl_toolbox.utils import MergeLabels, OneHot
+
+DATASET_DESC = {
+    'labels': [
+        (0, 'void'),
+        (1, 'bareland'),
+        (2, 'low vegetation'),
+        (3, 'water'),
+        (4, 'building'),
+        (5, 'high vegetation'),
+        (6, 'parking'),
+        (7, 'pedestrian'),
+        (8, 'road'),
+        (9, 'swimming pool'),
+        (10, 'railway')
+    ],
+    'percentile2': [0.0357, 0.0551, 0.0674],
+    'percentile98': [0.2945, 0.2734, 0.2662],
+}
 
 class DigitanieDs(Dataset):
-
-    labels_desc = [
-            (0, (255,255,255), 'void'),
-            (1, (34, 139, 34), 'bareland'),
-            (2, (35, 140, 35), 'grass'),
-            (3, (0, 0, 238), 'lake'),
-            (4, (238, 118, 33), 'building'),
-            (5, (0, 222, 137), 'high vegetation'),
-            (6, (38, 38, 38), 'parking'),
-            (7, (40, 40, 40), 'roadway'),
-            (8, (42, 42, 42), 'traffic lanes'),
-            (9, (160, 30, 230), 'sport venue'),
-            (10, (0, 0, 250), 'swimming pool'),
-            (11, (44, 44, 44), 'railway')]
 
     def __init__(
             self,
             image_path,
-            label_path,
             fixed_crops,
             crop_size,
             img_aug,
+            label_path=None,
+            merge_labels=None,
+            one_hot_labels=True,
             *args,
             **kwargs
             ):
@@ -42,6 +49,19 @@ class DigitanieDs(Dataset):
         self.crop_windows = None if not fixed_crops else list(get_tiles(*self.tile_size, crop_size))
         self.crop_size = crop_size
         self.img_aug = aug.get_transforms(img_aug)
+
+        self.merge_labels = merge_labels
+        if merge_labels is None:
+            self.labels, self.label_names = map(list, zip(*DATASET_DESC['labels']))
+            self.label_merger = None
+        else:
+            labels, self.label_names = merge_labels
+            self.labels = list(range(len(labels)))
+            self.label_merger = MergeLabels(labels)
+
+        self.one_hot_labels = one_hot_labels
+        if self.one_hot_labels:
+            self.one_hot = OneHot(self.labels)
 
     def __len__(self):
 
@@ -56,28 +76,21 @@ class DigitanieDs(Dataset):
             cy = np.random.randint(0, self.tile_size[1] - self.crop_size + 1)
             window = Window(cx, cy, self.crop_size, self.crop_size)
         
-#        with rasterio.open(self.label_path) as label_file:
-#            label = label_file.read(window=label_window, out_dtype=np.float32)
-#            window_bounds = bounds(label_window, label_file.transform)
-#        
-#        with rasterio.open(self.image_path) as image_file:
-#            image_window = from_bounds(*window_bounds, transform=image_file.transform)
-#            image = image_file.read(window=image_window, out_dtype=np.float32)
-
         with rasterio.open(self.image_path) as image_file:
-            image = image_file.read(window=window, out_dtype=np.float32)
+            image = image_file.read(window=window, out_dtype=np.float32)[:3, ...]
+        image = torch.from_numpy(image).float().contiguous()
+        
+        label = None
+        if self.label_path:
 
-        with rasterio.open(self.label_path) as label_file:
-            label = label_file.read(window=window, out_dtype=np.float32)
-        
-#        m = np.array([0.0357, 0.0551, 0.0674]
-#        M = np.array([0.2945, 0.2734, 0.2662])
-#        image = torch.from_numpy(minmax(image[:3,...], m, M)).float().contiguous()
-        image = torch.from_numpy(image[:3,...]).float().contiguous()
-        
-        onehot_masks = [(label==val).astype(float).squeeze() for val, _, _ in self.labels_desc]
-        label = torch.from_numpy(np.stack(onehot_masks, axis=0)).float().contiguous()
-        
+            with rasterio.open(self.label_path) as label_file:
+                label = label_file.read(window=window, out_dtype=np.float32)
+            if self.label_merger:
+                label = self.label_merger(label)
+            if self.one_hot:
+                label = self.one_hot(label)
+            label = torch.from_numpy(label).float().contiguous()
+
         if self.img_aug is not None:
             end_image, end_mask = self.img_aug(img=image, label=label)
         else:

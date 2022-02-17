@@ -61,11 +61,12 @@ class SegmentationImagesVisualisation(pl.Callback):
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
 
-        if trainer.global_step % 5000 == 0:
+        if trainer.global_step % 100 == 0:
 
-            self.display_batch(trainer, pl_module, outputs, 'Train')
+            self.display_batch(trainer, pl_module, outputs, batch_idx=0,
+                               prefix='Train')
             
-    def display_batch(self, trainer, pl_module, outputs, prefix):
+    def display_batch(self, trainer, pl_module, outputs, batch_idx, prefix):
 
         img, mask = outputs['batch']['image'].cpu(), outputs['batch']['mask'].cpu()
         orig_img = outputs['batch']['orig_image'].cpu()
@@ -93,14 +94,13 @@ class SegmentationImagesVisualisation(pl.Callback):
             out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
             final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
 
-            trainer.logger.experiment.add_image(f'Images/{prefix}_batch {idx}', final_grid, global_step=trainer.global_step)
+            trainer.logger.experiment.add_image(f'Images/{prefix}_batch_{batch_idx}_part_{idx}', final_grid, global_step=trainer.global_step)
 
     def on_validation_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
         """Called when the validation batch ends."""
-
-        if batch_idx == 1:
-
-            self.display_batch(trainer, pl_module, outputs, 'Val')
+        
+        if batch_idx % 4 == 0:
+            self.display_batch(trainer, pl_module, outputs, batch_idx=batch_idx, prefix='Val')
 

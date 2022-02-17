@@ -31,11 +31,11 @@ class SemcityBdsdDs(Dataset):
     def __init__(
         self,
         image_path,
-        label_path,
         tile,
         fixed_crops,
         crop_size,
         img_aug,
+        label_path=None,
         *args,
         **kwargs):
 
@@ -64,24 +64,24 @@ class SemcityBdsdDs(Dataset):
             cy = np.random.randint(self.tile.row_off, self.tile.row_off + self.tile.height - self.crop_size + 1)
             window = Window(cx, cy, self.crop_size, self.crop_size)
         
-        with rasterio.open(self.label_path) as label_file:
-            label = label_file.read(window=window, out_dtype=np.float32)
-        
+        label = None
+        if self.label_path:
+            with rasterio.open(self.label_path) as label_file:
+                label = label_file.read(window=window, out_dtype=np.float32)
+            onehot_masks = []
+            for _, color, _, _ in self.labels_desc:
+                d = label[0, :, :] == color[0]
+                d = np.logical_and(d, (label[1, :, :] == color[1]))
+                d = np.logical_and(d, (label[2, :, :] == color[2]))
+                onehot_masks.append(d.astype(float))
+            onehot = np.stack(onehot_masks, axis=0)
+            label = torch.from_numpy(np.stack(onehot_masks, axis=0)).float().contiguous()
+            
         with rasterio.open(self.image_path) as image_file:
             image = image_file.read(window=window, out_dtype=np.float32)
-        
         m, M = self.image_stats['min'][[3,2,1]], self.image_stats['max'][[3,2,1]]
         image = torch.from_numpy(minmax(image[[3,2,1],...], m, M)).float().contiguous()
 
-        onehot_masks = []
-        for _, color, _, _ in self.labels_desc:
-            d = label[0, :, :] == color[0]
-            d = np.logical_and(d, (label[1, :, :] == color[1]))
-            d = np.logical_and(d, (label[2, :, :] == color[2]))
-            onehot_masks.append(d.astype(float))
-        onehot = np.stack(onehot_masks, axis=0)
-        label = torch.from_numpy(np.stack(onehot_masks, axis=0)).float().contiguous()
-        
         if self.img_aug is not None:
             end_image, end_mask = self.img_aug(img=image, label=label)
         else:
