@@ -1,16 +1,15 @@
 import torch.nn as nn
 import copy
-from lightning_modules import SupervisedBaseline
+from dl_toolbox.lightning_modules import Unet
 import torch
-import augmentations as aug
+import dl_toolbox.augmentations as aug
 
-class MeanTeacher(SupervisedBaseline):
+class MeanTeacher(Unet):
 
     def __init__(self,
                  ema,
                  consistency_aug,
                  supervised_warmup,
-                 crop_size,
                  pseudo_labelling=False,
                  consistency_training=False,
                  do_semisup=False,
@@ -28,9 +27,8 @@ class MeanTeacher(SupervisedBaseline):
         self.pseudo_labelling = pseudo_labelling
         self.consistency_training = consistency_training
         self.consistency_aug = aug.get_transforms(consistency_aug)
-        self.crop_size = crop_size
         self.do_semisup = do_semisup
-
+        
         # Unsupervised leaning loss
         self.unsup_loss = nn.MSELoss(reduction='none')
         self.save_hyperparameters()
@@ -53,10 +51,11 @@ class MeanTeacher(SupervisedBaseline):
     def on_train_epoch_start(self) -> None:
 
         if self.do_semisup:
-            s = self.trainer.max_steps
-            b = self.trainer.datamodule.sup_batch_size
-            l = self.trainer.datamodule.epoch_len
-            m = s * b / l # max number of epochs
+            #s = self.trainer.max_steps
+            #b = self.trainer.datamodule.sup_batch_size
+            #l = self.trainer.datamodule.epoch_len
+            #m = s * b / l # max number of epochs
+            m = self.trainer.max_epoch            
             w = self.supervised_warmup
             e = self.trainer.current_epoch
             if e <= w:
@@ -108,11 +107,15 @@ class MeanTeacher(SupervisedBaseline):
 
         unsup_loss = 0
         if self.trainer.current_epoch > self.supervised_warmup:
+            
+            w_sup, h_sup = sup_batch['image'].shape[-1], sup_batch['image'].shape[-2]
+            w_unsup, h_unsup = unsup_batch['image'].shape[-1], unsup_batch['image'].shape[-2]
 
-            w, h = unsup_batch['image'].shape[-1], unsup_batch['image'].shape[-2]
-            i1 = torch.randint(0, h - self.crop_size + 1, size=(1, )).item()
-            j1 = torch.randint(0, w - self.crop_size + 1, size=(1, )).item()
-            unsup_inputs = unsup_batch['image'][..., i1:i1 + self.crop_size, j1:j1 + self.crop_size]
+            i1 = torch.randint(0, h_unsup - h_sup + 1, size=(1, )).item()
+            j1 = torch.randint(0, w_unsup - w_sup + 1, size=(1, )).item()
+            unsup_inputs = unsup_batch['image'][..., i1:i1 + h_sup, j1:j1 +
+                                                w_sup] 
+
             with torch.no_grad():
                 teacher_outputs = self.teacher_network(unsup_inputs)
 
@@ -131,17 +134,20 @@ class MeanTeacher(SupervisedBaseline):
 
                 unsup_loss += consistency_loss
 
-            if h != self.crop_size or w != self.crop_size:
+            if h_unsup != h_sup or w_unsup != w_sup:
 
-                i2 = torch.randint(0, h - self.crop_size + 1, size=(1, )).item()
-                j2 = torch.randint(0, w - self.crop_size + 1, size=(1, )).item()
-                student_crop =  unsup_batch['image'][..., i2:i2 + self.crop_size, j2:j2 + self.crop_size]
+                i2 = torch.randint(0, h_unsup - h_sup + 1, size=(1, )).item()
+                j2 = torch.randint(0, w_unsup - w_sup + 1, size=(1, )).item()
+                student_crop =  unsup_batch['image'][..., i2:i2 + h_sup, j2:j2 +
+                                                     w_sup]
                 student_outputs = self.student_network(student_crop)
 
                 min_i1, max_i1, min_j1, max_j1 = self.compute_intersection(i1, i2, j1, j2)
-                intersection_teacher = teacher_outputs[..., max_i1:self.crop_size+min_i1, max_j1:self.crop_size+min_j1]
+                intersection_teacher = teacher_outputs[..., max_i1:h_sup+min_i1,
+                                                       max_j1:w_sup+min_j1]
                 min_i2, max_i2, min_j2, max_j2 = self.compute_intersection(i2, i1, j2, j1)
-                intersection_student = student_outputs[..., max_i2:self.crop_size+min_i2, max_j2:self.crop_size+min_j2]
+                intersection_student = student_outputs[..., max_i2:h_sup+min_i2,
+                                                       max_j2:w_sup+min_j2]
 
                 translate_loss_no_reduce = self.unsup_loss(
                     intersection_student.softmax(dim=1),

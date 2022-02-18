@@ -61,7 +61,7 @@ class SegmentationImagesVisualisation(pl.Callback):
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
 
-        if trainer.global_step % 100 == 0:
+        if trainer.current_epoch % 10 == 0 and trainer.global_step % 100 == 0:
 
             self.display_batch(trainer, pl_module, outputs, batch_idx=0,
                                prefix='Train')
@@ -101,6 +101,6 @@ class SegmentationImagesVisualisation(pl.Callback):
     ) -> None:
         """Called when the validation batch ends."""
         
-        if batch_idx % 4 == 0:
+        if trainer.current_epoch % 10 == 0 and batch_idx % 10 == 0:
             self.display_batch(trainer, pl_module, outputs, batch_idx=batch_idx, prefix='Val')
 

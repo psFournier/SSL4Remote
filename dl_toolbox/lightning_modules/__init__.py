@@ -1,2 +1,2 @@
 from .supervised_baseline import Unet
-# from .mean_teacher import MeanTeacher
+from .mean_teacher import MeanTeacher

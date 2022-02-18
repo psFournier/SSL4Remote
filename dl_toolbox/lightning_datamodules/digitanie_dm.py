@@ -76,22 +76,22 @@ class DigitanieDm(LightningDataModule):
             merge_labels=(merges, self.class_names),
             one_hot_labels=True
         ) for tile in toulouse_tile_names]
-        datasets += [DigitanieDs(
-            image_path=os.path.join(
-                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
-            ),
-            label_path=os.path.join(
-                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
-            ),
-            fixed_crops=False,
-            crop_size=self.crop_size,
-            img_aug=self.img_aug,
-            merge_labels=(merges, self.class_names),
-            one_hot_labels=True
-        ) for city, city_lower in [
-            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
-                                                           'strasbourg')
-        ] for i in range(1, 9)]
+#        datasets += [DigitanieDs(
+#            image_path=os.path.join(
+#                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
+#            ),
+#            label_path=os.path.join(
+#                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
+#            ),
+#            fixed_crops=False,
+#            crop_size=self.crop_size,
+#            img_aug=self.img_aug,
+#            merge_labels=(merges, self.class_names),
+#            one_hot_labels=True
+#        ) for city, city_lower in [
+#            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
+#                                                           'strasbourg')
+#        ] for i in range(1, 9)]
         self.train_set = ConcatDataset(datasets)
 
         toulouse_tile_names = ['empalot', 'arenes']
@@ -104,22 +104,22 @@ class DigitanieDm(LightningDataModule):
             merge_labels=(merges, self.class_names),
             one_hot_labels=True
         ) for tile in toulouse_tile_names]
-        datasets += [DigitanieDs(
-            image_path=os.path.join(
-                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
-            ),
-            label_path=os.path.join(
-                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
-            ),
-            fixed_crops=True,
-            crop_size=self.crop_size,
-            img_aug=self.img_aug,
-            merge_labels=(merges, self.class_names),
-            one_hot_labels=True
-        ) for city, city_lower in [
-            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
-                                                           'strasbourg')
-        ] for i in range(9, 11)]
+#        datasets += [DigitanieDs(
+#            image_path=os.path.join(
+#                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
+#            ),
+#            label_path=os.path.join(
+#                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
+#            ),
+#            fixed_crops=True,
+#            crop_size=self.crop_size,
+#            img_aug=self.img_aug,
+#            merge_labels=(merges, self.class_names),
+#            one_hot_labels=True
+#        ) for city, city_lower in [
+#            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
+#                                                           'strasbourg')
+#        ] for i in range(9, 11)]
         self.val_set = ConcatDataset(datasets)
     
     def train_dataloader(self):
@@ -166,59 +166,62 @@ class DigitanieDm(LightningDataModule):
 
         return rgb_label
 
-#class DigitanieSemisupDm(DigitanieDm):
-#
-#    def __init__(
-#        self,
-#        unsup_batch_size,
-#        *args,
-#        **kwargs
-#    ):
-#        
-#        super().__init__(*args, **kwargs)
-#        self.unsup_batch_size = unsup_batch_size
-#
-#    @classmethod
-#    def add_model_sepcific_args(cls, parent_parser):
-#
-#        parser = super().add_model_specific_args(parent_parser)
-#        parser.add_argument("--unsup_batch_size", type=int, default=16)
-#
-#        return parser
-#
-#    def setup(self, stage=None):
-#
-#        super().setup()
-#        self.unsup_train_set = DigitanieDs(
-#            image_path=os.path.join(self.data_path, 'Toulouse', 'normalized_mergedTO')
-#            fixed_crops=False,
-#            crop_size=128,
-#            img_aug=self.img_aug
-#        )
-#
-#    def train_dataloader(self):
-#
-#        train_dataloader = super().train_dataloader()
-#        unsup_train_sampler = RandomSampler(
-#            data_source=self.unsup_train_set,
-#            replacement=True,
-#            num_samples=self.epoch_len
-#        )
-#
-#        unsup_train_dataloader = DataLoader(
-#            dataset=self.unsup_train_set,
-#            batch_size=self.unsup_batch_size,
-#            sampler=unsup_train_sampler,
-#            collate_fn=CustomCollate(),
-#            num_workers=self.num_workers,
-#            pin_memory=True,
-#            worker_init_fn=worker_init_function
-#        )
-#
-#        train_dataloaders = {
-#            "sup": train_dataloader,
-#            "unsup": unsup_train_dataloader
-#        }
-#
-#        return train_dataloaders 
-#
+class DigitanieSemisupDm(DigitanieDm):
+
+    def __init__(
+        self,
+        unsup_batch_size,
+        unsup_crop_size,
+        *args,
+        **kwargs
+    ):
+        
+        super().__init__(*args, **kwargs)
+        self.unsup_batch_size = unsup_batch_size
+        self.unsup_crop_size = unsup_crop_size
+
+    @classmethod
+    def add_model_sepcific_args(cls, parent_parser):
+
+        parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument("--unsup_batch_size", type=int, default=16)
+        parser.add_argument("--unsup_crop_size", type=int, default=160)
+        return parser
+
+    def setup(self, stage=None):
+
+        super().setup()
+        self.unsup_train_set = DigitanieDs(
+            image_path=os.path.join(self.data_path, 'Toulouse',
+                                    'normalized_mergedTO'),
+            fixed_crops=False,
+            crop_size=self.unsup_crop_size,
+            img_aug=self.img_aug
+        )
+
+    def train_dataloader(self):
+
+        train_dataloader = super().train_dataloader()
+        unsup_train_sampler = RandomSampler(
+            data_source=self.unsup_train_set,
+            replacement=True,
+            num_samples=self.epoch_len
+        )
+
+        unsup_train_dataloader = DataLoader(
+            dataset=self.unsup_train_set,
+            batch_size=self.unsup_batch_size,
+            sampler=unsup_train_sampler,
+            collate_fn=CustomCollate(),
+            num_workers=self.num_workers,
+            pin_memory=True,
+            worker_init_fn=worker_init_function
+        )
+
+        train_dataloaders = {
+            "sup": train_dataloader,
+            "unsup": unsup_train_dataloader
+        }
+
+        return train_dataloaders 
+
