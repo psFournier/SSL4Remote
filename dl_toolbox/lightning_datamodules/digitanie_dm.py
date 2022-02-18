@@ -181,7 +181,7 @@ class DigitanieSemisupDm(DigitanieDm):
         self.unsup_crop_size = unsup_crop_size
 
     @classmethod
-    def add_model_sepcific_args(cls, parent_parser):
+    def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--unsup_batch_size", type=int, default=16)
@@ -193,7 +193,7 @@ class DigitanieSemisupDm(DigitanieDm):
         super().setup()
         self.unsup_train_set = DigitanieDs(
             image_path=os.path.join(self.data_path, 'Toulouse',
-                                    'normalized_mergedTO'),
+                                    'normalized_mergedTO.tif'),
             fixed_crops=False,
             crop_size=self.unsup_crop_size,
             img_aug=self.img_aug
