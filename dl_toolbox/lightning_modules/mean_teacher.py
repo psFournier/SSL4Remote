@@ -42,9 +42,9 @@ class MeanTeacher(Unet):
         parser.add_argument("--ema", type=float, default=0.95)
         parser.add_argument("--do_semisup", action='store_true')
         parser.add_argument("--consistency_training", action='store_true')
-        parser.add_argument('--consistency_aug', type=str)
+        parser.add_argument('--consistency_aug', type=str, default='no')
         parser.add_argument('--pseudo_labelling', action='store_true')
-        parser.add_argument("--supervised_warmup", type=int, default=20)
+        parser.add_argument("--supervised_warmup", type=int, default=10)
 
         return parser
 
@@ -55,7 +55,7 @@ class MeanTeacher(Unet):
             #b = self.trainer.datamodule.sup_batch_size
             #l = self.trainer.datamodule.epoch_len
             #m = s * b / l # max number of epochs
-            m = self.trainer.max_epoch            
+            m = self.trainer.max_epochs           
             w = self.supervised_warmup
             e = self.trainer.current_epoch
             if e <= w:
