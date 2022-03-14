@@ -60,10 +60,10 @@ class MeanTeacher(Unet):
             e = self.trainer.current_epoch
             if e <= w:
                 self.alpha = 0
-            elif e <= 0.5 * m:
-                self.alpha = ((e - w) / (0.5 * m - w)) * 0.9
+            elif e <= 0.7 * m:
+                self.alpha = ((e - w) / (0.7 * m - w)) * 1000
             else:
-                self.alpha = 0.9
+                self.alpha = 1000
         else:
             self.alpha = 0
 
@@ -171,6 +171,6 @@ class MeanTeacher(Unet):
 
         self.update_teacher()
         self.log('Prop unsup train', self.alpha)
-        loss = (1 - self.alpha) * sup_loss + self.alpha * unsup_loss
+        loss = sup_loss + self.alpha * unsup_loss
 
         return {'batch': sup_batch, 'logits': sup_logits, "loss": loss}
