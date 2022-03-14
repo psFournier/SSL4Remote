@@ -65,61 +65,63 @@ class DigitanieDm(LightningDataModule):
                         (238,118,33), (0,222,137), (118,118,118), (48,48,48), (38,38,38), (33,203,220),
                         (112, 53,0)]
 
-        toulouse_tile_names = ['bagatelle', 'cepiere', 'lardenne', 'minimes', 'mirail',
+        tlse_train = ['bagatelle', 'cepiere', 'lardenne', 'minimes', 'mirail',
                       'montaudran', 'zenith', 'ramier']
-        datasets = [DigitanieDs(
-            image_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_img_c.tif'),
-            label_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_c.tif'),
-            fixed_crops=False,
-            crop_size=self.crop_size,
-            img_aug=self.img_aug,
-            merge_labels=(merges, self.class_names),
-            one_hot_labels=True
-        ) for tile in toulouse_tile_names]
-#        datasets += [DigitanieDs(
-#            image_path=os.path.join(
-#                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
-#            ),
-#            label_path=os.path.join(
-#                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
-#            ),
-#            fixed_crops=False,
-#            crop_size=self.crop_size,
-#            img_aug=self.img_aug,
-#            merge_labels=(merges, self.class_names),
-#            one_hot_labels=True
-#        ) for city, city_lower in [
-#            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
-#                                                           'strasbourg')
-#        ] for i in range(1, 9)]
+        other_train = [f'tuile_{i}' for i in range(1, 9)]
+        
+        datasets = [
+            DigitanieDs(
+                image_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_img_c.tif'
+                ),
+                label_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_c.tif'
+                ),
+                fixed_crops=False,
+                crop_size=self.crop_size,
+                img_aug=self.img_aug,
+                merge_labels=(merges, self.class_names),
+                one_hot_labels=True
+            ) for city, city_lower, tile_names in [
+                ('Toulouse', 'tlse', tlse_train),
+                ('Paris', 'paris', other_train), 
+                ('Biarritz', 'biarritz', other_train), 
+                ('Strasbourg', 'strasbourg', other_train)
+            ] for tile in tile_names
+        ]
         self.train_set = ConcatDataset(datasets)
 
-        toulouse_tile_names = ['empalot', 'arenes']
-        datasets = [DigitanieDs(
-            image_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_img_c.tif'),
-            label_path=os.path.join(self.data_path, 'Toulouse', f'tlse_{tile}_c.tif'),
-            fixed_crops=True,
-            crop_size=self.crop_size,
-            img_aug=None,
-            merge_labels=(merges, self.class_names),
-            one_hot_labels=True
-        ) for tile in toulouse_tile_names]
-#        datasets += [DigitanieDs(
-#            image_path=os.path.join(
-#                self.data_path, city, city_lower+f'_tuile_{i}_img_c.tif'
-#            ),
-#            label_path=os.path.join(
-#                self.data_path, city, city_lower+f'_tuile_{i}_c.tif'
-#            ),
-#            fixed_crops=True,
-#            crop_size=self.crop_size,
-#            img_aug=self.img_aug,
-#            merge_labels=(merges, self.class_names),
-#            one_hot_labels=True
-#        ) for city, city_lower in [
-#            ('Paris', 'paris'), ('Biarritz', 'biarritz'), ('Strasbourg',
-#                                                           'strasbourg')
-#        ] for i in range(9, 11)]
+        tlse_test = ['empalot', 'arenes']
+        other_test = [f'tuile_{i}' for i in range(9, 11)]
+
+        datasets = [
+            DigitanieDs(
+                image_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_img_c.tif'
+                ),
+                label_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_c.tif'
+                ),
+                fixed_crops=True,
+                crop_size=self.crop_size,
+                img_aug=self.img_aug,
+                merge_labels=(merges, self.class_names),
+                one_hot_labels=True
+            ) for city, city_lower, tile_names in [
+                ('Toulouse', 'tlse', tlse_test),
+                ('Paris', 'paris', other_test), 
+                ('Biarritz', 'biarritz', other_test), 
+                ('Strasbourg', 'strasbourg', other_test)
+            ] for tile in tile_names
+        ]
         self.val_set = ConcatDataset(datasets)
     
     def train_dataloader(self):
