@@ -47,7 +47,7 @@ class DigitanieDm(LightningDataModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_path", type=str)
         parser.add_argument("--splitfile_path", type=str)
-        parser.add_argument("--test_fold", type=str)
+        parser.add_argument("--test_fold", type=int)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--sup_batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -76,24 +76,27 @@ class DigitanieDm(LightningDataModule):
         validation_datasets = []
         with open(self.splitfile_path, newline='') as splitfile:
             reader = csv.reader(splitfile)
+            next(reader)
             for row in reader:
+                is_val = int(row[8])==self.test_fold
                 dataset = DigitanieDs(
                     image_path=row[2],
                     label_path=row[3],
-                    fixed_crops=int(row[8])==self.test_fold,
-                    col_offset=row[4],
-                    row_offset=row[5],
-                    tile_size=(row[6], row[7])
+                    fixed_crops=is_val,
+                    col_offset=int(row[4]),
+                    row_offset=int(row[5]),
+                    tile_size=(int(row[6]), int(row[7])),
                     crop_size=self.crop_size,
                     img_aug=self.img_aug,
                     merge_labels=(merges, self.class_names),
                     one_hot_labels=True
                 )
-                if int(row[8]) == self.test_fold:
-                    validation_datasets += dataset
+                if is_val:
+                    validation_datasets.append(dataset)
                 else:
-                    train_datasets += dataset
-
+                    train_datasets.append(dataset)
+        print(len(train_datasets))
+        print(len(validation_datasets))
         self.train_set = ConcatDataset(train_datasets)
         self.val_set = ConcatDataset(validation_datasets)
 
