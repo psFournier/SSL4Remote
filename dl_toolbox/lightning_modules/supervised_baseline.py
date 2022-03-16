@@ -14,12 +14,11 @@ import torch.nn.functional as F
 class Unet(pl.LightningModule):
 
     def __init__(self,
-                 encoder='efficientnet-b0',
-                 pretrained=False,
-                 in_channels=3,
-                 num_classes=2,
-                 learning_rate=0.001,
-                 lr_milestones=(100,),
+                 encoder,
+                 pretrained,
+                 in_channels,
+                 num_classes,
+                 learning_rate,
                  *args,
                  **kwargs):
 
@@ -49,12 +48,11 @@ class Unet(pl.LightningModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--num_classes", type=int, default=2)
-        parser.add_argument("--in_channels", type=int, default=3)
+        parser.add_argument("--num_classes", type=int)
+        parser.add_argument("--in_channels", type=int)
         parser.add_argument("--pretrained", action='store_true')
-        parser.add_argument("--encoder", type=str, default='efficientnet-b0')
-        parser.add_argument("--learning_rate", type=float, default=5e-2)
-        parser.add_argument("--lr_milestones", nargs='+', type=int, default=[100])
+        parser.add_argument("--encoder", type=str)
+        parser.add_argument("--learning_rate", type=float)
 
         return parser
 
@@ -113,7 +111,7 @@ class Unet(pl.LightningModule):
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
-        return loss1, loss2, loss1 + 2*loss2
+        return loss1, loss2, loss1 + loss2
 
     def compute_metrics(self, preds, labels):
 
@@ -174,9 +172,7 @@ class Unet(pl.LightningModule):
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
         self.log_metric_per_class(mode='Val', metrics={'iou': iou})
-        self.log(f'Val_iou', torch.mean(iou))
         self.log(f'Val_acc', accuracy)
-        # self.log('epoch', self.trainer.current_epoch)
 
         return {'batch': batch, 'logits': logits, 'iou': iou, 'accuracy' : accuracy}
 
