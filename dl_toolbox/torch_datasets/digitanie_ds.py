@@ -59,6 +59,8 @@ class DigitanieDs(Dataset):
             col_offset = self.col_offset,
             row_offset = self.row_offset
         ))
+	print(self.tile_size)
+	print(self.crop_windows)
         self.img_aug = aug.get_transforms(img_aug)
 
         self.merge_labels = merge_labels
@@ -85,6 +87,7 @@ class DigitanieDs(Dataset):
         else:
             cx = self.col_offset + np.random.randint(0, self.tile_size[0] - self.crop_size + 1)
             cy = self.row_offset + np.random.randint(0, self.tile_size[1] - self.crop_size + 1)
+	    print(cx, cy)
             window = Window(cx, cy, self.crop_size, self.crop_size)
         
         with rasterio.open(self.image_path) as image_file:
