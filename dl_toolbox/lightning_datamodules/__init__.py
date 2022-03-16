@@ -5,5 +5,4 @@
 #from lightning_datamodules.phr_pan_dm import PhrPanDm, PhrPanDmSemisup
 #from lightning_datamodules.phr_pan_ndvi_dm import PhrPanNdviDm, PhrPanNdviDmSemisup
 from .semcity_bdsd_dm import SemcityBdsdDm
-#from .digitanie_dm import DigitanieDm, DigitanieSemisupDm
-from .digitanie_from_textfile import DigitanieDm
+from .digitanie_dm import DigitanieDm, DigitanieSemisupDm

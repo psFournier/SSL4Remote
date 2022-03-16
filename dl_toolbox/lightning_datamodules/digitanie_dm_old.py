@@ -1,6 +1,5 @@
 from argparse import ArgumentParser
 import os
-import csv
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
@@ -17,8 +16,6 @@ class DigitanieDm(LightningDataModule):
 
     def __init__(self,
                  data_path,
-                 splitfile_path,
-                 test_fold,
                  crop_size,
                  epoch_len,
                  sup_batch_size,
@@ -31,8 +28,6 @@ class DigitanieDm(LightningDataModule):
 
         super().__init__()
         self.data_path = data_path
-        self.splitfile_path = splitfile_path
-        self.test_fold = test_fold
         self.crop_size = crop_size
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
@@ -46,8 +41,6 @@ class DigitanieDm(LightningDataModule):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_path", type=str)
-        parser.add_argument("--splitfile_path", type=str)
-        parser.add_argument("--test_fold", type=int)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--sup_batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -71,35 +64,66 @@ class DigitanieDm(LightningDataModule):
         self.label_colors = [(255,255,255), (184,141,21), (34,139,34), (0,0,238),
                         (238,118,33), (0,222,137), (118,118,118), (48,48,48), (38,38,38), (33,203,220),
                         (112, 53,0)]
-        
-        train_datasets = []
-        validation_datasets = []
-        with open(self.splitfile_path, newline='') as splitfile:
-            reader = csv.reader(splitfile)
-            next(reader)
-            for row in reader:
-                is_val = int(row[8])==self.test_fold
-                dataset = DigitanieDs(
-                    image_path=row[2],
-                    label_path=row[3],
-                    fixed_crops=is_val,
-                    col_offset=int(row[4]),
-                    row_offset=int(row[5]),
-                    tile_size=(int(row[6]), int(row[7])),
-                    crop_size=self.crop_size,
-                    img_aug=self.img_aug,
-                    merge_labels=(merges, self.class_names),
-                    one_hot_labels=True
-                )
-                if is_val:
-                    validation_datasets.append(dataset)
-                else:
-                    train_datasets.append(dataset)
-        print(len(train_datasets))
-        print(len(validation_datasets))
-        self.train_set = ConcatDataset(train_datasets)
-        self.val_set = ConcatDataset(validation_datasets)
 
+        tlse_train = ['bagatelle', 'cepiere', 'lardenne', 'minimes', 'mirail',
+                      'montaudran', 'zenith', 'ramier']
+        other_train = [f'tuile_{i}' for i in range(1, 9)]
+        
+        datasets = [
+            DigitanieDs(
+                image_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_img_c.tif'
+                ),
+                label_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_c.tif'
+                ),
+                fixed_crops=False,
+                crop_size=self.crop_size,
+                img_aug=self.img_aug,
+                merge_labels=(merges, self.class_names),
+                one_hot_labels=True
+            ) for city, city_lower, tile_names in [
+                ('Toulouse', 'tlse', tlse_train),
+                ('Paris', 'paris', other_train), 
+                ('Biarritz', 'biarritz', other_train), 
+                ('Strasbourg', 'strasbourg', other_train)
+            ] for tile in tile_names
+        ]
+        self.train_set = ConcatDataset(datasets)
+
+        tlse_test = ['empalot', 'arenes']
+        other_test = [f'tuile_{i}' for i in range(9, 11)]
+
+        datasets = [
+            DigitanieDs(
+                image_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_img_c.tif'
+                ),
+                label_path=os.path.join(
+                    self.data_path, 
+                    city, 
+                    city_lower+f'_{tile}_c.tif'
+                ),
+                fixed_crops=True,
+                crop_size=self.crop_size,
+                img_aug=self.img_aug,
+                merge_labels=(merges, self.class_names),
+                one_hot_labels=True
+            ) for city, city_lower, tile_names in [
+                ('Toulouse', 'tlse', tlse_test),
+                ('Paris', 'paris', other_test), 
+                ('Biarritz', 'biarritz', other_test), 
+                ('Strasbourg', 'strasbourg', other_test)
+            ] for tile in tile_names
+        ]
+        self.val_set = ConcatDataset(datasets)
+    
     def train_dataloader(self):
 
         train_sampler = RandomSampler(

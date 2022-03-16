@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import os
+import csv
 
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
@@ -16,8 +17,10 @@ from dl_toolbox.torch_datasets import SemcityBdsdDs
 class SemcityBdsdDm(LightningDataModule):
 
     def __init__(self,
-                 image_path,
-                 label_path,
+                 splitfile_path,
+                 #image_path,
+                 #label_path,
+                 test_fold,
                  crop_size,
                  epoch_len,
                  sup_batch_size,
@@ -29,9 +32,11 @@ class SemcityBdsdDm(LightningDataModule):
                  **kwargs):
 
         super().__init__()
-        self.image_path = image_path
+        #self.image_path = image_path
+        self.splitfile_path = splitfile_path
+        self.test_fold = test_fold
         self.class_names = [label[2] for label in SemcityBdsdDs.labels_desc]
-        self.label_path = label_path
+        #self.label_path = label_path
         self.crop_size = crop_size
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
@@ -44,7 +49,9 @@ class SemcityBdsdDm(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--data_path", type=str)
+        parser.add_argument("--splitfile_path", type=str)
+        parser.add_argument("--test_fold", type=int)
+        #parser.add_argument("--data_path", type=str)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--sup_batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -60,33 +67,36 @@ class SemcityBdsdDm(LightningDataModule):
         pass
 
     def setup(self, stage=None):
-        
-        image_path = os.path.join(self.data_path, 'BDSD_M_3_4_7_8.tif')
-        label_path = os.path.join(self.data_path, 'GT_3_4_7_8.tif')
-        w, h = imagesize.get(image_path)
-        train_val_tiles = list(get_tiles(w, h, size=876, size2=863))
-        train_tiles = train_val_tiles[::3] + train_val_tiles[1::3]
-        val_tiles = train_val_tiles[2::3]
-        
-        train_tiles_datasets = [SemcityBdsdDs(
-                image_path=image_path,
-                label_path=label_path,
-                tile=tile,
-                fixed_crops=False,
-                crop_size=self.crop_size,
-                img_aug=self.img_aug
-            ) for tile in train_tiles]
-        self.train_set = ConcatDataset(train_tiles_datasets)
+         
+        train_datasets = []
+        validation_datasets = []
+        with open(self.splitfile_path, newline='') as splitfile:
+            reader = csv.reader(splitfile)
+            next(reader) # skipping header
+            for row in reader:
+                is_val = int(row[8])==self.test_fold
+                window = Window(
+                    col_off=int(row[4]),
+                    row_off=int(row[5]),
+                    width=int(row[6]),
+                    height=int(row[7])
+                )
+                dataset = SemcityBdsdDs(
+                    image_path=row[2],
+                    label_path=row[3],
+                    fixed_crops=is_val,
+                    tile=window,
+                    crop_size=self.crop_size,
+                    img_aug=self.img_aug
+                )
+                if is_val:
+                    validation_datasets.append(dataset)
+                else:
+                    train_datasets.append(dataset)
 
-        val_tiles_datasets = [SemcityBdsdDs(
-                image_path=image_path,
-                label_path=label_path,
-                tile=tile,
-                fixed_crops=True,
-                crop_size=self.crop_size,
-                img_aug=self.img_aug
-            ) for tile in val_tiles]
-        self.val_set = ConcatDataset(val_tiles_datasets)
+        
+        self.train_set = ConcatDataset(train_datasets)
+        self.val_set = ConcatDataset(validation_datasets)
 
     def train_dataloader(self):
 

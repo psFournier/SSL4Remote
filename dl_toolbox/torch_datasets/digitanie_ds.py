@@ -12,8 +12,8 @@ from dl_toolbox.utils import MergeLabels, OneHot
 
 DATASET_DESC = {
     'labels': [
-        (0, 'void'),
-        (1, 'bareland'),
+        (0, 'other'),
+        (1, 'bare ground'),
         (2, 'low vegetation'),
         (3, 'water'),
         (4, 'building'),
@@ -21,8 +21,8 @@ DATASET_DESC = {
         (6, 'parking'),
         (7, 'pedestrian'),
         (8, 'road'),
-        (9, 'swimming pool'),
-        (10, 'railway')
+        #(9, 'swimming pool'),
+        (9, 'railways')
     ],
     'percentile2': [0.0357, 0.0551, 0.0674],
     'percentile98': [0.2945, 0.2734, 0.2662],
@@ -33,12 +33,13 @@ class DigitanieDs(Dataset):
     def __init__(
             self,
             image_path,
+            tile,
             fixed_crops,
             crop_size,
             img_aug,
-            col_offset=0,
-            row_offset=0,
-            tile_size=None,
+            #col_offset=0,
+            #row_offset=0,
+            #tile_size=None,
             label_path=None,
             merge_labels=None,
             one_hot_labels=True,
@@ -48,19 +49,14 @@ class DigitanieDs(Dataset):
 
         self.image_path = image_path
         self.label_path = label_path
-        self.tile_size = imagesize.get(image_path) if not tile_size else tile_size
-        self.col_offset = col_offset
-        self.row_offset = row_offset
+        self.tile = tile
+        self.crop_windows = list(get_tiles(
+            nols=tile.width, 
+            nrows=tile.height, 
+            size=crop_size, 
+            row_offset=tile.row_off, 
+            col_offset=tile.col_off)) if fixed_crops else None
         self.crop_size = crop_size
-        self.crop_windows = None if not fixed_crops else list(get_tiles(
-            nols = self.tile_size[0],
-            nrows = self.tile_size[1],
-            size = self.crop_size,
-            col_offset = self.col_offset,
-            row_offset = self.row_offset
-        ))
-	print(self.tile_size)
-	print(self.crop_windows)
         self.img_aug = aug.get_transforms(img_aug)
 
         self.merge_labels = merge_labels
@@ -85,9 +81,8 @@ class DigitanieDs(Dataset):
         if self.crop_windows:
             window = self.crop_windows[idx]
         else:
-            cx = self.col_offset + np.random.randint(0, self.tile_size[0] - self.crop_size + 1)
-            cy = self.row_offset + np.random.randint(0, self.tile_size[1] - self.crop_size + 1)
-	    print(cx, cy)
+            cx = self.tile.col_off + np.random.randint(0, self.tile.width - self.crop_size + 1)
+            cy = self.tile.row_off + np.random.randint(0, self.tile.height - self.crop_size + 1)
             window = Window(cx, cy, self.crop_size, self.crop_size)
         
         with rasterio.open(self.image_path) as image_file:
@@ -115,3 +110,20 @@ class DigitanieDs(Dataset):
                 'image':end_image,
                 'window':window,
                 'mask':end_mask}
+
+def main():
+
+    dataset = DigitanieDs(
+        image_path='/work/OT/ai4geo/DATA/DATASETS/DIGITANIE/Toulouse/toulouse_tuile_7_img_normalized.tif',
+        label_path='/work/OT/ai4geo/DATA/DATASETS/DIGITANIE/Toulouse/toulouse_tuile_7.tif',
+        crop_size=256,
+        img_aug='no',
+        tile=Window(col_off=500, row_off=502, width=400, height=400),
+        fixed_crops=True
+    )
+
+    for data in dataset:
+        print(data['window'])
+
+if __name__ == '__main__':
+    main()

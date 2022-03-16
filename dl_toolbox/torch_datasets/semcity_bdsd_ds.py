@@ -36,6 +36,8 @@ class SemcityBdsdDs(Dataset):
         crop_size,
         img_aug,
         label_path=None,
+        merge_labels=None,
+        one_hot_labels=True,
         *args,
         **kwargs):
 
@@ -60,8 +62,8 @@ class SemcityBdsdDs(Dataset):
         if self.crop_windows:
             window = self.crop_windows[idx]
         else:
-            cx = np.random.randint(self.tile.col_off, self.tile.col_off + self.tile.width - self.crop_size + 1)
-            cy = np.random.randint(self.tile.row_off, self.tile.row_off + self.tile.height - self.crop_size + 1)
+            cx = self.tile.col_off + np.random.randint(0, self.tile.width - self.crop_size + 1)
+            cy = self.tile_row_off + np.random.randint(0, self.tile.height - self.crop_size + 1)
             window = Window(cx, cy, self.crop_size, self.crop_size)
         
         label = None
