@@ -42,7 +42,6 @@ class Unet(pl.LightningModule):
         # loss works properly by just masking preds and labels
         self.dice_loss = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
         self.save_hyperparameters()
-        self.lr_milestones = lr_milestones
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
