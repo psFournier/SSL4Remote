@@ -2,11 +2,11 @@ from argparse import ArgumentParser
 from torch.utils.data import DataLoader
 import torch
 import imagesize
-# from omegaconf import OmegaConf
 import numpy as np
 import rasterio
+from rasterio.windows import Window
 from torch import nn
-from torch_datasets import SemcityBdsdDs
+from torch_datasets import SemcityBdsdDs, DigitanieDs
 from torch_collate import CollateDefault
 from lightning_modules import SupervisedBaseline
 from utils import worker_init_function
@@ -44,13 +44,12 @@ def main():
     # Optional arguments (label file for metrics computation + forward and tta paramters)
     parser.add_argument("--label_path", type=str, default=None)
     parser.add_argument("--tta", nargs='+', type=str, default=[])
-    parser.add_argument("--batch_size", type=int, default=32)
-    parser.add_argument("--workers", default=8, type=int)
-    parser.add_argument("--num_classes", default=7, type=int)
-    parser.add_argument("--in_channels", default=3, type=int)
-    parser.add_argument("--tile_size", nargs=2, type=int, default=[128, 128])
-    parser.add_argument("--crop_size", type=int, default=128)
-    parser.add_argument("--tile_step", nargs=2, type=int,default=[128, 128])
+    parser.add_argument("--batch_size", type=int)
+    parser.add_argument("--workers", type=int)
+    parser.add_argument("--num_classes", type=int)
+    parser.add_argument("--in_channels", type=int)
+    parser.add_argument("--crop_size", type=int)
+    parser.add_argument("--crop_step", type=int)
 
     args = parser.parse_args()
 
@@ -69,13 +68,16 @@ def main():
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
     module.to(device)
-
-    dataset = SemcityBdsdDs(
+    
+    width, height = imagesize.get(args.image_path)
+    tile = Window(row_off=0, col_off=0, width=width, height=height)
+    dataset = DigitanieDs(
         image_path=args.image_path,
         label_path=args.label_path,
-        tile_size=args.tile_size,
-        tile_step=args.tile_step,
+        tile=tile,
+        fixed_crops=True,
         crop_size=args.crop_size,
+        crop_step=args.crop_step,
     )
 
     # The collate function is needed to process the read windows from
@@ -91,7 +93,6 @@ def main():
     )
 
     # The full matrix used to cumulate results from overlapping tiles or tta
-    width, height = imagesize.get(args.image_path)
     pred_sum = torch.zeros(size=(module.num_classes, height, width))
     metrics = {'accuracy': []}
 
@@ -122,17 +123,11 @@ def main():
         windows = get_tiles(
             nols=width,
             nrows=height,
-            width=128,
-            height=128,
-            col_step=128,
-            row_step=128
+            size=128,
+            step=128
         )
         for window in list(windows)[2::3]:
-            labels_rgb = rasterio.open(args.label_path).read(window=window, out_dtype=np.float32)
-            labels_onehot = torch.from_numpy(SemcityBdsdDs.to_onehot(labels_rgb)).contiguous()
-            window_labels = torch.argmax(labels_onehot, dim=0).long()
-            # test_labels[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] = labels
-
+            window_labels = rasterio.open(args.label_path).read(window=window, out_dtype=np.float32)
             window_preds = preds[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height]
             accuracy = M.accuracy(torch.unsqueeze(window_preds, 0),
                                   torch.unsqueeze(window_labels, 0),
@@ -163,7 +158,7 @@ def main():
                 row_step=128
         ):
             pred = preds[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height]
-            for val, color, _, _ in SemcityBdsdDs.labels_desc:
+            for val, color in enumerate(DATASET_DESC['label_colors']):
                 mask = pred == val
                 preds_rgb[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height, :][mask] = torch.tensor(color, dtype=torch.int)
         preds_rgb = preds_rgb.numpy().astype(np.uint8)

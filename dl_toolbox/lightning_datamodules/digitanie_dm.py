@@ -111,6 +111,7 @@ class DigitanieDm(LightningDataModule):
                     fixed_crops=is_val,
                     tile=window,
                     crop_size=self.crop_size,
+                    crop_step=self.crop_size,
                     img_aug=aug,
                     merge_labels=(merges, self.class_names),
                     one_hot_labels=True

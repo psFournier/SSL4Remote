@@ -26,6 +26,19 @@ DATASET_DESC = {
     ],
     'percentile2': [0.0357, 0.0551, 0.0674],
     'percentile98': [0.2945, 0.2734, 0.2662],
+    'label_colors' : [
+        (255,255,255), 
+        (184,141,21), 
+        (34,139,34), 
+        (0,0,238),
+        (238,118,33), 
+        (0,222,137), 
+        (118,118,118), 
+        (48,48,48), 
+        (38,38,38), 
+        #(33,203,220),
+        (112, 53,0)]
+
 }
 
 class DigitanieDs(Dataset):
@@ -36,6 +49,7 @@ class DigitanieDs(Dataset):
             tile,
             fixed_crops,
             crop_size,
+            crop_step,
             img_aug,
             #col_offset=0,
             #row_offset=0,
@@ -54,6 +68,7 @@ class DigitanieDs(Dataset):
             nols=tile.width, 
             nrows=tile.height, 
             size=crop_size, 
+            step=crop_step,
             row_offset=tile.row_off, 
             col_offset=tile.col_off)) if fixed_crops else None
         self.crop_size = crop_size
