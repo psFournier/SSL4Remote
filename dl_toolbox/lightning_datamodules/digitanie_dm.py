@@ -98,6 +98,7 @@ class DigitanieDm(LightningDataModule):
             next(reader)
             for row in reader:
                 is_val = int(row[8])==self.test_fold
+                aug = 'no' if is_val else self.img_aug
                 window = Window(
                     col_off=int(row[4]),
                     row_off=int(row[5]),
@@ -110,7 +111,7 @@ class DigitanieDm(LightningDataModule):
                     fixed_crops=is_val,
                     tile=window,
                     crop_size=self.crop_size,
-                    img_aug=self.img_aug,
+                    img_aug=aug,
                     merge_labels=(merges, self.class_names),
                     one_hot_labels=True
                 )
