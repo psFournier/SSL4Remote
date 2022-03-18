@@ -5,7 +5,7 @@ from pytorch_lightning.profiler import SimpleProfiler
 from pytorch_lightning.loggers import TensorBoardLogger
 from dl_toolbox.lightning_modules import Unet
 from dl_toolbox.lightning_datamodules import DigitanieDm
-from dl_toolbox.callbacks import SegmentationImagesVisualisation, ConfMatLogger
+from dl_toolbox.callbacks import SegmentationImagesVisualisation, ConfMatLogger, CustomSwa
 
 
 def main():
@@ -26,8 +26,15 @@ def main():
         profiler=SimpleProfiler(),
         callbacks=[
             ModelCheckpoint(monitor='Val_Dice', mode='min'),
+            ModelCheckpoint(),
             SegmentationImagesVisualisation(),
             ConfMatLogger(),
+            CustomSwa(
+                swa_epoch_start=0.8,
+                swa_lrs=0.05,
+                annealing_epochs=10,
+                annealing_strategy='linear'
+            )
         ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,

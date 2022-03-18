@@ -79,8 +79,8 @@ class Unet(pl.LightningModule):
             m = self.trainer.max_epochs
             if epoch < 0.4*m:
                 return 1
-            elif 0.4*m <= epoch <= 0.9*m:
-                return 1 + ((epoch - 0.4*m) / (0.9*m - 0.4*m)) * (0.01 - 1)
+            elif 0.4*m <= epoch <= 0.8*m:
+                return 1 + ((epoch - 0.4*m) / (0.8*m - 0.4*m)) * (0.01 - 1)
             else:
                 return 0.01
 
