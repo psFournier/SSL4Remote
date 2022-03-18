@@ -20,10 +20,13 @@ class CustomSwa(StochasticWeightAveraging):
         dataloader_idx: int,
     ):
 
-        if trainer.current_epoch < self._swa_epoch_start:
+        if trainer.current_epoch <= self._swa_epoch_start:
             swa_iou = outputs['iou']
             swa_accuracy = outputs['accuracy']
         else:
+            print(self._average_model.device)
+            print(pl_module.device)
+            print(self._device)
             inputs = batch['image']
             swa_logits = self._average_model.network(inputs.to(pl_module.device))
             swa_preds = swa_logits.argmax(dim=1)

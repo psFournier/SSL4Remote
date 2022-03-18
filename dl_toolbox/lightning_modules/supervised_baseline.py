@@ -64,7 +64,7 @@ class Unet(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        optimizer = SGD(
+        self.optimizer = SGD(
             self.parameters(),
             lr=self.learning_rate,
             momentum=0.9
@@ -77,19 +77,19 @@ class Unet(pl.LightningModule):
             #l = self.trainer.datamodule.epoch_len
             #m = s * b / l
             m = self.trainer.max_epochs
-            if epoch < 0.4*m:
+            if epoch < 0.3*m:
                 return 1
-            elif 0.4*m <= epoch <= 0.8*m:
-                return 1 + ((epoch - 0.4*m) / (0.8*m - 0.4*m)) * (0.01 - 1)
+            elif 0.3*m <= epoch <= 0.7*m:
+                return 1 + ((epoch - 0.3*m) / (0.7*m - 0.3*m)) * (0.01 - 1)
             else:
                 return 0.01
 
         scheduler = LambdaLR(
-            optimizer,
+            self.optimizer,
             lr_lambda=lambda_lr
         )
 
-        return [optimizer], [scheduler]
+        return [self.optimizer], [scheduler]
 
     def get_masked_labels(self, mask):
 
@@ -179,4 +179,7 @@ class Unet(pl.LightningModule):
     def ignore_void(self):
         return self.trainer.datamodule.ignore_void
 
+    def on_epoch_start(self):
+        for param_group in self.optimizer.param_groups:
+            print(param_group['lr'])
 

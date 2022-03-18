@@ -33,7 +33,8 @@ def main():
                 swa_epoch_start=0.8,
                 swa_lrs=0.05,
                 annealing_epochs=10,
-                annealing_strategy='linear'
+                annealing_strategy='linear',
+                device=None
             )
         ],
         log_every_n_steps=300,
