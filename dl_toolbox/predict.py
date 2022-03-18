@@ -10,9 +10,9 @@ from torch_datasets import SemcityBdsdDs, DigitanieDs
 from torch_collate import CollateDefault
 from lightning_modules import Unet
 from utils import worker_init_function
-from inference import apply_tta
 import torchmetrics.functional as  M
 from utils import get_tiles
+from augmentations import image_level_aug
 
 # class DummyModule(nn.Module):
 #     def __init__(self, model, config_loss):
@@ -25,6 +25,17 @@ from utils import get_tiles
 #
 #     def forward(self, x):
 #         return self.model.forward(x)
+
+anti_t_dict = {
+    'hflip': 'hflip',
+    'vflip': 'vflip',
+    'd1flip': 'd1flip',
+    'd2flip': 'd2flip',
+    'rot90': 'rot270',
+    'rot180': 'rot180',
+    'rot270': 'rot90'
+}
+
 
 def main():
 
@@ -70,7 +81,6 @@ def main():
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
-    torch.no_grad()
     module.to(device)
     
     width, height = imagesize.get(args.image_path)
@@ -104,20 +114,33 @@ def main():
     for batch in dataloader:
 
         inputs, _, windows = batch['image'], batch['mask'], batch['window']
-
-        outputs = module.forward(inputs.to(device)).cpu()
+        
+        with torch.no_grad():
+            outputs = module.forward(inputs.to(device)).cpu()
 
         split_pred = np.split(outputs, outputs.shape[0], axis=0)
         pred_list = [np.squeeze(e, axis=0) for e in split_pred]
         window_list = windows[:]
-
-        if args.tta:
-            tta_preds, tta_windows = apply_tta(args.tta, device, module, batch)
-            pred_list += tta_preds
-            window_list += tta_windows
-
+        
         for pred, window in zip(pred_list, window_list):
             pred_sum[:, window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height] += pred
+    
+    for t_name in args.tta:
+        for batch in dataloader:
+            inputs = batch['image']
+            aug_inputs, _ = image_level_aug[t_name](p=1)(inputs)
+            with torch.no_grad():
+                outputs = module.forward(aug_inputs.to(device)).cpu()
+            if t_name in anti_t_dict:
+                outputs, _ = image_level_aug[anti_t_dict[t_name]](p=1)(outputs)
+            split_pred = np.split(outputs, outputs.shape[0], axis=0)
+            pred_list = [np.squeeze(e, axis=0) for e in split_pred]
+            window_list = batch['window'][:]
+            
+            for pred, window in zip(pred_list, window_list):
+                pred_sum[:, 
+                        window.row_off:window.row_off + window.width, 
+                        window.col_off:window.col_off + window.height] += pred
 
     preds = pred_sum.argmax(dim=0) + 1
 
