@@ -8,7 +8,7 @@ from rasterio.windows import Window
 from torch import nn
 from torch_datasets import SemcityBdsdDs, DigitanieDs
 from torch_collate import CollateDefault
-from lightning_modules import SupervisedBaseline
+from lightning_modules import Unet
 from utils import worker_init_function
 from inference import apply_tta
 import torchmetrics.functional as  M
@@ -60,13 +60,17 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     ckpt = torch.load(args.ckpt_path, map_location=device)
 
-    module = SupervisedBaseline(
+    module = Unet(
         in_channels=args.in_channels,
-        num_classes=args.num_classes
+        num_classes=args.num_classes,
+        pretrained=False,
+        learning_rate=0.001,
+        encoder='efficientnet-b0'
     )
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
+    torch.no_grad()
     module.to(device)
     
     width, height = imagesize.get(args.image_path)
@@ -78,6 +82,7 @@ def main():
         fixed_crops=True,
         crop_size=args.crop_size,
         crop_step=args.crop_step,
+        img_aug='no'
     )
 
     # The collate function is needed to process the read windows from
@@ -100,15 +105,14 @@ def main():
 
         inputs, _, windows = batch['image'], batch['mask'], batch['window']
 
-        with torch.no_grad():
-            outputs = module.forward(inputs.to(device)).cpu()
+        outputs = module.forward(inputs.to(device)).cpu()
 
         split_pred = np.split(outputs, outputs.shape[0], axis=0)
         pred_list = [np.squeeze(e, axis=0) for e in split_pred]
         window_list = windows[:]
 
         if args.tta:
-            tta_preds, tta_windows = apply_tta(args.tta, device, module.network, batch)
+            tta_preds, tta_windows = apply_tta(args.tta, device, module, batch)
             pred_list += tta_preds
             window_list += tta_windows
 
@@ -126,8 +130,9 @@ def main():
             size=128,
             step=128
         )
-        for window in list(windows)[2::3]:
-            window_labels = rasterio.open(args.label_path).read(window=window, out_dtype=np.float32)
+        for window in windows:        
+            window_labels = rasterio.open(args.label_path).read(window=window, out_dtype=np.uint8)
+            window_labels = torch.from_numpy(window_labels)
             window_preds = preds[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height]
             accuracy = M.accuracy(torch.unsqueeze(window_preds, 0),
                                   torch.unsqueeze(window_labels, 0),
@@ -152,13 +157,11 @@ def main():
         for window in get_tiles(
                 nols=width,
                 nrows=height,
-                width=128,
-                height=128,
-                col_step=128,
-                row_step=128
+                size=128,
+                step=128
         ):
             pred = preds[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height]
-            for val, color in enumerate(DATASET_DESC['label_colors']):
+            for val, color in enumerate(dataset.DATASET_DESC['label_colors']):
                 mask = pred == val
                 preds_rgb[window.row_off:window.row_off + window.width, window.col_off:window.col_off + window.height, :][mask] = torch.tensor(color, dtype=torch.int)
         preds_rgb = preds_rgb.numpy().astype(np.uint8)

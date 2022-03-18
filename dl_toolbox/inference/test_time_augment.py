@@ -23,8 +23,13 @@ def apply_tta(
     window_list = []
 
     for t_name in tta:
+        print(t_name)
+        print(test_inputs.shape)
+        print(test_inputs.device)
         t = image_level_aug[t_name](p=1)
         aug_inputs = t(test_inputs)[0]
+        print(aug_inputs.shape)
+        print(aug_inputs.device)
         pred = module.forward(aug_inputs).cpu()
         if t_name in anti_t_dict:
             anti_t = image_level_aug[anti_t_dict[t_name]](p=1)

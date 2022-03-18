@@ -10,38 +10,41 @@ import numpy as np
 from rasterio.windows import Window, bounds, from_bounds
 from dl_toolbox.utils import MergeLabels, OneHot
 
-DATASET_DESC = {
-    'labels': [
-        (0, 'other'),
-        (1, 'bare ground'),
-        (2, 'low vegetation'),
-        (3, 'water'),
-        (4, 'building'),
-        (5, 'high vegetation'),
-        (6, 'parking'),
-        (7, 'pedestrian'),
-        (8, 'road'),
-        #(9, 'swimming pool'),
-        (9, 'railways')
-    ],
-    'percentile2': [0.0357, 0.0551, 0.0674],
-    'percentile98': [0.2945, 0.2734, 0.2662],
-    'label_colors' : [
-        (255,255,255), 
-        (184,141,21), 
-        (34,139,34), 
-        (0,0,238),
-        (238,118,33), 
-        (0,222,137), 
-        (118,118,118), 
-        (48,48,48), 
-        (38,38,38), 
-        #(33,203,220),
-        (112, 53,0)]
 
-}
 
 class DigitanieDs(Dataset):
+
+    DATASET_DESC = {
+
+        'labels': [
+            (0, 'other'),
+            (1, 'bare ground'),
+            (2, 'low vegetation'),
+            (3, 'water'),
+            (4, 'building'),
+            (5, 'high vegetation'),
+            (6, 'parking'),
+            (7, 'pedestrian'),
+            (8, 'road'),
+            #(9, 'swimming pool'),
+            (9, 'railways')
+        ],
+        'percentile2': [0.0357, 0.0551, 0.0674],
+        'percentile98': [0.2945, 0.2734, 0.2662],
+        'label_colors' : [
+            (255,255,255), 
+            (184,141,21), 
+            (34,139,34), 
+            (0,0,238),
+            (238,118,33), 
+            (0,222,137), 
+            (118,118,118), 
+            (48,48,48), 
+            (38,38,38), 
+            #(33,203,220),
+            (112, 53,0)]
+
+    }
 
     def __init__(
             self,
@@ -76,7 +79,7 @@ class DigitanieDs(Dataset):
 
         self.merge_labels = merge_labels
         if merge_labels is None:
-            self.labels, self.label_names = map(list, zip(*DATASET_DESC['labels']))
+            self.labels, self.label_names = map(list, zip(*self.DATASET_DESC['labels']))
             self.label_merger = None
         else:
             labels, self.label_names = merge_labels
