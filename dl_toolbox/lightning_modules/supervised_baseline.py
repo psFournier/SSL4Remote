@@ -18,7 +18,10 @@ class Unet(pl.LightningModule):
                  pretrained,
                  in_channels,
                  num_classes,
-                 learning_rate,
+                 initial_lr,
+                 final_lr,
+                 weight_decay,
+                 lr_milestones,
                  *args,
                  **kwargs):
 
@@ -34,7 +37,10 @@ class Unet(pl.LightningModule):
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.network = network
-        self.learning_rate = learning_rate
+        self.initial_lr = initial_lr
+        self.final_lr = final_lr
+        self.wd = weight_decay
+        self.lr_milestones = list(lr_milestones)
         # Reduction = none is necessary to compute properly the mean when using
         # a masked loss
         self.ce_loss = nn.BCEWithLogitsLoss(reduction='none')
@@ -51,7 +57,10 @@ class Unet(pl.LightningModule):
         parser.add_argument("--in_channels", type=int)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str)
-        parser.add_argument("--learning_rate", type=float)
+        parser.add_argument("--initial_lr", type=float)
+        parser.add_argument("--final_lr", type=float)
+        parser.add_argument("--weight_decay", type=float)
+        parser.add_argument("--lr_milestones", nargs=2, type=float)
 
         return parser
 
@@ -66,23 +75,20 @@ class Unet(pl.LightningModule):
 
         self.optimizer = SGD(
             self.parameters(),
-            lr=self.learning_rate,
-            momentum=0.9
+            lr=self.initial_lr,
+            momentum=0.9,
+            weight_decay=self.wd
         )
 
         def lambda_lr(epoch):
 
-            #s = self.trainer.max_steps
-            #b = self.trainer.datamodule.sup_batch_size
-            #l = self.trainer.datamodule.epoch_len
-            #m = s * b / l
-            m = self.trainer.max_epochs
-            if epoch < 0.3*m:
+            m = epoch / self.trainer.max_epochs 
+            if m < self.lr_milestones[0]:
                 return 1
-            elif 0.3*m <= epoch <= 0.7*m:
-                return 1 + ((epoch - 0.3*m) / (0.7*m - 0.3*m)) * (0.01 - 1)
+            elif m < self.lr_milestones[1]:
+                return 1 + ((m - self.lr_milestones[0]) / (self.lr_milestones[1] - self.lr_milestones[0])) * (self.final_lr/self.initial_lr - 1)
             else:
-                return 0.01
+                return self.final_lr/self.initial_lr
 
         scheduler = LambdaLR(
             self.optimizer,
@@ -179,7 +185,7 @@ class Unet(pl.LightningModule):
     def ignore_void(self):
         return self.trainer.datamodule.ignore_void
 
-    def on_epoch_start(self):
+    def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:
-            print(param_group['lr'])
-
+            self.log(f'learning_rate', param_group['lr'])
+            break

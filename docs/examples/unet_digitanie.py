@@ -31,8 +31,8 @@ def main():
             ConfMatLogger(),
             CustomSwa(
                 swa_epoch_start=0.8,
-                swa_lrs=0.05,
-                annealing_epochs=10,
+                swa_lrs=0.005,
+                annealing_epochs=1,
                 annealing_strategy='linear',
                 device=None
             )
