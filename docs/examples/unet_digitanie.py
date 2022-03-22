@@ -29,13 +29,13 @@ def main():
             ModelCheckpoint(),
             SegmentationImagesVisualisation(),
             ConfMatLogger(),
-            CustomSwa(
-                swa_epoch_start=0.8,
-                swa_lrs=0.005,
-                annealing_epochs=1,
-                annealing_strategy='linear',
-                device=None
-            )
+            #CustomSwa(
+            #    swa_epoch_start=0.8,
+            #    swa_lrs=0.005,
+            #    annealing_epochs=1,
+            #    annealing_strategy='linear',
+            #    device=None
+            #)
         ],
         log_every_n_steps=300,
         flush_logs_every_n_steps=1000,
