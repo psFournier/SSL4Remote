@@ -2,11 +2,16 @@ import csv
 import imagesize
 import os
 from dl_toolbox.utils import get_tiles
+from argparse import ArgumentParser
 
-with open('/d/pfournie/ai4geo/data/SemcityTLS_DL/split.csv', 'w', newline='') as csvfile:
+parser = ArgumentParser()
+parser.add_argument("--output_file", type=str)
+parser.add_argument("--data_dir", type=str)
+args = parser.parse_args()
+
+with open(args.output_file, 'w', newline='') as csvfile:
     writer = csv.writer(csvfile)
-    #path = '/work/OT/ai4geo/DATA/DATASETS/DIGITANIE'
-    path = '/d/pfournie/ai4geo/data/SemcityTLS_DL'
+    path = args.data_dir
     writer.writerow(['city',
                      'img_path',
                      'label_path',
