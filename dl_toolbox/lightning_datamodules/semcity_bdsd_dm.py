@@ -8,6 +8,7 @@ from torch.utils.data._utils.collate import default_collate
 import torch
 import numpy as np
 import imagesize
+from rasterio.windows import Window
 
 from dl_toolbox.utils import worker_init_function, get_tiles
 from dl_toolbox.torch_collate import CustomCollate
@@ -35,7 +36,7 @@ class SemcityBdsdDm(LightningDataModule):
         #self.image_path = image_path
         self.splitfile_path = splitfile_path
         self.test_fold = test_fold
-        self.class_names = [label[2] for label in SemcityBdsdDs.labels_desc]
+        #self.class_names = [label[2] for label in SemcityBdsdDs.labels_desc]
         #self.label_path = label_path
         self.crop_size = crop_size
         self.epoch_len = epoch_len
@@ -67,6 +68,8 @@ class SemcityBdsdDm(LightningDataModule):
         pass
 
     def setup(self, stage=None):
+
+        self.class_names = [info[2] for info in SemcityBdsdDs.labels_desc]
          
         train_datasets = []
         validation_datasets = []
@@ -75,6 +78,7 @@ class SemcityBdsdDm(LightningDataModule):
             next(reader) # skipping header
             for row in reader:
                 is_val = int(row[8])==self.test_fold
+                aug = 'no' if is_val else self.img_aug
                 window = Window(
                     col_off=int(row[4]),
                     row_off=int(row[5]),
@@ -87,6 +91,7 @@ class SemcityBdsdDm(LightningDataModule):
                     fixed_crops=is_val,
                     tile=window,
                     crop_size=self.crop_size,
+                    crop_step=self.crop_size,
                     img_aug=self.img_aug
                 )
                 if is_val:

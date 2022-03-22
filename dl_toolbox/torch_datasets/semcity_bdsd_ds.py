@@ -34,6 +34,7 @@ class SemcityBdsdDs(Dataset):
         tile,
         fixed_crops,
         crop_size,
+        crop_step,
         img_aug,
         label_path=None,
         merge_labels=None,
@@ -45,13 +46,16 @@ class SemcityBdsdDs(Dataset):
         self.label_path = label_path
         self.tile = tile
         self.crop_windows = list(get_tiles(
-            tile.width, 
-            tile.height, 
-            crop_size, 
+            nols=tile.width, 
+            nrows=tile.height, 
+            size=crop_size, 
+            step=crop_step,
             row_offset=tile.row_off, 
             col_offset=tile.col_off)) if fixed_crops else None
         self.crop_size = crop_size
         self.img_aug = aug.get_transforms(img_aug)
+        
+
 
     def __len__(self):
 
@@ -63,7 +67,7 @@ class SemcityBdsdDs(Dataset):
             window = self.crop_windows[idx]
         else:
             cx = self.tile.col_off + np.random.randint(0, self.tile.width - self.crop_size + 1)
-            cy = self.tile_row_off + np.random.randint(0, self.tile.height - self.crop_size + 1)
+            cy = self.tile.row_off + np.random.randint(0, self.tile.height - self.crop_size + 1)
             window = Window(cx, cy, self.crop_size, self.crop_size)
         
         label = None

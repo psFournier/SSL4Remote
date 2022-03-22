@@ -22,6 +22,7 @@ with open('/d/pfournie/ai4geo/data/SemcityTLS_DL/split.csv', 'w', newline='') as
     for i, tile in enumerate(get_tiles(w, h, size=876, size2=863)):
         writer.writerow([
             'Toulouse',
+            0,
             image_path,
             label_path,
             tile.col_off,

@@ -189,3 +189,4 @@ class Unet(pl.LightningModule):
         for param_group in self.optimizer.param_groups:
             self.log(f'learning_rate', param_group['lr'])
             break
+
