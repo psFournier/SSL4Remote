@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 import torch
 import imagesize
 import numpy as np
@@ -48,9 +48,9 @@ def main():
 
     # Required arguments
     parser.add_argument("--ckpt_path", type=str)
-    parser.add_argument("--config_path", type=str, default=None)
-    parser.add_argument("--image_path", type=str)
-    parser.add_argument("--output_path", type=str)
+    parser.add_argument("--image_path", type=str, default=None)
+    parser.add_argument("--splitfile_path", type=str, default=None)
+    parser.add_argument("--output_path", type=str, default=None)
 
     # Optional arguments (label file for metrics computation + forward and tta paramters)
     parser.add_argument("--label_path", type=str, default=None)
@@ -77,28 +77,44 @@ def main():
         pretrained=False,
         learning_rate=0.001,
         encoder='efficientnet-b0'
+        initial_lr=None,
+        final_lr=None,
+        weight_decay=None,
+        lr_milestones=None
     )
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
     module.to(device)
     
-    width, height = imagesize.get(args.image_path)
-    tile = Window(row_off=0, col_off=0, width=width, height=height)
-    dataset = DigitanieDs(
-        image_path=args.image_path,
-        label_path=args.label_path,
-        tile=tile,
-        fixed_crops=True,
-        crop_size=args.crop_size,
-        crop_step=args.crop_step,
-        img_aug='no'
-    )
-
+    datasets = []
+    with open(args.splitfile_path, newline='') as splitfile:
+        reader=csv.reader(splitfile)
+        next(reader)
+        for row in reader:
+            if int(row[8])==args.test_fold:
+                window = Window(
+                    col_off=int(row[4]),
+                    row_off=int(row[5]),
+                    width=int(row[6]),
+                    height=int(row[7])
+                )
+                dataset = DigitanieDs(
+                    image_path=row[2],
+                    label_path=row[3],
+                    fixed_crops=True,
+                    tile=window,
+                    crop_size=args.crop_size,
+                    crop_step=args.crop_step,
+                    img_aug='no'
+                )
+                datasets.append(dataset)
+    val_set = ConcatDataset(datasets)
+                
     # The collate function is needed to process the read windows from
     # the dataset __get_item__ method.
     dataloader = DataLoader(
-        dataset=dataset,
+        dataset=val_set,
         shuffle=False,
         collate_fn=CollateDefault(),
         batch_size=args.batch_size,
@@ -106,7 +122,7 @@ def main():
         pin_memory=True,
         worker_init_fn=worker_init_function
     )
-
+ 
     # The full matrix used to cumulate results from overlapping tiles or tta
     pred_sum = torch.zeros(size=(module.num_classes, height, width))
     metrics = {'accuracy': []}
