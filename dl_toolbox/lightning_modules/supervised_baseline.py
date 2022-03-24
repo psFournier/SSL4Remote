@@ -15,13 +15,13 @@ class Unet(pl.LightningModule):
 
     def __init__(self,
                  encoder,
-                 pretrained,
                  in_channels,
                  num_classes,
-                 initial_lr,
-                 final_lr,
-                 weight_decay,
-                 lr_milestones,
+                 pretrained=True,
+                 initial_lr=0.05,
+                 final_lr=0.001,
+                 weight_decay=0,
+                 lr_milestones=(0.5,0.9),
                  *args,
                  **kwargs):
 
