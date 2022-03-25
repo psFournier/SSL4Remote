@@ -31,6 +31,7 @@ def main():
     parser.add_argument("--in_channels", type=int)
     parser.add_argument("--crop_size", type=int)
     parser.add_argument("--crop_step", type=int)
+    parser.add_argument("--encoder", type=str)
 
     args = parser.parse_args()
 
@@ -43,7 +44,7 @@ def main():
         in_channels=args.in_channels,
         num_classes=args.num_classes,
         pretrained=False,
-        encoder='efficientnet-b5'
+        encoder=args.encoder
     )
 
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
