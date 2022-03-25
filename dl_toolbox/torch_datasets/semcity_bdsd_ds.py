@@ -27,6 +27,7 @@ class SemcityBdsdDs(Dataset):
         'min' : np.array([245, 166, 167, 107, 42, 105, 60, 48]),
         'max' : np.array([615, 681, 1008, 1087, 732, 1065, 1126, 1046])
     }
+    color_map = {k: v for k,v in [(e[0], e[1]) for e in labels_desc]}
 
     def __init__(
         self,

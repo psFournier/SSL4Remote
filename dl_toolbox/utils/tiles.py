@@ -6,7 +6,7 @@ def get_tiles(nols, nrows, size, size2=None, step=None, step2=None, col_offset=0
     
     if step is None: step = size
     if size2 is None: size2 = size
-    if step2 is None: step2 = size2
+    if step2 is None: step2 = step
 
     max_col_offset = int(np.ceil((nols-size)/step))
     # Remove all offsets such that offset+size > nols and add one offset to

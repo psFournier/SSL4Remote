@@ -1,17 +1,9 @@
-from torch.utils.data import DataLoader, ConcatDataset
 from argparse import ArgumentParser
 import torch
-import imagesize
 import numpy as np
 import rasterio
-from rasterio.windows import Window
-from torch import nn
-from dl_toolbox.torch_datasets import SemcityBdsdDs, DigitanieDs
-from dl_toolbox.torch_collate import CustomCollate
 from dl_toolbox.lightning_modules import Unet
-from dl_toolbox.utils import worker_init_function, get_tiles
-import torchmetrics.functional as  M
-from dl_toolbox.augmentations import image_level_aug
+import dl_toolbox.inference as dl_inf
 
 def main():
 
@@ -59,7 +51,7 @@ def main():
     module.eval()
     module.to(device)
     
-    probas = compute_probas(
+    probas = dl_inf.compute_probas(
         image_path=args.image_path,
         tile=args.tile,
         dataset_type=args.dataset,
@@ -72,21 +64,26 @@ def main():
     )
 
     initial_profile = rasterio.open(args.image_path).profile
-    preds = torch.squeeze(probas_to_preds(torch.unsqueeze(probas, dim=0)))
+    preds = dl_inf.probas_to_preds(torch.unsqueeze(probas, dim=0)) + 1
     
     if args.output_probas:    
         
-        write_probas(
+        dl_inf.write_probas(
             probas=probas,
+            tile=args.tile,
             output_path=args.output_probas,
-            initial_profile=initial_profile,
-            num_classes=args.num_classes
+            initial_profile=initial_profile
         )
 
     if args.output_preds:
         
-        write_rgb_preds(
-            rgb_preds=preds,
+        rgb_preds = dl_inf.labels_to_rgb(
+            preds,
+            dataset=args.dataset
+        )
+        dl_inf.write_rgb_preds(
+            rgb_preds=np.squeeze(rgb_preds),
+            tile=args.tile,
             output_path=args.output_preds,
             initial_profile=initial_profile
         )
@@ -94,9 +91,10 @@ def main():
 
     if args.label_path:
         
-        metrics = compute_metrics(
-            preds=preds,
+        metrics = dl_inf.compute_metrics(
+            preds=torch.squeeze(preds),
             label_path=args.label_path,
+            dataset_type=args.dataset,
             tile=args.tile
         )
         print(metrics)
@@ -104,9 +102,10 @@ def main():
         if args.stat_class >= 0:
             
             assert args.output_errors
-            visualize_errors(
-                preds=preds,
+            dl_inf.visualize_errors(
+                preds=torch.squeeze(preds),
                 label_path=args.label_path,
+                dataset_type=args.dataset,
                 tile=args.tile,
                 output_path=args.output_errors,
                 class_id=args.stat_class,
