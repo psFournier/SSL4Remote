@@ -128,13 +128,13 @@ class Unet(pl.LightningModule):
 
         ignore_index = None if self.eval_with_void else 0
 
-        iou = torchmetrics.iou(
-            preds + int(not self.train_with_void),
-            labels,
-            reduction='none',
-            num_classes=self.num_classes, 
-            ignore_index=ignore_index
-        )
+#        iou = torchmetrics.iou(
+#            preds + int(not self.train_with_void),
+#            labels,
+#            reduction='none',
+#            num_classes=self.num_classes, 
+#            ignore_index=ignore_index
+#        )
 
         accuracy = torchmetrics.accuracy(
             preds + int(not self.train_with_void),
@@ -142,7 +142,15 @@ class Unet(pl.LightningModule):
             ignore_index=ignore_index
         )
 
-        return iou, accuracy
+        f1_score = torchmetrics.f1_score(
+            preds + int(not self.train_with_void),
+            label,
+            ignore_index=ignore_index,
+            average='none',
+            mdmc_average='global'
+        )
+
+        return f1_score, accuracy
 
     def log_metric_per_class(self, mode, metrics):
 
@@ -179,15 +187,15 @@ class Unet(pl.LightningModule):
         preds = logits.argmax(dim=1)
         labels = torch.argmax(batch['mask'], dim=1).long()
 
-        iou, accuracy = self.compute_metrics(preds, labels)
+        f1_score, accuracy = self.compute_metrics(preds, labels)
 
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
-        self.log_metric_per_class(mode='Val', metrics={'iou': iou})
+        self.log_metric_per_class(mode='Val', metrics={'f1': f1_score})
         self.log(f'Val_acc', accuracy)
 
-        return {'batch': batch, 'logits': logits, 'iou': iou, 'accuracy' : accuracy}
+        return {'batch': batch, 'logits': logits, 'f1': f1_score, 'accuracy' : accuracy}
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:
