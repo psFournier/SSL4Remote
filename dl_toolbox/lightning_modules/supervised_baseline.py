@@ -17,6 +17,8 @@ class Unet(pl.LightningModule):
                  encoder,
                  in_channels,
                  num_classes,
+                 train_with_void,
+                 eval_with_void,
                  pretrained=True,
                  initial_lr=0.05,
                  final_lr=0.001,
@@ -27,14 +29,16 @@ class Unet(pl.LightningModule):
 
         super().__init__()
 
+        self.num_classes = num_classes
         network = smp.Unet(
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
-            classes=num_classes,
+            classes=num_classes if train_with_void else num_classes-1,
             decoder_use_batchnorm=True
         )
-        self.num_classes = num_classes
+        self.train_with_void = train_with_void
+        self.eval_with_void = eval_with_void
         self.in_channels = in_channels
         self.network = network
         self.initial_lr = initial_lr
@@ -54,6 +58,8 @@ class Unet(pl.LightningModule):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--num_classes", type=int)
+        parser.add_argument("--train_with_void", action='store_true')
+        parser.add_argument("--eval_with_void", action='store_true')
         parser.add_argument("--in_channels", type=int)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str)
@@ -99,7 +105,7 @@ class Unet(pl.LightningModule):
 
     def get_masked_labels(self, mask):
 
-        if self.ignore_void:
+        if not self.train_with_void:
             # Granted that the first label is the void/unknown label, this extracts
             # from labels the mask to use to ignore this class
             labels_onehot = mask[:, 1:, :, :]
@@ -120,18 +126,18 @@ class Unet(pl.LightningModule):
 
     def compute_metrics(self, preds, labels):
 
-        ignore_index = 0 if self.ignore_void else None
+        ignore_index = None if self.eval_with_void else 0
 
         iou = torchmetrics.iou(
-            preds + int(self.ignore_void),
+            preds + int(not self.train_with_void),
             labels,
             reduction='none',
-            num_classes=self.num_classes + int(self.ignore_void),
+            num_classes=self.num_classes, 
             ignore_index=ignore_index
         )
 
         accuracy = torchmetrics.accuracy(
-            preds + int(self.ignore_void),
+            preds + int(not self.train_with_void),
             labels,
             ignore_index=ignore_index
         )
@@ -140,7 +146,9 @@ class Unet(pl.LightningModule):
 
     def log_metric_per_class(self, mode, metrics):
 
-        class_names = self.trainer.datamodule.class_names[int(self.ignore_void):]
+        class_names = self.trainer.datamodule.class_names[
+            int(not self.eval_with_void):
+        ]
         for metric_name, vals in metrics.items():
             for val, class_name in zip(vals, class_names):
                 self.log(f'{mode}_{metric_name}_{class_name}', val)
@@ -180,10 +188,6 @@ class Unet(pl.LightningModule):
         self.log(f'Val_acc', accuracy)
 
         return {'batch': batch, 'logits': logits, 'iou': iou, 'accuracy' : accuracy}
-
-    @property
-    def ignore_void(self):
-        return self.trainer.datamodule.ignore_void
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:

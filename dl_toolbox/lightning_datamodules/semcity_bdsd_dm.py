@@ -28,7 +28,6 @@ class SemcityBdsdDm(LightningDataModule):
                  workers,
                  img_aug,
                  batch_aug,
-                 ignore_void,
                  *args,
                  **kwargs):
 
@@ -42,7 +41,6 @@ class SemcityBdsdDm(LightningDataModule):
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
         self.num_workers = workers
-        self.ignore_void = ignore_void
         self.img_aug = img_aug
         self.batch_aug = batch_aug
 
@@ -59,7 +57,6 @@ class SemcityBdsdDm(LightningDataModule):
         parser.add_argument("--workers", default=6, type=int)
         parser.add_argument('--img_aug', type=str, default='no')
         parser.add_argument('--batch_aug', type=str, default='no')
-        parser.add_argument("--ignore_void", action='store_true')
 
         return parser
 
@@ -188,7 +185,6 @@ def main():
         workers=0,
         img_aug='no',
         batch_aug='no',
-        ignore_void=True
     )
 
     for batch in datamodule.train_dataloader:

@@ -45,7 +45,7 @@ class ConfMatLogger(pl.Callback):
     def on_fit_start(self, trainer, pl_module):
 
         self.conf_mat = ConfusionMatrix(
-            num_classes=pl_module.num_classes + int(pl_module.ignore_void),
+            num_classes=pl_module.num_classes,
             normalize="true",
             compute_on_step=False
         )
@@ -57,7 +57,7 @@ class ConfMatLogger(pl.Callback):
         inputs, labels_onehot = batch['image'], batch['mask']
 
         labels = torch.argmax(labels_onehot, dim=1)
-        preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
+        preds = torch.argmax(outputs['logits'], dim=1) + int(not pl_module.train_with_void)
 
         self.conf_mat(preds.cpu(), labels.cpu())
 

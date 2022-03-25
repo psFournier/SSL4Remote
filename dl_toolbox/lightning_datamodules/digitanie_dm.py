@@ -27,7 +27,6 @@ class DigitanieDm(LightningDataModule):
                  workers,
                  img_aug,
                  batch_aug,
-                 ignore_void,
                  *args,
                  **kwargs):
 
@@ -39,7 +38,6 @@ class DigitanieDm(LightningDataModule):
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
         self.num_workers = workers
-        self.ignore_void = ignore_void
         self.img_aug = img_aug
         self.batch_aug = batch_aug
 
@@ -56,7 +54,6 @@ class DigitanieDm(LightningDataModule):
         parser.add_argument("--workers", type=int)
         parser.add_argument('--img_aug', type=str)
         parser.add_argument('--batch_aug', type=str)
-        parser.add_argument("--ignore_void", action='store_true')
 
         return parser
    

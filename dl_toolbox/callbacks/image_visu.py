@@ -72,7 +72,7 @@ class SegmentationImagesVisualisation(pl.Callback):
         orig_img = outputs['batch']['orig_image'].cpu()
 
         labels = torch.argmax(mask, dim=1)
-        preds = torch.argmax(outputs['logits'], dim=1) + int(pl_module.ignore_void)
+        preds = torch.argmax(outputs['logits'], dim=1) + int(not pl_module.train_with_void)
         mask_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(labels)).float()
         out_rgb = torch.from_numpy(trainer.datamodule.label_to_rgb(preds.cpu())).float()
 
