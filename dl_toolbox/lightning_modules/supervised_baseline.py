@@ -144,7 +144,8 @@ class Unet(pl.LightningModule):
 
         f1_score = torchmetrics.f1_score(
             preds + int(not self.train_with_void),
-            label,
+            labels,
+            num_classes=self.num_classes,
             ignore_index=ignore_index,
             average='none',
             mdmc_average='global'
