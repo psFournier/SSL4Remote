@@ -142,16 +142,23 @@ class Unet(pl.LightningModule):
             ignore_index=ignore_index
         )
 
-        f1_score = torchmetrics.f1_score(
+        weighted_f1_score = torchmetrics.f1_score(
             preds + int(not self.train_with_void),
             labels,
             num_classes=self.num_classes,
             ignore_index=ignore_index,
-            average='none',
+            average='weighted',
+            mdmc_average='global'
+        )
+        f1_score = torchmetrics.f1_score(
+            preds + int(not self.train_with_void),
+            labels,
+            ignore_index=ignore_index,
             mdmc_average='global'
         )
 
-        return f1_score, accuracy
+
+        return weighted_f1_score, f1_score, accuracy
 
     def log_metric_per_class(self, mode, metrics):
 
@@ -188,15 +195,16 @@ class Unet(pl.LightningModule):
         preds = logits.argmax(dim=1)
         labels = torch.argmax(batch['mask'], dim=1).long()
 
-        f1_score, accuracy = self.compute_metrics(preds, labels)
+        weighted_f1_score, f1_score, accuracy = self.compute_metrics(preds, labels)
 
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
-        self.log_metric_per_class(mode='Val', metrics={'f1': f1_score})
         self.log(f'Val_acc', accuracy)
+        self.log(f'Val_f1', f1_score)
+        self.log(f'Val_weighted_f1', weighted_f1_score)
 
-        return {'batch': batch, 'logits': logits, 'f1': f1_score, 'accuracy' : accuracy}
+        return {'batch': batch, 'logits': logits, 'f1': f1_score, 'accuracy' : accuracy, 'weighted_f1': weighted_f1_score}
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:
