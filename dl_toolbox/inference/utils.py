@@ -280,10 +280,11 @@ def visualize_errors(
     preds,
     label_path,
     dataset_type,
-    class_id,
     output_path,
     tile,
-    initial_profile
+    initial_profile,
+    class_id=None,
+    eval_with_void=False
 ):
     
     window = get_window(tile)
@@ -292,16 +293,26 @@ def visualize_errors(
         label_tile = f.read(window=window, out_dtype=np.uint8)
     label_tile = raw_labels_to_labels(label_tile, dataset=dataset_type)
 
-    label_bool = label_tile == class_id
-    pred_bool = preds == class_id
     overlay = np.zeros(shape=(window.height, window.width, 3), dtype=np.uint8)
+    if class_id:
+        label_bool = label_tile == class_id
+        pred_bool = preds == class_id
 
-    # Correct predictions (Hits) painted with green
-    overlay[label_bool & pred_bool] = np.array([0, 250, 0], dtype=overlay.dtype)
-    # Misses painted with red
-    overlay[label_bool & ~pred_bool] = np.array([250, 0, 0], dtype=overlay.dtype)
-    # False alarm painted with yellow
-    overlay[~label_bool & pred_bool] = np.array([250, 250, 0], dtype=overlay.dtype)
+        # Correct predictions (Hits) painted with green
+        overlay[label_bool & pred_bool] = np.array([0, 250, 0], dtype=overlay.dtype)
+        # Misses painted with red
+        overlay[label_bool & ~pred_bool] = np.array([250, 0, 0], dtype=overlay.dtype)
+        # False alarm painted with yellow
+        overlay[~label_bool & pred_bool] = np.array([250, 250, 0], dtype=overlay.dtype)
+    else:
+        if not eval_with_void:
+            void_bool = label_tile == 0
+        else:
+            void_bool = np.zeros(shape=(window.height, window.width), dtype=np.uint8)
+        correct = label_tile == pred
+        overlay[correct & ~void_bool] = np.array([0,250,0], dtype=overlay.dtype)
+        overlay[~correct & ~void_bool] = np.array([250,0,0], dtype=overlay.dtype)
+
 
     transform = get_window_transform(
         window,

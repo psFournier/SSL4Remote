@@ -114,9 +114,23 @@ def main():
                 tile=args.tile,
                 output_path=args.output_errors,
                 class_id=args.stat_class,
-                initial_profile=initial_profile
+                initial_profile=initial_profile,
+                eval_with_void=args.eval_with_void
             )
+        
+        else:
 
+            assert args.output_errors
+            dl_inf.visualize_errors(
+                preds=torch.squeeze(preds),
+                label_path=args.label_path,
+                dataset_type=args.dataset,
+                tile=args.tile,
+                output_path=args.output_errors,
+                initial_profile=initial_profile,
+                eval_with_void=args.eval_with_void
+            )
+ 
 
 
 
