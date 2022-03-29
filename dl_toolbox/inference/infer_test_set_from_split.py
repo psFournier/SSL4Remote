@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import csv
 import torch
 import numpy as np
 import rasterio
@@ -28,6 +29,9 @@ def main():
     parser.add_argument("--crop_size", type=int)
     parser.add_argument("--crop_step", type=int)
     parser.add_argument("--encoder", type=str)
+    parser.add_argument("--train_with_void", action='store_true')
+    parser.add_argument("--eval_with_void", action='store_true')
+
 
     args = parser.parse_args()
 
@@ -40,7 +44,8 @@ def main():
         in_channels=args.in_channels,
         num_classes=args.num_classes,
         pretrained=False,
-        encoder=args.encoder
+        encoder=args.encoder,
+        train_with_void=args.train_with_void
     )
 
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
@@ -49,34 +54,37 @@ def main():
     module.to(device)
     
     metrics = {
-        'accuracy': []
+        'accuracy': [],
+        'f1': []
     }
     with open(args.splitfile_path, newline='') as splitfile:
         reader = csv.reader(splitfile)
         next(reader)
         for row in reader:
-            city, img_path, label_path, x0, y0, patch_width, patch_height, fold_id = *row
-            if fold_id == args.test_fold:
+            city,tile, img_path, label_path, x0, y0, patch_width, patch_height, fold_id = row
+            if int(fold_id) == args.test_fold:
                 probas = dl_inf.compute_probas(
                     image_path=img_path,
-                    tile=(x0, y0, patch_width, patch_height),
+                    tile=(int(x0), int(y0), int(patch_width), int(patch_height)),
                     dataset_type=args.dataset,
                     module=module,
                     batch_size=args.batch_size,
                     workers=args.workers,
                     crop_size=args.crop_size,
-                    crop_step=args.cropo_step,
+                    crop_step=args.crop_step,
                     tta=args.tta
                 )
                 preds = dl_inf.probas_to_preds(
                     torch.unsqueeze(probas, dim=0)
-                ) + 1
+                ) + int(not args.train_with_void)
                 row_metrics = dl_inf.compute_metrics(
                     preds=torch.squeeze(preds),
                     label_path=label_path,
                     dataset_type=args.dataset,
-                    tile=(x0, y0, patch_width, patch_height)
+                    tile=(int(x0), int(y0), int(patch_width), int(patch_height)),
+                    eval_with_void=args.eval_with_void
                 )
+                print(img_path, x0, y0, row_metrics)
                 for k, v in row_metrics.items():
                     metrics[k].append(v)
 

@@ -24,7 +24,8 @@ anti_t_dict = {
 }
 
 datasets = {
-    'semcity': SemcityBdsdDs 
+    'semcity': SemcityBdsdDs,
+    'digitanie': DigitanieDs
 }
 
 
@@ -58,6 +59,15 @@ def rgb_to_labels(rgb, color_map=None, dataset=None):
         labels[d] = val
 
     return labels.long()
+
+def raw_labels_to_labels(labels, dataset=None):
+
+    if dataset=='semcity':
+        return rgb_to_labels(labels, dataset=dataset)
+    elif dataset=='digitanie':
+        return torch.squeeze(torch.from_numpy(labels)).long()
+    else:
+        raise NotImplementedError
 
 def get_window(tile):
 
@@ -106,8 +116,8 @@ def compute_probas(
         worker_init_fn=worker_init_function
     )
 
-
-    pred_sum = torch.zeros(size=(module.num_classes, window.height, window.width))
+    num_classes = module.num_classes - int(not module.train_with_void)
+    pred_sum = torch.zeros(size=(num_classes, window.height, window.width))
 
     for batch in dataloader:
 
@@ -128,10 +138,10 @@ def compute_probas(
         for pred, w in zip(pred_list, window_list):
             pred_sum[
                 :, 
-                w.row_off:w.row_off + w.width,
-                w.col_off:w.col_off + w.height
+                w.row_off-window.row_off:w.row_off-window.row_off+w.height,
+                w.col_off-window.col_off:w.col_off-window.col_off+w.width
             ] += pred
-    
+                
     probas = pred_sum.softmax(dim=0)
 
     return probas
@@ -222,34 +232,48 @@ def compute_metrics(
     preds,
     label_path,
     dataset_type,
-    tile
+    tile,
+    eval_with_void
 ):
 
+    ignore_index = None if eval_with_void else 0
     metrics = {
-        'accuracy': []
+        'accuracy': [],
+        'f1': []
     }
     col_off, row_off, width, height = tile
     windows = get_tiles(
         nols=width, 
         nrows=height, 
-        size=256, 
-        step=256,
+        size=width, 
+        size2=height,
+        step=width,
+        step2=height,
         row_offset=row_off, 
         col_offset=col_off
     )
     for window in windows:        
         window_labels = rasterio.open(label_path).read(window=window, out_dtype=np.uint8)
-        window_labels = rgb_to_labels(window_labels, dataset=dataset_type)
+        window_labels = raw_labels_to_labels(window_labels, dataset=dataset_type)
         window_preds = preds[
-            window.row_off-row_off:window.row_off-row_off+window.width, 
-            window.col_off-col_off:window.col_off-col_off+window.height
+            window.row_off-row_off:window.row_off-row_off+window.height, 
+            window.col_off-col_off:window.col_off-col_off+window.width
         ]
         accuracy = M.accuracy(torch.unsqueeze(window_preds, 0),
                               torch.unsqueeze(window_labels, 0),
-                              ignore_index=0)
+                              ignore_index=ignore_index)
+        f1 = M.f1_score(
+            torch.unsqueeze(window_preds, 0),
+            torch.unsqueeze(window_labels, 0),
+            ignore_index=ignore_index,
+            mdmc_average="global"
+        )
         metrics['accuracy'].append(accuracy)
-
-    return {'accuracy': np.mean(metrics['accuracy'])}
+        metrics['f1'].append(f1)
+    
+    
+    ret = {'accuracy': np.mean(metrics['accuracy']), 'f1': np.mean(metrics['f1'])}
+    return ret
  
 
 def visualize_errors(
@@ -266,7 +290,7 @@ def visualize_errors(
 
     with rasterio.open(label_path) as f:
         label_tile = f.read(window=window, out_dtype=np.uint8)
-    label_tile = rgb_to_labels(label_tile, dataset=dataset_type)
+    label_tile = raw_labels_to_labels(label_tile, dataset=dataset_type)
 
     label_bool = label_tile == class_id
     pred_bool = preds == class_id

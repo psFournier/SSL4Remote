@@ -32,6 +32,8 @@ def main():
     parser.add_argument("--crop_size", type=int)
     parser.add_argument("--crop_step", type=int)
     parser.add_argument("--encoder", type=str)
+    parser.add_argument("--train_with_void", action='store_true')
+    parser.add_argument("--eval_with_void", action='store_true')
 
     args = parser.parse_args()
 
@@ -44,7 +46,8 @@ def main():
         in_channels=args.in_channels,
         num_classes=args.num_classes,
         pretrained=False,
-        encoder=args.encoder
+        encoder=args.encoder,
+        train_with_void=args.train_with_void
     )
 
     # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
@@ -65,7 +68,7 @@ def main():
     )
 
     initial_profile = rasterio.open(args.image_path).profile
-    preds = dl_inf.probas_to_preds(torch.unsqueeze(probas, dim=0)) + 1
+    preds = dl_inf.probas_to_preds(torch.unsqueeze(probas, dim=0)) + int(not args.train_with_void)
     
     if args.output_probas:    
         
@@ -96,7 +99,8 @@ def main():
             preds=torch.squeeze(preds),
             label_path=args.label_path,
             dataset_type=args.dataset,
-            tile=args.tile
+            tile=args.tile,
+            eval_with_void=args.eval_with_void
         )
         print(metrics)
 

@@ -45,6 +45,7 @@ class DigitanieDs(Dataset):
             (112, 53,0)]
 
     }
+    color_map = {k: v for k, v in enumerate(DATASET_DESC['label_colors'])}
 
     def __init__(
             self,
