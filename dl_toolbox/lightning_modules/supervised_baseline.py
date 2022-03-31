@@ -122,7 +122,7 @@ class Unet(pl.LightningModule):
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
-        return loss1, loss2, loss1 + loss2
+        return loss1, loss2, loss1 + 2*loss2
 
     def compute_metrics(self, preds, labels):
 
