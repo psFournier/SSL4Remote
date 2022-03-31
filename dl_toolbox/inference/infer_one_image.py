@@ -55,6 +55,7 @@ def main():
     module.eval()
     module.to(device)
     
+    print('Computing probas')
     probas = dl_inf.compute_probas(
         image_path=args.image_path,
         tile=args.tile,
@@ -64,7 +65,8 @@ def main():
         workers=args.workers,
         crop_size=args.crop_size,
         crop_step=args.crop_step,
-        tta=args.tta
+        tta=args.tta,
+        mode='sigmoid'
     )
 
     initial_profile = rasterio.open(args.image_path).profile
@@ -72,11 +74,11 @@ def main():
     
     if args.output_probas:    
         
-        dl_inf.write_probas(
-            probas=probas,
+        dl_inf.write_array(
+            inputs=probas,
             tile=args.tile,
             output_path=args.output_probas,
-            initial_profile=initial_profile
+            profile=initial_profile
         )
 
     if args.output_preds:
@@ -85,16 +87,17 @@ def main():
             preds,
             dataset=args.dataset
         )
-        dl_inf.write_rgb_preds(
-            rgb_preds=np.squeeze(rgb_preds),
+        dl_inf.write_array(
+            inputs=np.squeeze(rgb_preds),
             tile=args.tile,
             output_path=args.output_preds,
-            initial_profile=initial_profile
+            profile=initial_profile
         )
 
 
     if args.label_path:
         
+        print('Computing metrics')
         metrics = dl_inf.compute_metrics(
             preds=torch.squeeze(preds),
             label_path=args.label_path,

@@ -90,7 +90,8 @@ def compute_probas(
     crop_step,
     batch_size,
     workers,
-    tta
+    tta,
+    mode
 ):
     
     device = module.device
@@ -118,9 +119,11 @@ def compute_probas(
 
     num_classes = module.num_classes - int(not module.train_with_void)
     pred_sum = torch.zeros(size=(num_classes, window.height, window.width))
+    mask_sum = torch.zeros(size=(window.height, window.width))
 
-    for batch in dataloader:
-
+    for i, batch in enumerate(dataloader):
+        
+        print('batch ', i)
         inputs, _, windows = batch['image'], batch['mask'], batch['window']
 
         outputs = batch_forward(inputs, module)
@@ -132,17 +135,25 @@ def compute_probas(
             outputs = torch.vstack([outputs, outputs_tta])
             window_list += windows[:]
 
-        split_pred = np.split(outputs, outputs.shape[0], axis=0)
-        pred_list = [np.squeeze(e, axis=0) for e in split_pred]
+        split_pred = torch.split(outputs, 1, dim=0)
+        pred_list = [torch.squeeze(e, dim=0) for e in split_pred]
         
         for pred, w in zip(pred_list, window_list):
+            if mode=='softmax':
+                prob = pred.softmax(dim=0)
+            elif mode=='sigmoid':
+                prob = torch.sigmoid(pred)
             pred_sum[
                 :, 
                 w.row_off-window.row_off:w.row_off-window.row_off+w.height,
                 w.col_off-window.col_off:w.col_off-window.col_off+w.width
-            ] += pred
+            ] += prob
+            mask_sum[
+                w.row_off-window.row_off:w.row_off-window.row_off+w.height,
+                w.col_off-window.col_off:w.col_off-window.col_off+w.width
+            ] += 1
                 
-    probas = pred_sum.softmax(dim=0)
+    probas = torch.div(pred_sum, mask_sum)
 
     return probas
 
@@ -156,29 +167,6 @@ def batch_forward(inputs, module, tta=None):
         outputs, _ = image_level_aug[anti_t_dict[tta]](p=1)(outputs)
 
     return outputs
-
-def write_rgb_preds(rgb_preds, tile, output_path, initial_profile):
-
-    window = get_window(tile)
-    transform = get_window_transform(
-        window,
-        initial_profile
-    )
-    profile = {
-        'driver': 'GTiff',
-        'dtype': 'float32',
-        'nodata': None,
-        'width': window.width,
-        'height': window.height,
-        'count': 3,
-        'crs': initial_profile['crs'],
-        'transform': transform,
-        'tiled': False,
-        'interleave': 'pixel'
-    }
-    with rasterio.open(output_path, 'w', **profile) as dst:
-        for i in range(3):
-            dst.write(rgb_preds[i, :, :], indexes=i+1)
 
 def get_window_transform(window, profile):
 
@@ -194,30 +182,28 @@ def get_window_transform(window, profile):
 
     return new_transform
  
+def write_array(inputs, tile, output_path, profile):
 
-def write_probas(probas, tile, output_path, initial_profile):
-
-    num_classes = probas.shape[0]
     window = get_window(tile)
     transform = get_window_transform(
         window,
-        initial_profile
+        profile
     )
-    profile = {
+    new_profile = {
         'driver': 'GTiff',
         'dtype': 'float32',
         'nodata': None,
         'width': window.width,
         'height': window.height,
-        'count': num_classes,
-        'crs': initial_profile['crs'],
+        'count': inputs.shape[0],
+        'crs': profile['crs'],
         'transform': transform,
         'tiled': False,
         'interleave': 'pixel'
     }
-    with rasterio.open(output_path, 'w', **profile) as dst:
-        for i in range(num_classes):
-            dst.write(probas[i, :, :], indexes=i+1)
+    with rasterio.open(output_path, 'w', **new_profile) as dst:
+        dst.write(inputs)
+
 
 def read_probas(input_path):
 
@@ -309,27 +295,9 @@ def visualize_errors(
             void_bool = label_tile == 0
         else:
             void_bool = np.zeros(shape=(window.height, window.width), dtype=np.uint8)
-        correct = label_tile == pred
+        correct = label_tile == preds
+        print(correct.shape)
         overlay[correct & ~void_bool] = np.array([0,250,0], dtype=overlay.dtype)
         overlay[~correct & ~void_bool] = np.array([250,0,0], dtype=overlay.dtype)
 
-
-    transform = get_window_transform(
-        window,
-        initial_profile
-    )
-    profile = {
-        'driver': 'GTiff',
-        'dtype': 'float32',
-        'nodata': None,
-        'width': window.width,
-        'height': window.height,
-        'count': 3,
-        'crs': initial_profile['crs'],
-        'transform': transform,
-        'tiled': False,
-        'interleave': 'pixel'
-    }
- 
-    with rasterio.open(output_path, 'w', **profile) as dst:
-        dst.write(overlay.transpose(2,0,1))
+    write_array(overlay.transpose(2,0,1), tile, output_path, initial_profile)
