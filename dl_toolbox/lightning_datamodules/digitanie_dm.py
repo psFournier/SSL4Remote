@@ -18,7 +18,7 @@ from dl_toolbox.torch_datasets import DigitanieDs
 class DigitanieDm(LightningDataModule):
 
     def __init__(self,
-                 #data_path,
+                 data_path,
                  splitfile_path,
                  test_fold,
                  crop_size,
@@ -31,7 +31,7 @@ class DigitanieDm(LightningDataModule):
                  **kwargs):
 
         super().__init__()
-        #self.data_path = data_path
+        self.data_path = data_path
         self.splitfile_path = splitfile_path
         self.test_fold = test_fold
         self.crop_size = crop_size
@@ -45,7 +45,7 @@ class DigitanieDm(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        #parser.add_argument("--data_path", type=str)
+        parser.add_argument("--data_path", type=str)
         parser.add_argument("--splitfile_path", type=str)
         parser.add_argument("--test_fold", type=int)
         parser.add_argument("--epoch_len", type=int)
@@ -63,7 +63,7 @@ class DigitanieDm(LightningDataModule):
 
     def setup(self, stage=None):
         
-        merges = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9]]
+        merges = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
         self.labels = list(range(len(merges)))
         self.class_names = ['other',
                             'bare ground', 
@@ -74,19 +74,21 @@ class DigitanieDm(LightningDataModule):
                             'parking',
                             'pedestrian',
                             'road',
-                            #'water',
-                            'railways']
-        self.label_colors = [(255,255,255), 
-                             (184,141,21), 
-                             (34,139,34), 
-                             (0,0,238),
-                             (238,118,33), 
-                             (0,222,137), 
-                             (118,118,118), 
-                             (48,48,48), 
-                             (38,38,38), 
-                             #(33,203,220),
-                             (112, 53,0)]
+                            'railways',
+                            'swimmingpool']
+        self.label_colors = [
+            (0,0,0),
+            (100,50,0),
+            (0,250,50),
+            (0,50,250),
+            (250,50,50),
+            (0,100,50),
+            (200,200,200),
+            (200,150,50),
+            (100,100,100),
+            (200,100,200),
+            (50,150,250)
+        ]
         
         train_datasets = []
         validation_datasets = []
@@ -103,8 +105,8 @@ class DigitanieDm(LightningDataModule):
                     height=int(row[7])
                 )
                 dataset = DigitanieDs(
-                    image_path=row[2],
-                    label_path=row[3],
+                    image_path=os.path.join(self.data_path, row[2]),
+                    label_path=os.path.join(self.data_path,row[3]),
                     fixed_crops=is_val,
                     tile=window,
                     crop_size=self.crop_size,
