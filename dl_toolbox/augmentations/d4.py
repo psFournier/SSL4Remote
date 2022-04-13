@@ -1,7 +1,7 @@
 import torch
 import torchvision.transforms.functional as F
 import random
-from dl_toolbox.augmentations import Compose, NoOp
+import dl_toolbox.augmentations as aug
 
 class Vflip(torch.nn.Module):
 
@@ -135,23 +135,52 @@ class Rot270:
 #
 #         return img, label
 
-class D4(torch.nn.Module):
+class D4:
 
-    def __init__(self, p=1):
-        super().__init__()
-        self.transforms = [
-            # NoOp(),
-            Hflip(p=1),
-            Vflip(p=1),
-            Transpose1(p=1),
-            Transpose2(p=1),
-            Rot90(p=1),
-            Rot180(p=1),
-            Rot270(p=1)
-        ]
+    def __init__(self):
+        self.d4 = aug.OneOf(
+            [
+                aug.NoOp(),
+                Hflip(p=1),
+                Vflip(p=1),
+                Transpose1(p=1),
+                Transpose2(p=1),
+                Rot90(p=1),
+                Rot180(p=1),
+                Rot270(p=1)
+            ],
+            transforms_ps=[
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1,
+                1
+            ]
+        )
 
     def __call__(self, img, label):
+        return self.d4(img, label)
 
-        t = random.choice(self.transforms)
-
-        return t(img, label)
+#class D4(torch.nn.Module):
+#
+#    def __init__(self, p=1):
+#        super().__init__()
+#        self.transforms = [
+#            NoOp(),
+#            Hflip(p=1),
+#            Vflip(p=1),
+#            Transpose1(p=1),
+#            Transpose2(p=1),
+#            Rot90(p=1),
+#            Rot180(p=1),
+#            Rot270(p=1)
+#        ]
+#
+#    def __call__(self, img, label):
+#
+#        t = random.choice(self.transforms)
+#
+#        return t(img, label)

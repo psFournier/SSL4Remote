@@ -133,10 +133,11 @@ class DigitanieDs(Dataset):
 def main():
 
     dataset = DigitanieDs(
-        image_path='/work/OT/ai4geo/DATA/DATASETS/DIGITANIE/Toulouse/toulouse_tuile_7_img_normalized.tif',
-        label_path='/work/OT/ai4geo/DATA/DATASETS/DIGITANIE/Toulouse/toulouse_tuile_7.tif',
+        image_path='/home/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7_img_normalized.tif',
+        label_path='/home/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7.tif',
         crop_size=256,
-        img_aug='no',
+        crop_step=256,
+        img_aug='d4_color-1',
         tile=Window(col_off=500, row_off=502, width=400, height=400),
         fixed_crops=True
     )
