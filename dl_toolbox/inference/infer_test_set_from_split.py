@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import os
 import csv
 import torch
 import numpy as np
@@ -18,7 +19,8 @@ def main():
     # Required arguments
     parser.add_argument("--ckpt_path", type=str)
     parser.add_argument("--splitfile_path", type=str)
-    parser.add_argument("--test_fold", type=int)
+    parser.add_argument("--data_path", type=str)
+    parser.add_argument("--test_fold", nargs='+', type=int)
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--tta", nargs='+', type=str, default=[])
     parser.add_argument("--label_path", type=str, default=None)
@@ -55,16 +57,20 @@ def main():
     
     metrics = {
         'accuracy': [],
-        'f1': []
+        'f1': [],
+        'iou': [],
+        'f1_per_class': [],
+        'accu_per_class': []
     }
+    global_cm = np.zeros(shape=(args.num_classes, args.num_classes))
     with open(args.splitfile_path, newline='') as splitfile:
         reader = csv.reader(splitfile)
         next(reader)
         for row in reader:
             city,tile, img_path, label_path, x0, y0, patch_width, patch_height, fold_id = row
-            if int(fold_id) == args.test_fold:
+            if int(fold_id) in args.test_fold:
                 probas = dl_inf.compute_probas(
-                    image_path=img_path,
+                    image_path=os.path.join(args.data_path, img_path),
                     tile=(int(x0), int(y0), int(patch_width), int(patch_height)),
                     dataset_type=args.dataset,
                     module=module,
@@ -72,24 +78,27 @@ def main():
                     workers=args.workers,
                     crop_size=args.crop_size,
                     crop_step=args.crop_step,
-                    tta=args.tta
+                    tta=args.tta,
+                    mode='sigmoid'
                 )
                 preds = dl_inf.probas_to_preds(
                     torch.unsqueeze(probas, dim=0)
                 ) + int(not args.train_with_void)
-                row_metrics = dl_inf.compute_metrics(
+                row_cm = dl_inf.compute_cm(
                     preds=torch.squeeze(preds),
-                    label_path=label_path,
+                    label_path=os.path.join(args.data_path, label_path),
                     dataset_type=args.dataset,
                     tile=(int(x0), int(y0), int(patch_width), int(patch_height)),
-                    eval_with_void=args.eval_with_void
+                    eval_with_void=args.eval_with_void,
+                    num_classes=args.num_classes
                 )
-                print(img_path, x0, y0, row_metrics)
-                for k, v in row_metrics.items():
-                    metrics[k].append(v)
+                global_cm += row_cm
+    
+    ignore_index = -1 if args.eval_with_void else 0
+    metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(global_cm, ignore_index=ignore_index)
+    print(metrics_per_class_df)
+    print(average_metrics_df)
 
-    final_metrics = {k: np.mean(v) for k, v in metrics.items()}
-    print(final_metrics)
 
 if __name__ == "__main__":
 

@@ -47,7 +47,7 @@ class DigitanieDm(LightningDataModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_path", type=str)
         parser.add_argument("--splitfile_path", type=str)
-        parser.add_argument("--test_fold", type=int)
+        parser.add_argument("--test_fold", nargs='+', type=int)
         parser.add_argument("--epoch_len", type=int)
         parser.add_argument("--sup_batch_size", type=int)
         parser.add_argument("--crop_size", type=int)
@@ -96,7 +96,7 @@ class DigitanieDm(LightningDataModule):
             reader = csv.reader(splitfile)
             next(reader)
             for row in reader:
-                is_val = int(row[8])==self.test_fold
+                is_val = int(row[8]) in self.test_fold
                 aug = 'no' if is_val else self.img_aug
                 window = Window(
                     col_off=int(row[4]),
@@ -133,7 +133,7 @@ class DigitanieDm(LightningDataModule):
         train_dataloader = DataLoader(
             dataset=self.train_set,
             batch_size=self.sup_batch_size,
-            collate_fn=CustomCollate(self.batch_aug),
+            collate_fn=CustomCollate(batch_aug=self.batch_aug),
             sampler=train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -147,7 +147,7 @@ class DigitanieDm(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             shuffle=False,
-            collate_fn=CustomCollate(),
+            collate_fn=CustomCollate(batch_aug='no'),
             batch_size=self.sup_batch_size,
             num_workers=self.num_workers,
             pin_memory=True,

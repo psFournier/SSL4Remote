@@ -1,6 +1,7 @@
 import dl_toolbox.augmentations as aug 
 
 aug_dict = {
+    'no': aug.NoOp,
     'd4': aug.D4,
     'hflip': aug.Hflip,
     'vflip': aug.Vflip,
@@ -74,7 +75,7 @@ aug_dict = {
 def get_transforms(name: str):
     
     parts = name.split('_')
-    aug_list = [aug.NoOp()]
+    aug_list = []
     for part in parts:
         if part.startswith('color'):
             bounds = part.split('-')[-1]

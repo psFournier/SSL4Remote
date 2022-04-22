@@ -4,7 +4,7 @@ import dl_toolbox.augmentations as aug
 
 class CustomCollate():
 
-    def __init__(self, batch_aug=None):
+    def __init__(self, batch_aug):
 
         self.batch_aug = aug.get_transforms(batch_aug)
 

@@ -98,14 +98,19 @@ def main():
     if args.label_path:
         
         print('Computing metrics')
-        metrics = dl_inf.compute_metrics(
+        cm = dl_inf.compute_cm(
             preds=torch.squeeze(preds),
             label_path=args.label_path,
             dataset_type=args.dataset,
             tile=args.tile,
-            eval_with_void=args.eval_with_void
+            eval_with_void=args.eval_with_void,
+            num_classes=args.num_classes
         )
-        print(metrics)
+
+        ignore_index = None if args.eval_with_void else 0
+        metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(cm, ignore_index=ignore_index)
+        print(metrics_per_class_df)
+        print(average_metrics_df)
 
         if args.stat_class >= 0:
             
