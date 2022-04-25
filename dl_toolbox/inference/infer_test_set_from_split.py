@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import matplotlib.pyplot as plt
 import os
 import csv
 import torch
@@ -6,6 +7,14 @@ import numpy as np
 import rasterio
 from dl_toolbox.lightning_modules import Unet
 import dl_toolbox.inference as dl_inf
+from dl_toolbox.callbacks import plot_confusion_matrix
+from dl_toolbox.torch_datasets import DigitanieDs, SemcityBdsdDs
+
+datasets = {
+    'semcity': SemcityBdsdDs,
+    'digitanie': DigitanieDs
+}
+
 
 def main():
 
@@ -98,6 +107,10 @@ def main():
     metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(global_cm, ignore_index=ignore_index)
     print(metrics_per_class_df)
     print(average_metrics_df)
+    norm_confmat = global_cm/(np.sum(global_cm,axis=1)[:,None]) 
+    class_names = [l[1] for l in datasets[args.dataset].DATASET_DESC['labels']]
+    figure = plot_confusion_matrix(norm_confmat, class_names=class_names)
+    plt.savefig('/home/eh/fournip/cm.jpg')
 
 
 if __name__ == "__main__":
