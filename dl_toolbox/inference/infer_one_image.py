@@ -107,8 +107,8 @@ def main():
             num_classes=args.num_classes
         )
 
-        ignore_index = None if args.eval_with_void else 0
-        metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(cm, ignore_index=ignore_index)
+        #ignore_index = None if args.eval_with_void else 0
+        metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(cm, ignore_index=-1)
         print(metrics_per_class_df)
         print(average_metrics_df)
 

@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
 import os
+import pandas as pd
 import csv
 import torch
 import numpy as np
@@ -29,6 +30,7 @@ def main():
     parser.add_argument("--ckpt_path", type=str)
     parser.add_argument("--splitfile_path", type=str)
     parser.add_argument("--data_path", type=str)
+    parser.add_argument("--output_path", type=str)
     parser.add_argument("--test_fold", nargs='+', type=int)
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--tta", nargs='+', type=str, default=[])
@@ -103,14 +105,22 @@ def main():
                 )
                 global_cm += row_cm
     
-    ignore_index = -1 if args.eval_with_void else 0
-    metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(global_cm, ignore_index=ignore_index)
+    #ignore_index = -1 if args.eval_with_void else 0
+    metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(global_cm, ignore_index=-1)
+    labels = datasets[args.dataset].DATASET_DESC['labels']
+    metrics_per_class_df.rename(
+        index=dict(labels),
+        inplace=True
+    )
+    with pd.ExcelWriter(os.path.join(args.output_path, 'metrics.xlsx')) as writer:
+        metrics_per_class_df.to_excel(writer, sheet_name='metrics_per_class')
+        average_metrics_df.to_excel(writer, sheet_name='average_metrics')
     print(metrics_per_class_df)
     print(average_metrics_df)
     norm_confmat = global_cm/(np.sum(global_cm,axis=1)[:,None]) 
-    class_names = [l[1] for l in datasets[args.dataset].DATASET_DESC['labels']]
+    class_names = [l[1] for l in labels]
     figure = plot_confusion_matrix(norm_confmat, class_names=class_names)
-    plt.savefig('/home/eh/fournip/cm.jpg')
+    plt.savefig(os.path.join(args.output_path,'confmat.jpg'))
 
 
 if __name__ == "__main__":

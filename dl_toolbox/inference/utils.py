@@ -243,10 +243,10 @@ def cm2metrics(cm, ignore_index=-1):
             "IoU": iou
         })
 
-        mF1 = (2*np.sum(TP)) / (2 * np.sum(TP) + np.sum(FP) +np.sum(FN))
-        mRecall = np.sum(TP) / (np.sum(TP) + np.sum(FN))
-        mPrecision = np.sum(TP) / (np.sum(TP) + np.sum(FP))
-        mIou = np.sum(TP) / (np.sum(TP) + np.sum(FP) + np.sum(FN))
+        #mF1 = (2*np.sum(TP)) / (2 * np.sum(TP) + np.sum(FP) +np.sum(FN))
+        #mRecall = np.sum(TP) / (np.sum(TP) + np.sum(FN))
+        #mPrecision = np.sum(TP) / (np.sum(TP) + np.sum(FP))
+        #mIou = np.sum(TP) / (np.sum(TP) + np.sum(FP) + np.sum(FN))
 
         # Accuracy
         obs_acc = sum(TP) / np.sum(cm[np.array([l for l in labels if l != ignore_index]), :])
@@ -254,23 +254,23 @@ def cm2metrics(cm, ignore_index=-1):
         marg_freq = np.sum(cm, axis=0) * np.sum(cm, axis=1) / np.sum(cm)
         exp_acc = sum(marg_freq) / np.sum(cm)
         kappa = (obs_acc - exp_acc) / (1 - exp_acc)
+        #average_metrics = pd.DataFrame({
+        #    "mF1": [mF1],
+        #    "mRecall": [mRecall],
+        #    "mPrecision": [mPrecision],
+        #    "mIoU": [mIou],
+        #    "OAccuracy": [obs_acc],
+        #    "Kappa": [kappa]
+        #})
+       
         average_metrics = pd.DataFrame({
-            "mF1": [mF1],
-            "mRecall": [mRecall],
-            "mPrecision": [mPrecision],
-            "mIoU": [mIou],
+            "mF1": [np.mean(f1)],
+            "mRecall": [np.mean(recall)],
+            "mPrecision": [np.mean(precision)],
+            "mIoU": [np.mean(iou)],
             "OAccuracy": [obs_acc],
             "Kappa": [kappa]
         })
-       
-#        average_metrics = pd.DataFrame({
-#            "mF1": [np.mean(f1)],
-#            "mRecall": [np.mean(recall)],
-#            "mPrecision": [np.mean(precision)],
-#            "mIoU": [np.mean(iou)],
-#            "OAccuracy": [obs_acc],
-#            "Kappa": [kappa]
-#        })
         return metrics_per_class, average_metrics
 
 def compute_cm(
