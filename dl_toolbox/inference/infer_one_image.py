@@ -4,6 +4,12 @@ import numpy as np
 import rasterio
 from dl_toolbox.lightning_modules import Unet
 import dl_toolbox.inference as dl_inf
+from dl_toolbox.torch_datasets import DigitanieDs, SemcityBdsdDs
+
+datasets = {
+    'semcity': SemcityBdsdDs,
+    'digitanie': DigitanieDs
+}
 
 def main():
 
@@ -109,6 +115,12 @@ def main():
 
         #ignore_index = None if args.eval_with_void else 0
         metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(cm, ignore_index=-1)
+        labels = datasets[args.dataset].DATASET_DESC['labels']
+        metrics_per_class_df.rename(
+            index=dict(labels),
+            inplace=True
+        )
+
         print(metrics_per_class_df)
         print(average_metrics_df)
 
