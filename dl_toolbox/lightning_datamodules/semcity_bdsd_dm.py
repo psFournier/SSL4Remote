@@ -18,9 +18,8 @@ from dl_toolbox.torch_datasets import SemcityBdsdDs
 class SemcityBdsdDm(LightningDataModule):
 
     def __init__(self,
+                 data_path,
                  splitfile_path,
-                 #image_path,
-                 #label_path,
                  test_fold,
                  crop_size,
                  epoch_len,
@@ -32,11 +31,9 @@ class SemcityBdsdDm(LightningDataModule):
                  **kwargs):
 
         super().__init__()
-        #self.image_path = image_path
+        self.data_path = data_path 
         self.splitfile_path = splitfile_path
         self.test_fold = test_fold
-        #self.class_names = [label[2] for label in SemcityBdsdDs.labels_desc]
-        #self.label_path = label_path
         self.crop_size = crop_size
         self.epoch_len = epoch_len
         self.sup_batch_size = sup_batch_size
@@ -48,9 +45,9 @@ class SemcityBdsdDm(LightningDataModule):
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--data_path", type=str)
         parser.add_argument("--splitfile_path", type=str)
         parser.add_argument("--test_fold", type=int)
-        #parser.add_argument("--data_path", type=str)
         parser.add_argument("--epoch_len", type=int, default=10000)
         parser.add_argument("--sup_batch_size", type=int, default=16)
         parser.add_argument("--crop_size", type=int, default=128)
@@ -66,7 +63,9 @@ class SemcityBdsdDm(LightningDataModule):
 
     def setup(self, stage=None):
 
-        self.class_names = [info[2] for info in SemcityBdsdDs.labels_desc]
+        self.label_colors = SemcityBdsdDs.DATASET_DESC['label_colors']
+        self.labels = list(range(len(self.label_colors)))
+        self.class_names = [info[1] for info in SemcityBdsdDs.DATASET_DESC['labels']]
          
         train_datasets = []
         validation_datasets = []
@@ -83,13 +82,13 @@ class SemcityBdsdDm(LightningDataModule):
                     height=int(row[7])
                 )
                 dataset = SemcityBdsdDs(
-                    image_path=row[2],
-                    label_path=row[3],
+                    image_path=os.path.join(self.data_path, row[2]),
+                    label_path=os.path.join(self.data_path, row[3]),
                     fixed_crops=is_val,
                     tile=window,
                     crop_size=self.crop_size,
                     crop_step=self.crop_size,
-                    img_aug=self.img_aug
+                    img_aug=aug
                 )
                 if is_val:
                     validation_datasets.append(dataset)
@@ -111,7 +110,7 @@ class SemcityBdsdDm(LightningDataModule):
         train_dataloader = DataLoader(
             dataset=self.train_set,
             batch_size=self.sup_batch_size,
-            collate_fn=CustomCollate(self.batch_aug),
+            collate_fn=CustomCollate(batch_aug=self.batch_aug),
             sampler=train_sampler,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -125,7 +124,7 @@ class SemcityBdsdDm(LightningDataModule):
         val_dataloader = DataLoader(
             dataset=self.val_set,
             shuffle=False,
-            collate_fn=CustomCollate(),
+            collate_fn=CustomCollate(batch_aug='no'),
             batch_size=self.sup_batch_size,
             num_workers=self.num_workers,
             pin_memory=True,
@@ -137,7 +136,7 @@ class SemcityBdsdDm(LightningDataModule):
     def label_to_rgb(self, labels):
 
         rgb_label = np.zeros(shape=(*labels.shape, 3), dtype=float)
-        for val, color, _, _ in SemcityBdsdDs.labels_desc:
+        for val, color in zip(self.labels, self.label_colors):
             mask = np.array(labels == val)
             rgb_label[mask] = np.array(color)
         rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
@@ -177,17 +176,20 @@ class SemcityBdsdDmSemisup(SemcityBdsdDm):
 def main():
 
     datamodule = SemcityBdsdDm(
-        image_path='/home/pfournie/ai4geo/data/SemcityTLS_DL/BDSD_M_3_4_7_8.tif',
-        label_path='/home/pfournie/ai4geo/data/SemcityTLS_DL/GT_3_4_7_8.tif',
+        data_path='/d/pfournie/ai4geo/data/SemcityTLS_DL',
+        splitfile_path='/d/pfournie/ai4geo/split_semcity.csv',
+        test_fold=4,
         crop_size=128,
         epoch_len=100,
         sup_batch_size=16,
         workers=0,
-        img_aug='no',
+        img_aug='d4_color-0',
         batch_aug='no',
     )
 
-    for batch in datamodule.train_dataloader:
+    datamodule.setup()
+    dataloader = datamodule.train_dataloader()
+    for batch in dataloader:
 
         print(batch['image'].shape)
 

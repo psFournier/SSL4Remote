@@ -11,23 +11,47 @@ from rasterio.windows import Window, bounds, from_bounds
 
 class SemcityBdsdDs(Dataset):
 
-    labels_desc = [
-        (0, (255, 255, 255), 'void', 1335825),
-        (1, (38, 38, 38), 'impervious surface', 13109372),
-        (2, (238, 118, 33), 'building', 9101418),
-        (3, (34, 139, 34), 'pervious surface', 12857668),
-        (4, (0, 222, 137), 'high vegetation', 8214402),
-        (5, (255, 0, 0), 'car', 1015653),
-        (6, (0, 0, 238), 'water', 923176),
-        (7, (160, 30, 230), 'sport venues', 1825718)
-    ]
-    # Min and max are 1 and 99 percentiles
-    image_stats = {
-        'num_channels': 8,
+    DATASET_DESC = {
+        'labels' : [
+            (0, 'void'),
+            (1, 'impervious surface'),
+            (2, 'building'),
+            (3, 'pervious surface'),
+            (4, 'high vegetation'),
+            (5, 'car'),
+            (6, 'water'),
+            (7, 'sport venue')
+        ],
         'min' : np.array([245, 166, 167, 107, 42, 105, 60, 48]),
-        'max' : np.array([615, 681, 1008, 1087, 732, 1065, 1126, 1046])
+        'max' : np.array([615, 681, 1008, 1087, 732, 1065, 1126, 1046]),
+        'label_colors' : [
+            (255, 255, 255),
+            (38, 38, 38),
+            (238, 118, 33),
+            (34, 139, 34),
+            (0, 222, 137),
+            (255, 0, 0),
+            (0, 0, 238),
+            (160, 30, 230)
+        ]
     }
-    color_map = {k: v for k,v in [(e[0], e[1]) for e in labels_desc]}
+#    labels_desc = [
+#        , 'void', 1335825),
+#        impervious surface', 13109372),
+#         'building', 9101418),
+#        'pervious surface', 12857668),
+#        'high vegetation', 8214402),
+#        ar', 1015653),
+#        ater', 923176),
+#         'sport venues', 1825718)
+#    ]
+#    # Min and max are 1 and 99 percentiles
+#    image_stats = {
+#        'num_channels': 8,
+#        'min' : np.array([245, 166, 167, 107, 42, 105, 60, 48]),
+#        'max' : np.array([615, 681, 1008, 1087, 732, 1065, 1126, 1046])
+#    }
+    color_map = {k: v for k,v in enumerate(DATASET_DESC['label_colors'])}
 
     def __init__(
         self,
@@ -56,6 +80,18 @@ class SemcityBdsdDs(Dataset):
         self.crop_size = crop_size
         self.img_aug = aug.get_transforms(img_aug)
         
+        #self.merge_labels = merge_labels
+        #if merge_labels is None:
+        #    self.labels, self.label_names = map(list, zip(*self.DATASET_DESC['labels']))
+        #    self.label_merger = None
+        #else:
+        #    labels, self.label_names = merge_labels
+        #    self.labels = list(range(len(labels)))
+        #    self.label_merger = MergeLabels(labels)
+
+        #self.one_hot_labels = one_hot_labels
+        #if self.one_hot_labels:
+        #    self.one_hot = OneHot(self.labels)
 
 
     def __len__(self):
@@ -76,7 +112,7 @@ class SemcityBdsdDs(Dataset):
             with rasterio.open(self.label_path) as label_file:
                 label = label_file.read(window=window, out_dtype=np.float32)
             onehot_masks = []
-            for _, color, _, _ in self.labels_desc:
+            for color in self.DATASET_DESC['label_colors']:
                 d = label[0, :, :] == color[0]
                 d = np.logical_and(d, (label[1, :, :] == color[1]))
                 d = np.logical_and(d, (label[2, :, :] == color[2]))
@@ -86,7 +122,7 @@ class SemcityBdsdDs(Dataset):
             
         with rasterio.open(self.image_path) as image_file:
             image = image_file.read(window=window, out_dtype=np.float32)
-        m, M = self.image_stats['min'][[3,2,1]], self.image_stats['max'][[3,2,1]]
+        m, M = self.DATASET_DESC['min'][[3,2,1]], self.DATASET_DESC['max'][[3,2,1]]
         image = torch.from_numpy(minmax(image[[3,2,1],...], m, M)).float().contiguous()
 
         if self.img_aug is not None:
@@ -104,10 +140,11 @@ class SemcityBdsdDs(Dataset):
 def main():
 
     dataset = SemcityBdsdDs(
-        image_path='/home/pfournie/ai4geo/data/SemcityTLS_DL/BDSD_M_3_4_7_8.tif',
-        label_path='/home/pfournie/ai4geo/data/SemcityTLS_DL/GT_3_4_7_8.tif',
+        image_path='/d/pfournie/ai4geo/data/SemcityTLS_DL/BDSD_M_3_4_7_8.tif',
+        label_path='/d/pfournie/ai4geo/data/SemcityTLS_DL/GT_3_4_7_8.tif',
         crop_size=128,
-        img_aug='no',
+        crop_step=128,
+        img_aug='d4_color-1',
         tile=Window(col_off=876, row_off=863, width=876, height=863),
         fixed_crops=True
     )
