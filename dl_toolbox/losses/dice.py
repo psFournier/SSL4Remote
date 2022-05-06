@@ -2,7 +2,6 @@ from typing import List
 
 import torch
 import torch.nn.functional as F
-from pytorch_toolbelt.utils.torch_utils import to_tensor
 from torch import Tensor
 from torch.nn.modules.loss import _Loss
 
@@ -51,7 +50,6 @@ class DiceLoss(_Loss):
     def __init__(
             self,
             mode: str,
-            classes: List[int] = None,
             log_loss=False,
             from_logits=True,
             smooth: float = 0.0,
@@ -61,8 +59,6 @@ class DiceLoss(_Loss):
         """
 
         :param mode: Metric mode {'binary', 'multiclass', 'multilabel'}
-        :param classes: Optional list of classes that contribute in loss computation;
-        By default, all channels are included.
         :param log_loss: If True, loss computed as `-log(jaccard)`; otherwise `1 - jaccard`
         :param from_logits: If True assumes input is raw logits
         :param smooth:
@@ -72,11 +68,6 @@ class DiceLoss(_Loss):
         assert mode in {BINARY_MODE, MULTILABEL_MODE, MULTICLASS_MODE}
         super(DiceLoss, self).__init__()
         self.mode = mode
-        if classes is not None:
-            assert mode != BINARY_MODE, "Masking classes is not supported with mode=binary"
-            classes = to_tensor(classes, dtype=torch.long)
-
-        self.classes = classes
         self.from_logits = from_logits
         self.smooth = smooth
         self.eps = eps
@@ -151,8 +142,5 @@ class DiceLoss(_Loss):
 
         mask = y_true.sum(dims) > 0
         loss *= mask.to(loss.dtype)
-
-        if self.classes is not None:
-            loss = loss[self.classes]
 
         return loss.mean()
