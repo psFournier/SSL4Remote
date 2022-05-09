@@ -7,4 +7,4 @@ rasterio
 torch
 segmentation_models_pytorch
 pytorch_lightning
-pytorch-toolbelt
+torchmetrics==0.7.2
