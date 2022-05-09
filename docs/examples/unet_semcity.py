@@ -28,13 +28,6 @@ def main():
             ModelCheckpoint(monitor='Val_Dice', mode='min'),
             ModelCheckpoint(),
             SegmentationImagesVisualisation(),
-            StochasticWeightAveraging(
-                swa_epoch_start=0.91,
-                swa_lrs=0.005,
-                annealing_epochs=1,
-                annealing_strategy='linear',
-                device=None
-            ),
             ConfMatLogger()
         ],
         log_every_n_steps=300,

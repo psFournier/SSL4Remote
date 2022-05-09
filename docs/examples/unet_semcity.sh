@@ -1,17 +1,16 @@
 #!/bin/bash
 
-DATA=/d/pfournie/ai4geo/data
-PYTHON=/d/pfournie/ai4geo/venv/bin/python3
-SCRIPT=/d/pfournie/ai4geo/python_scripts/unet_semcity.py
+PYTHON=/d/pfournie/semi-supervised-learning/venv/bin/python3
+SCRIPT=/d/pfournie/semi-supervised-learning/docs/examples/unet_semcity.py
 
 "${PYTHON}" "${SCRIPT}" \
---data_path /d/pfournie/ai4geo/data/SemcityTLS_DL \
---splitfile_path /d/pfournie/ai4geo/split_semcity.csv \
+--data_path /scratchf/semcity_merged \
+--splitfile_path /d/pfournie/split_semcity.csv \
 --test_fold 4 \
---output_dir /d/pfournie/ai4geo/outputs \
+--output_dir /d/pfournie/semi-supervised-learning/outputs \
 --sup_batch_size 8 \
 --workers 6 \
---max_epochs 100 \
+--max_epochs 10 \
 --epoch_len 2000 \
 --crop_size 256 \
 --num_classes 8 \
@@ -26,4 +25,5 @@ SCRIPT=/d/pfournie/ai4geo/python_scripts/unet_semcity.py
 --pretrained \
 --train_with_void \
 --limit_train_batch 1 \
+--limit_val_batch 1 \
 --gpus 1
