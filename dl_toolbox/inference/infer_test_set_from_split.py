@@ -31,6 +31,7 @@ def main():
     parser.add_argument("--splitfile_path", type=str)
     parser.add_argument("--data_path", type=str)
     parser.add_argument("--output_path", type=str)
+    parser.add_argument("--write_probas", action='store_true')
     parser.add_argument("--test_fold", nargs='+', type=int)
     parser.add_argument("--dataset", type=str)
     parser.add_argument("--tta", nargs='+', type=str, default=[])
@@ -78,11 +79,14 @@ def main():
         reader = csv.reader(splitfile)
         next(reader)
         for row in reader:
-            city,tile, img_path, label_path, x0, y0, patch_width, patch_height, fold_id = row
+            city,tile_num, img_path, label_path, x0, y0, patch_width, patch_height, fold_id = row
             if int(fold_id) in args.test_fold:
+                print(row)
+                image_path = os.path.join(args.data_path, img_path)
+                tile=(int(x0), int(y0), int(patch_width), int(patch_height))
                 probas = dl_inf.compute_probas(
-                    image_path=os.path.join(args.data_path, img_path),
-                    tile=(int(x0), int(y0), int(patch_width), int(patch_height)),
+                    image_path=image_path,
+                    tile=tile,
                     dataset_type=args.dataset,
                     module=module,
                     batch_size=args.batch_size,
@@ -92,6 +96,16 @@ def main():
                     tta=args.tta,
                     mode='sigmoid'
                 )
+                if args.write_probas:
+                    initial_profile = rasterio.open(image_path).profile
+                    output_probas = os.path.join(args.output_path, '_'.join([city, tile_num, x0, y0]) + '.tif')
+                    dl_inf.write_array(
+                        inputs=probas,
+                        tile=tile,
+                        output_path=output_probas,
+                        profile=initial_profile
+                    )
+
                 preds = dl_inf.probas_to_preds(
                     torch.unsqueeze(probas, dim=0)
                 ) + int(not args.train_with_void)

@@ -15,6 +15,7 @@ aug_dict = {
     'contrast': aug.Contrast,
     'gamma': aug.Gamma,
     'brightness': aug.Brightness,
+    'color': aug.Color
 }
 
 #def d4_transformation():

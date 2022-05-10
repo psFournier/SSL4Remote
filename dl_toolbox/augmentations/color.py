@@ -67,7 +67,8 @@ class Contrast(torch.nn.Module):
 
 class Color():
 
-    def __init__(self, bound):
+    def __init__(self, p=1, bound=0.3):
+        # p has no effect 
         self.bound = bound
         self.color_aug = aug.Compose(
             [
@@ -78,5 +79,5 @@ class Color():
             ]
         )
 
-    def __call__(self, image, label):
+    def __call__(self, image, label=None):
         return self.color_aug(image, label)
