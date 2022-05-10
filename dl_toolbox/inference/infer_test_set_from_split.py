@@ -10,6 +10,7 @@ from dl_toolbox.lightning_modules import Unet
 import dl_toolbox.inference as dl_inf
 from dl_toolbox.callbacks import plot_confusion_matrix
 from dl_toolbox.torch_datasets import DigitanieDs, SemcityBdsdDs
+import pathlib
 
 datasets = {
     'semcity': SemcityBdsdDs,
@@ -98,9 +99,10 @@ def main():
                 )
                 if args.write_probas:
                     initial_profile = rasterio.open(image_path).profile
+                    pathlib.Path(args.output_path).mkdir(parents=True, exist_ok=True)
                     output_probas = os.path.join(args.output_path, '_'.join([city, tile_num, x0, y0]) + '.tif')
                     dl_inf.write_array(
-                        inputs=probas,
+                        inputs=probas[[4],...],
                         tile=tile,
                         output_path=output_probas,
                         profile=initial_profile
