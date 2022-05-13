@@ -63,32 +63,49 @@ class DigitanieDm(LightningDataModule):
 
     def setup(self, stage=None):
         
-        merges = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
+        #merges = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
+        merges = [[0,], [1, 2], [3, 10], [4], [5], [6, 7, 8, 9]]
         self.labels = list(range(len(merges)))
-        self.class_names = ['other',
-                            'bare ground', 
-                            'low vegetation',
-                            'water',
-                            'building',
-                            'high vegetation',
-                            'parking',
-                            'pedestrian',
-                            'road',
-                            'railways',
-                            'swimmingpool']
-        self.label_colors = [
-            (0,0,0),
-            (100,50,0),
-            (0,250,50),
-            (0,50,250),
-            (250,50,50),
-            (0,100,50),
-            (200,200,200),
-            (200,150,50),
-            (100,100,100),
-            (200,100,200),
-            (50,150,250)
+        #self.class_names = ['other',
+        #                    'bare ground', 
+        #                    'low vegetation',
+        #                    'water',
+        #                    'building',
+        #                    'high vegetation',
+        #                    'parking',
+        #                    'pedestrian',
+        #                    'road',
+        #                    'railways',
+        #                    'swimmingpool']
+        self.class_names = [
+            'other',
+            'pervious surface',
+            'water',
+            'building',
+            'high vegetation',
+            'transport network'
         ]
+        self.label_colors = [
+            (255, 255, 255),
+            (34, 139, 34),
+            (0, 0, 238),
+            (238, 118, 33),
+            (0, 222, 137),
+            (38, 38, 38),
+        ]
+        #self.label_colors = [
+        #    (0,0,0),
+        #    (100,50,0),
+        #    (0,250,50),
+        #    (0,50,250),
+        #    (250,50,50),
+        #    (0,100,50),
+        #    (200,200,200),
+        #    (200,150,50),
+        #    (100,100,100),
+        #    (200,100,200),
+        #    (50,150,250)
+        #]
         
         train_datasets = []
         validation_datasets = []
@@ -191,11 +208,16 @@ class DigitanieSemisupDm(DigitanieDm):
     def setup(self, stage=None):
 
         super().setup()
+        big_raster_path = os.path.join(self.data_path, 'Toulouse', 'normalized_mergedTO.tif'),
+        width, height = imagesize.get(big_raster_path)
+        tile = Window(0, 0, width, height)
+        
         self.unsup_train_set = DigitanieDs(
-            image_path=os.path.join(self.data_path, 'Toulouse',
-                                    'normalized_mergedTO.tif'),
+            image_path=big_raster_path,
+            tile=tile,
             fixed_crops=False,
             crop_size=self.unsup_crop_size,
+            crop_step=self.unsup_crop_size,
             img_aug=self.img_aug
         )
 
@@ -212,7 +234,7 @@ class DigitanieSemisupDm(DigitanieDm):
             dataset=self.unsup_train_set,
             batch_size=self.unsup_batch_size,
             sampler=unsup_train_sampler,
-            collate_fn=CustomCollate(),
+            collate_fn=CustomCollate(batch_aug='no'),
             num_workers=self.num_workers,
             pin_memory=True,
             worker_init_fn=worker_init_function
@@ -224,4 +246,5 @@ class DigitanieSemisupDm(DigitanieDm):
         }
 
         return train_dataloaders 
+
 

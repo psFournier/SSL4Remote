@@ -9,6 +9,7 @@ import imagesize
 import numpy as np
 from rasterio.windows import Window, bounds, from_bounds
 from dl_toolbox.utils import MergeLabels, OneHot
+import matplotlib.pyplot as plt
 
 
 
@@ -31,6 +32,8 @@ class DigitanieDs(Dataset):
         ],
         'percentile2': [0.0357, 0.0551, 0.0674],
         'percentile98': [0.2945, 0.2734, 0.2662],
+        'min': [0, 0.0029, 0.0028, 0],
+        'max': [1.5431, 1.1549, 1.1198, 2.0693],
         'label_colors' : [
             (0,0,0),
             (100,50,0),
@@ -105,9 +108,13 @@ class DigitanieDs(Dataset):
             window = Window(cx, cy, self.crop_size, self.crop_size)
         
         with rasterio.open(self.image_path) as image_file:
-            image = image_file.read(window=window, out_dtype=np.float32)[:3, ...]
-        image = torch.from_numpy(image).float().contiguous()
-        
+            minx, miny, maxx, maxy = rasterio.windows.bounds(window, transform=image_file.transform)
+            with rasterio.open('/d/pfournie/ai4geo/data/DIGITANIE/Toulouse/normalized_mergedTO.tif') as big_raster:
+                window_in_original_raster = rasterio.windows.from_bounds(minx, miny, maxx, maxy, transform=big_raster.transform)
+                image = big_raster.read(window=window_in_original_raster, out_dtype=np.float32)[:3, ...]
+        m, M = self.DATASET_DESC['min'][:3], self.DATASET_DESC['max'][:3]
+        image = torch.from_numpy(minmax(image, np.array(m), np.array(M))).float().contiguous()
+       
         label = None
         if self.label_path:
 
@@ -137,13 +144,15 @@ def main():
         label_path='/d/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7.tif',
         crop_size=256,
         crop_step=256,
-        img_aug='d4_color-1',
+        img_aug='no',
         tile=Window(col_off=500, row_off=502, width=400, height=400),
         fixed_crops=True
     )
 
-    for data in dataset:
-        print(data['window'])
+    img = plt.imshow(dataset[0]['image'].numpy().transpose(1,2,0))
+
+    plt.show()
+
 
 if __name__ == '__main__':
     main()
