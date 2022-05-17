@@ -40,7 +40,6 @@ def main():
     parser.add_argument('--seed', type=int, default=1, metavar='S',
                         help='random seed (default: 1)')
     args = parser.parse_args()
-    args_dict = vars(args)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -125,10 +124,11 @@ def main():
 
     model.to(device)
 
-    loss_fn = torch.nn.BCEWithLogitsLoss(reduction='none')
+    # A changer pour le masking ("reduction=none")
+    loss_fn = torch.nn.BCEWithLogitsLoss()
 
     optimizer = SGD(
-        model,
+        model.parameters(),
         lr=args.initial_lr,
         momentum=0.9,
     )
@@ -190,7 +190,7 @@ def main():
         model.eval()
 
         for i, (input, target) in enumerate(val_dataloader):
-            
+
             input = input['image'].to(device)
             target = input['mask'].to(device)
 
