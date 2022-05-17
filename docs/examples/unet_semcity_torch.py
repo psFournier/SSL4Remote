@@ -190,9 +190,9 @@ def main():
         model.eval()
 
         for i, (input, target) in enumerate(val_dataloader):
-
-            input = input.to(device)
-            target = target.to(device)
+            
+            input = input['image'].to(device)
+            target = input['mask'].to(device)
 
             output = model(input)
             loss = loss_fn(output, target)
