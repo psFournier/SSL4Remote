@@ -149,12 +149,14 @@ class SemcityBdsdDmSemisup(SemcityBdsdDm):
 
         super().__init__(*args, **kwargs)
         self.unsup_batch_size = unsup_batch_size
+        self.unsup_crop_size = unsup_crop_size
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
-        parser.add_argument('--unsup_batch_size', type=str)
+        parser.add_argument('--unsup_batch_size', type=int)
+        parser.add_argument('--unsup_crop_size', type=int)
 
         return parser
 
@@ -166,8 +168,10 @@ class SemcityBdsdDmSemisup(SemcityBdsdDm):
         unsup_train_sets = [
             SemcityBdsdDs(
                 image_path=image_path,
+                tile=Window(0, 0, *imagesize.get(image_path)),
                 fixed_crops=False,
-                crop_size=128,
+                crop_size=self.unsup_crop_size,
+                crop_step=self.unsup_crop_size,
                 img_aug=self.img_aug
             ) for image_path in image_paths
         ]

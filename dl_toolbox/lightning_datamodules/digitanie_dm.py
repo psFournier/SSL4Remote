@@ -207,7 +207,7 @@ class DigitanieSemisupDm(DigitanieDm):
 
     def setup(self, stage=None):
 
-        super().setup()
+        super().setup(stage=stage)
         big_raster_path = os.path.join(self.data_path, 'Toulouse', 'normalized_mergedTO.tif'),
         width, height = imagesize.get(big_raster_path)
         tile = Window(0, 0, width, height)
