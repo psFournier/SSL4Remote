@@ -64,7 +64,7 @@ class DigitanieDm(LightningDataModule):
     def setup(self, stage=None):
         
         #merges = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
-        merges = [[0,], [1, 2], [3, 10], [4], [5], [6, 7, 8, 9]]
+        merges = [[0], [1, 2], [3, 10], [4], [5], [6, 7, 8, 9]]
         self.labels = list(range(len(merges)))
         #self.class_names = ['other',
         #                    'bare ground', 
