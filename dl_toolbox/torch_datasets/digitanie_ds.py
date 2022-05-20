@@ -111,12 +111,9 @@ class DigitanieDs(Dataset):
             minx, miny, maxx, maxy = rasterio.windows.bounds(window, transform=image_file.transform)
             with rasterio.open('/d/pfournie/ai4geo/data/DIGITANIE/Toulouse/normalized_mergedTO.tif') as big_raster:
                 window_in_original_raster = rasterio.windows.from_bounds(minx, miny, maxx, maxy, transform=big_raster.transform)
-                print(window_in_original_raster)
                 image = big_raster.read(window=window_in_original_raster, out_dtype=np.float32)[:3, ...]
         m, M = self.DATASET_DESC['min'][:3], self.DATASET_DESC['max'][:3]
-        print("image before minmax", image.shape)
         image = torch.from_numpy(minmax(image, np.array(m), np.array(M))).float().contiguous()
-        print("image",image.shape)
        
         label = None
         if self.label_path:
@@ -128,7 +125,6 @@ class DigitanieDs(Dataset):
             if self.one_hot:
                 label = self.one_hot(label)
             label = torch.from_numpy(label).float().contiguous()
-            print("label", label.shape)
 
         if self.img_aug is not None:
             end_image, end_mask = self.img_aug(img=image, label=label)
