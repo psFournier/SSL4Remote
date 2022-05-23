@@ -12,7 +12,40 @@ from rasterio.windows import Window
 
 from dl_toolbox.utils import worker_init_function
 from dl_toolbox.torch_collate import CustomCollate
-from dl_toolbox.torch_datasets import DigitanieDs
+from dl_toolbox.torch_datasets import DigitanieDs, DigitanieDs2
+
+
+def build_datasets_from_csv(splitfile, test_fold, img_aug, data_path, crop_size, merges, class_names):
+    validation_datasets, train_datasets = [], []
+    reader = csv.reader(splitfile)
+    next(reader)
+    for row in reader:
+        is_val = int(row[8]) in test_fold
+        aug = 'no' if is_val else img_aug
+        window = Window(
+            col_off=int(row[4]),
+            row_off=int(row[5]),
+            width=int(row[6]),
+            height=int(row[7])
+        )
+        dataset = DigitanieDs2(
+            image_path=os.path.join(data_path, row[2]),
+            label_path=os.path.join(data_path,row[3]),
+            fixed_crops=is_val,
+            tile=window,
+            crop_size=crop_size,
+            crop_step=crop_size,
+            img_aug=aug,
+            merge_labels=(merges, class_names),
+            one_hot_labels=True
+        )
+        if is_val:
+            validation_datasets.append(dataset)
+        else:
+            train_datasets.append(dataset)
+    train_set = ConcatDataset(train_datasets)
+    val_set = ConcatDataset(validation_datasets)
+    return train_set, val_set
 
 
 class DigitanieDm(LightningDataModule):
@@ -110,34 +143,16 @@ class DigitanieDm(LightningDataModule):
         train_datasets = []
         validation_datasets = []
         with open(self.splitfile_path, newline='') as splitfile:
-            reader = csv.reader(splitfile)
-            next(reader)
-            for row in reader:
-                is_val = int(row[8]) in self.test_fold
-                aug = 'no' if is_val else self.img_aug
-                window = Window(
-                    col_off=int(row[4]),
-                    row_off=int(row[5]),
-                    width=int(row[6]),
-                    height=int(row[7])
-                )
-                dataset = DigitanieDs(
-                    image_path=os.path.join(self.data_path, row[2]),
-                    label_path=os.path.join(self.data_path,row[3]),
-                    fixed_crops=is_val,
-                    tile=window,
-                    crop_size=self.crop_size,
-                    crop_step=self.crop_size,
-                    img_aug=aug,
-                    merge_labels=(merges, self.class_names),
-                    one_hot_labels=True
-                )
-                if is_val:
-                    validation_datasets.append(dataset)
-                else:
-                    train_datasets.append(dataset)
-        self.train_set = ConcatDataset(train_datasets)
-        self.val_set = ConcatDataset(validation_datasets)
+            self.train_set, self.val_set = build_datasets_from_csv(
+                splitfile,
+                test_fold=self.test_fold,
+                img_aug=self.img_aug,
+                data_path=self.data_path,
+                merges = merges,
+                class_names = self.class_names,
+                crop_size = self.crop_size
+            )
+
 
     def train_dataloader(self):
 

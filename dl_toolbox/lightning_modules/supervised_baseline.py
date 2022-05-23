@@ -10,6 +10,7 @@ from dl_toolbox.losses import DiceLoss
 from copy import deepcopy
 import torch.nn.functional as F
 
+from dl_toolbox.lightning_modules.utils import *
 
 class Unet(pl.LightningModule):
 
@@ -87,14 +88,11 @@ class Unet(pl.LightningModule):
         )
 
         def lambda_lr(epoch):
-
-            m = epoch / self.trainer.max_epochs 
-            if m < self.lr_milestones[0]:
-                return 1
-            elif m < self.lr_milestones[1]:
-                return 1 + ((m - self.lr_milestones[0]) / (self.lr_milestones[1] - self.lr_milestones[0])) * (self.final_lr/self.initial_lr - 1)
-            else:
-                return self.final_lr/self.initial_lr
+            return ramp_down(epoch,
+                             initial_lr=self.initial_lr,
+                             final_lr=self.final_lr,
+                             max_epochs=self.trainer.max_epochs,
+                             milestones=self.lr_milestones)
 
         scheduler = LambdaLR(
             self.optimizer,
