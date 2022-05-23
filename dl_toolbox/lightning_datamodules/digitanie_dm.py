@@ -227,18 +227,29 @@ class DigitanieSemisupDm(DigitanieDm):
     def setup(self, stage=None):
 
         super().setup(stage=stage)
-        big_raster_path = os.path.join(self.data_path, 'Toulouse', 'normalized_mergedTO.tif')
-        width, height = imagesize.get(big_raster_path)
-        tile = Window(0, 0, width, height)
+        unlabeled_paths = [
+            'Toulouse/normalized_mergedTO.tif',
+            #'Strasbourg/ORT_P1BPX-2018062038865324CP_epsg32632_decoup.tif',
+            #'Biarritz/biarritz_ortho_cropped.tif',
+            #'Paris/emprise_ORTHO_cropped.tif',
+        ]
+        unlabeled_sets = []
+        for path in unlabeled_paths:
+            big_raster_path = os.path.join(self.data_path, path),
+            width, height = imagesize.get(big_raster_path)
+            tile = Window(0, 0, width, height)
+            unlabeled_sets.append(
+                DigitanieDs(
+                    image_path=big_raster_path,
+                    tile=tile,
+                    fixed_crops=False,
+                    crop_size=self.unsup_crop_size,
+                    crop_step=self.unsup_crop_size,
+                    img_aug=self.img_aug
+                )
+            )
         
-        self.unsup_train_set = DigitanieDs(
-            image_path=big_raster_path,
-            tile=tile,
-            fixed_crops=False,
-            crop_size=self.unsup_crop_size,
-            crop_step=self.unsup_crop_size,
-            img_aug=self.img_aug
-        )
+        self.unsup_train_set = ConcatDataset(unlabeled_sets) 
 
     def train_dataloader(self):
 
