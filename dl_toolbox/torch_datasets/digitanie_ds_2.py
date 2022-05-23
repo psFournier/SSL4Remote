@@ -11,6 +11,8 @@ from rasterio.windows import Window, bounds, from_bounds
 from dl_toolbox.utils import MergeLabels, OneHot
 import matplotlib.pyplot as plt
 
+from dl_toolbox.torch_datasets.utils import *
+
 
 
 class DigitanieDs2(Dataset):

@@ -30,6 +30,7 @@ def build_datasets_from_csv(splitfile, test_fold, img_aug, data_path, crop_size,
         )
         dataset = DigitanieDs2(
             image_path=os.path.join(data_path, row[2]),
+            big_raster_path=os.path.join(data_path, row[9]),
             label_path=os.path.join(data_path,row[3]),
             fixed_crops=is_val,
             tile=window,
@@ -204,6 +205,7 @@ class DigitanieSemisupDm(DigitanieDm):
         self,
         unsup_batch_size,
         unsup_crop_size,
+        unsup_data_path,
         *args,
         **kwargs
     ):
@@ -211,6 +213,7 @@ class DigitanieSemisupDm(DigitanieDm):
         super().__init__(*args, **kwargs)
         self.unsup_batch_size = unsup_batch_size
         self.unsup_crop_size = unsup_crop_size
+        self.unsup_data_path = unsup_data_path
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -218,12 +221,13 @@ class DigitanieSemisupDm(DigitanieDm):
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--unsup_batch_size", type=int, default=16)
         parser.add_argument("--unsup_crop_size", type=int, default=160)
+        parser.add_argument("--unsup_data_path", type=str, default='')
         return parser
 
     def setup(self, stage=None):
 
         super().setup(stage=stage)
-        big_raster_path = os.path.join(self.data_path, 'Toulouse', 'normalized_mergedTO.tif'),
+        big_raster_path = os.path.join(self.data_path, 'Toulouse', 'normalized_mergedTO.tif')
         width, height = imagesize.get(big_raster_path)
         tile = Window(0, 0, width, height)
         
