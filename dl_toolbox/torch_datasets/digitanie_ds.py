@@ -11,6 +11,7 @@ from rasterio.windows import Window, bounds, from_bounds
 from dl_toolbox.utils import MergeLabels, OneHot
 import matplotlib.pyplot as plt
 
+from dl_toolbox.torch_datasets.utils import *
 
 
 class DigitanieDs(Dataset):
@@ -58,9 +59,8 @@ class DigitanieDs(Dataset):
             crop_size,
             crop_step,
             img_aug,
-            #col_offset=0,
-            #row_offset=0,
-            #tile_size=None,
+            read_window_fn,
+            norm_fn,
             label_path=None,
             merge_labels=None,
             one_hot_labels=True,
@@ -70,6 +70,8 @@ class DigitanieDs(Dataset):
 
         self.image_path = image_path
         self.label_path = label_path
+        self.read_window_fn = read_window_fn
+        self.norm_fn = norm_fn
         self.tile = tile
         self.crop_windows = list(get_tiles(
             nols=tile.width, 
@@ -103,29 +105,17 @@ class DigitanieDs(Dataset):
         if self.crop_windows:
             window = self.crop_windows[idx]
         else:
-            #window = get_rnd_window(offsets, size, window_size)_
             cx = self.tile.col_off + np.random.randint(0, self.tile.width - self.crop_size + 1)
             cy = self.tile.row_off + np.random.randint(0, self.tile.height - self.crop_size + 1)
             window = Window(cx, cy, self.crop_size, self.crop_size)
-        
-        with rasterio.open(self.image_path) as image_file:
-            #image = read_window_from_tsf(
-            #    window=window,
-            #    image_path='/d/pfournie/ai4geo/data/DIGITANIE/Toulouse/normalized_mergedTO.tif',
-            #    transform=transform
-            #)
-            minx, miny, maxx, maxy = rasterio.windows.bounds(window, transform=image_file.transform)
-            with rasterio.open('/d/pfournie/ai4geo/data/DIGITANIE/Toulouse/normalized_mergedTO.tif') as big_raster:
-                window_in_original_raster = rasterio.windows.from_bounds(minx, miny, maxx, maxy, transform=big_raster.transform)
-                image = big_raster.read(window=window_in_original_raster, out_dtype=np.float32)[:3, ...]
-        m, M = self.DATASET_DESC['min'][:3], self.DATASET_DESC['max'][:3]
-        image = torch.from_numpy(minmax(image, np.array(m), np.array(M))).float().contiguous()
+       
+        image = self.read_window_fn(window=window, path=self.image_path)
+        image = self.norm_fn(image[:3, ...])
+        image = torch.from_numpy(image).float().contiguous()
        
         label = None
         if self.label_path:
-
-            with rasterio.open(self.label_path) as label_file:
-                label = label_file.read(window=window, out_dtype=np.float32)
+            label = read_window_basic(window=window, path=self.label_path)
             if self.label_merger:
                 label = self.label_merger(label)
             if self.one_hot:

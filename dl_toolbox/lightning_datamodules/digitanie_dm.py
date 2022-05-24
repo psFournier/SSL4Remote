@@ -1,5 +1,6 @@
 from argparse import ArgumentParser
 import os
+from functools import partial
 import csv
 
 from pytorch_lightning import LightningDataModule
@@ -12,12 +13,15 @@ from rasterio.windows import Window
 
 from dl_toolbox.utils import worker_init_function
 from dl_toolbox.torch_collate import CustomCollate
-from dl_toolbox.torch_datasets import DigitanieDs, DigitanieDs2
+from dl_toolbox.torch_datasets import DigitanieDs
+from dl_toolbox.torch_datasets.utils import *
 
 
 def build_datasets_from_csv(splitfile, test_fold, img_aug, data_path, crop_size, merges, class_names):
     validation_datasets, train_datasets = [], []
     reader = csv.reader(splitfile)
+    
+    m, M = np.array(DigitanieDs.DATASET_DESC['min'][:3]), np.array(DigitanieDs.DATASET_DESC['max'][:3])
     next(reader)
     for row in reader:
         is_val = int(row[8]) in test_fold
@@ -28,14 +32,22 @@ def build_datasets_from_csv(splitfile, test_fold, img_aug, data_path, crop_size,
             width=int(row[6]),
             height=int(row[7])
         )
-        dataset = DigitanieDs2(
+        dataset = DigitanieDs(
             image_path=os.path.join(data_path, row[2]),
-            big_raster_path=os.path.join(data_path, row[9]),
-            label_path=os.path.join(data_path,row[3]),
+            label_path=os.path.join(data_path, row[3]),
             fixed_crops=is_val,
             tile=window,
             crop_size=crop_size,
             crop_step=crop_size,
+            read_window_fn=partial(
+                read_window_from_big_raster, 
+                raster_path=os.path.join(data_path, row[9])
+            ),
+            norm_fn=partial(
+                minmax,
+                m=m,
+                M=M
+            ),
             img_aug=aug,
             merge_labels=(merges, class_names),
             one_hot_labels=True
@@ -234,8 +246,10 @@ class DigitanieSemisupDm(DigitanieDm):
             #'Paris/emprise_ORTHO_cropped.tif',
         ]
         unlabeled_sets = []
+
+        m, M = np.array(DigitanieDs.DATASET_DESC['min'][:3]), np.array(DigitanieDs.DATASET_DESC['max'][:3])
         for path in unlabeled_paths:
-            big_raster_path = os.path.join(self.data_path, path),
+            big_raster_path = os.path.join(self.data_path, path)
             width, height = imagesize.get(big_raster_path)
             tile = Window(0, 0, width, height)
             unlabeled_sets.append(
@@ -243,6 +257,12 @@ class DigitanieSemisupDm(DigitanieDm):
                     image_path=big_raster_path,
                     tile=tile,
                     fixed_crops=False,
+                    read_window_fn=read_window_basic,
+                    norm_fn=partial(
+                        minmax,
+                        m=m,
+                        M=M
+                    ),
                     crop_size=self.unsup_crop_size,
                     crop_step=self.unsup_crop_size,
                     img_aug=self.img_aug

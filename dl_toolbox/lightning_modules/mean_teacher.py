@@ -59,13 +59,13 @@ class MeanTeacher(Unet):
             w = self.supervised_warmup
             e = self.trainer.current_epoch
             if e <= w:
-                self.alpha = 0
+                self.alpha = 0.
             elif e <= 0.7 * m:
                 self.alpha = ((e - w) / (0.7 * m - w)) * 1000
             else:
-                self.alpha = 1000
+                self.alpha = 1000.
         else:
-            self.alpha = 0
+            self.alpha = 0.
 
     def update_teacher(self):
 
@@ -105,8 +105,8 @@ class MeanTeacher(Unet):
         self.log('Train_sup_loss', sup_loss)
         # self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
 
-        unsup_loss = 0
-        if self.trainer.current_epoch > self.supervised_warmup:
+        unsup_loss = 0.
+        if self.trainer.current_epoch >= self.supervised_warmup:
             
             w_sup, h_sup = sup_batch['image'].shape[-1], sup_batch['image'].shape[-2]
             w_unsup, h_unsup = unsup_batch['image'].shape[-1], unsup_batch['image'].shape[-2]
@@ -173,4 +173,4 @@ class MeanTeacher(Unet):
         self.log('Prop unsup train', self.alpha)
         loss = sup_loss + self.alpha * unsup_loss
 
-        return {'batch': sup_batch, 'logits': sup_logits, "loss": loss}
+        return {'batch': sup_batch, 'logits': sup_logits.detach(), "loss": loss}
