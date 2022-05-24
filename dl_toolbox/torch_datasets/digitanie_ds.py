@@ -33,8 +33,20 @@ class DigitanieDs(Dataset):
         ],
         'percentile2': [0.0357, 0.0551, 0.0674],
         'percentile98': [0.2945, 0.2734, 0.2662],
-        'min': [0, 0.0029, 0.0028, 0],
-        'max': [1.5431, 1.1549, 1.1198, 2.0693],
+        'min': {
+            'Toulouse': np.array([0, 0.0029, 0.0028, 0]),
+            'Montpellier':np.array([1,1,1,2]),
+            'Biarritz':np.array([-544, -503, 473, -652]),
+            'Paris':np.array([0, 0, 0, 0]),
+            'Strasbourg':np.array([89, 159, 202,92])
+        },
+        'max': {
+            'Toulouse': np.array([1.5431, 1.1549, 1.1198, 2.0693]),
+            'Montpellier':np.array([4911,4736,4753,5586]),
+            'Biarritz':np.array([19498, 19829, 17822, 27880]),
+            'Paris':np.array([19051, 16216, 15239, 29244]),
+            'Strasbourg':np.array([4670, 4311, 4198, 6188])
+        }
         'label_colors' : [
             (0,0,0),
             (100,50,0),

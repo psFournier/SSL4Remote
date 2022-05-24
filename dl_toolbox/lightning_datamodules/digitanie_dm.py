@@ -21,9 +21,10 @@ def build_datasets_from_csv(splitfile, test_fold, img_aug, data_path, crop_size,
     validation_datasets, train_datasets = [], []
     reader = csv.reader(splitfile)
     
-    m, M = np.array(DigitanieDs.DATASET_DESC['min'][:3]), np.array(DigitanieDs.DATASET_DESC['max'][:3])
     next(reader)
     for row in reader:
+        m = DigitanieDs.DATASET_DESC['min'][row[0]][:3]
+        M = DigitanieDs.DATASET_DESC['max'][row[0]][:3]
         is_val = int(row[8]) in test_fold
         aug = 'no' if is_val else img_aug
         window = Window(
@@ -41,7 +42,7 @@ def build_datasets_from_csv(splitfile, test_fold, img_aug, data_path, crop_size,
             crop_step=crop_size,
             read_window_fn=partial(
                 read_window_from_big_raster, 
-                raster_path=os.path.join(data_path, row[9])
+                raster_path=os.path.join(data_path, row[0], row[9])
             ),
             norm_fn=partial(
                 minmax,
@@ -240,16 +241,18 @@ class DigitanieSemisupDm(DigitanieDm):
 
         super().setup(stage=stage)
         unlabeled_paths = [
-            'Toulouse/normalized_mergedTO.tif',
-            #'Strasbourg/ORT_P1BPX-2018062038865324CP_epsg32632_decoup.tif',
-            #'Biarritz/biarritz_ortho_cropped.tif',
-            #'Paris/emprise_ORTHO_cropped.tif',
+            ('Toulouse','normalized_mergedTO.tif'),
+            ('Strasbourg','ORT_P1BPX-2018062038865324CP_epsg32632_decoup.tif'),
+            ('Biarritz','biarritz_ortho_cropped.tif'),
+            ('Paris','emprise_ORTHO_cropped.tif'),
+            ('Montpellier','montpellier_ign_cropped.tif')
         ]
         unlabeled_sets = []
 
-        m, M = np.array(DigitanieDs.DATASET_DESC['min'][:3]), np.array(DigitanieDs.DATASET_DESC['max'][:3])
         for path in unlabeled_paths:
-            big_raster_path = os.path.join(self.data_path, path)
+            m = DigitanieDs.DATASET_DESC['min'][path[0]][:3]
+            M = DigitanieDs.DATASET_DESC['max'][path[0]][:3]
+            big_raster_path = os.path.join(self.data_path, *path)
             width, height = imagesize.get(big_raster_path)
             tile = Window(0, 0, width, height)
             unlabeled_sets.append(
