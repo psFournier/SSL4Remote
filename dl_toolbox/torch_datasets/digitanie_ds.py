@@ -46,7 +46,7 @@ class DigitanieDs(Dataset):
             'Biarritz':np.array([19498, 19829, 17822, 27880]),
             'Paris':np.array([19051, 16216, 15239, 29244]),
             'Strasbourg':np.array([4670, 4311, 4198, 6188])
-        }
+        },
         'label_colors' : [
             (0,0,0),
             (100,50,0),
