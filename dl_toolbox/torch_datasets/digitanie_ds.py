@@ -1,7 +1,6 @@
 import os
 from torch.utils.data import Dataset
 import torch
-import dl_toolbox.augmentations as aug
 from dl_toolbox.torch_datasets.commons import minmax
 from dl_toolbox.utils import get_tiles
 import rasterio
@@ -93,7 +92,7 @@ class DigitanieDs(Dataset):
             row_offset=tile.row_off, 
             col_offset=tile.col_off)) if fixed_crops else None
         self.crop_size = crop_size
-        self.img_aug = aug.get_transforms(img_aug)
+        self.img_aug = get_transforms(img_aug)
 
         self.merge_labels = merge_labels
         if merge_labels is None:

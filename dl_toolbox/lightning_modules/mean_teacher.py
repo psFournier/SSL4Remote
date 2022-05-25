@@ -2,7 +2,7 @@ import torch.nn as nn
 import copy
 from dl_toolbox.lightning_modules import Unet
 import torch
-import dl_toolbox.augmentations as aug
+from dl_toolbox.torch_datasets.utils import *
 
 class MeanTeacher(Unet):
 
@@ -26,7 +26,7 @@ class MeanTeacher(Unet):
         self.supervised_warmup = supervised_warmup
         self.pseudo_labelling = pseudo_labelling
         self.consistency_training = consistency_training
-        self.consistency_aug = aug.get_transforms(consistency_aug)
+        self.consistency_aug = get_transforms(consistency_aug)
         self.do_semisup = do_semisup
         
         # Unsupervised leaning loss

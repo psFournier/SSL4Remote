@@ -7,5 +7,4 @@ from .mixup import Mixup
 from .cutmix import Cutmix
 from .merge_label import MergeLabels
 #from .getters import get_image_level_aug, get_batch_level_aug, image_level_aug
-from .strategies import get_transforms, aug_dict
 from .crop import RandomCrop2

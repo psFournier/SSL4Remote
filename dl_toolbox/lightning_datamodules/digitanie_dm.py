@@ -41,8 +41,8 @@ def build_datasets_from_csv(splitfile, test_fold, img_aug, data_path, crop_size,
             crop_size=crop_size,
             crop_step=crop_size,
             read_window_fn=partial(
-                read_window_from_big_raster, 
-                raster_path=os.path.join(data_path, row[0], row[9])
+                read_window_from_big_raster_gdal, 
+                raster_path=os.path.join(data_path, row[9])
             ),
             norm_fn=partial(
                 minmax,
@@ -241,18 +241,24 @@ class DigitanieSemisupDm(DigitanieDm):
 
         super().setup(stage=stage)
         unlabeled_paths = [
-            ('Toulouse','normalized_mergedTO.tif'),
-            ('Strasbourg','ORT_P1BPX-2018062038865324CP_epsg32632_decoup.tif'),
-            ('Biarritz','biarritz_ortho_cropped.tif'),
-            ('Paris','emprise_ORTHO_cropped.tif'),
-            ('Montpellier','montpellier_ign_cropped.tif')
+            #('Toulouse','normalized_mergedTO.tif'),
+            #('Strasbourg','ORT_P1BPX-2018062038865324CP_epsg32632_decoup.tif'),
+            #('Biarritz','biarritz_ortho_cropped.tif'),
+            #('Paris','emprise_ORTHO_cropped.tif'),
+            #('Montpellier','montpellier_ign_cropped.tif')
+            ('Toulouse','toulouse_full_tiled.tif'),
+            ('Strasbourg','strasbourg_full_tiled.tif'),
+            ('Biarritz','biarritz_full_tiled.tif'),
+            ('Paris','paris_full_tiled.tif'),
+            ('Montpellier','montpellier_full_tiled.tif')
+
         ]
         unlabeled_sets = []
 
         for path in unlabeled_paths:
             m = DigitanieDs.DATASET_DESC['min'][path[0]][:3]
             M = DigitanieDs.DATASET_DESC['max'][path[0]][:3]
-            big_raster_path = os.path.join(self.data_path, *path)
+            big_raster_path = os.path.join(self.data_path, path[1])
             width, height = imagesize.get(big_raster_path)
             tile = Window(0, 0, width, height)
             unlabeled_sets.append(
@@ -260,7 +266,7 @@ class DigitanieSemisupDm(DigitanieDm):
                     image_path=big_raster_path,
                     tile=tile,
                     fixed_crops=False,
-                    read_window_fn=read_window_basic,
+                    read_window_fn=read_window_basic_gdal,
                     norm_fn=partial(
                         minmax,
                         m=m,

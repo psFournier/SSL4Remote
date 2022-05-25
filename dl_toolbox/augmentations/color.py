@@ -1,6 +1,6 @@
 import torch
 import torchvision.transforms.functional as F
-import dl_toolbox.augmentations as aug
+from .utils import Compose
 
 class Gamma(torch.nn.Module):
 
@@ -70,7 +70,7 @@ class Color():
     def __init__(self, p=1, bound=0.3):
         # p has no effect 
         self.bound = bound
-        self.color_aug = aug.Compose(
+        self.color_aug = Compose(
             [
                 Saturation(p=1, bound=bound),
                 Contrast(p=1, bound=bound),

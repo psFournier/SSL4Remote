@@ -15,6 +15,7 @@ import dl_toolbox.augmentations as aug
 import pandas as pd
 from sklearn.metrics import confusion_matrix as confusion_matrix
 from sklearn.metrics._plot.confusion_matrix import ConfusionMatrixDisplay
+from dl_toolbox.torch_datasets.utils import *
 
 anti_t_dict = {
     'hflip': 'hflip',
@@ -163,11 +164,11 @@ def compute_probas(
 def batch_forward(inputs, module, tta=None):
     
     if tta:
-        inputs, _ = aug.aug_dict[tta](p=1)(inputs)
+        inputs, _ = aug_dict[tta](p=1)(inputs)
     with torch.no_grad():
         outputs = module.forward(inputs.to(module.device)).cpu()
     if tta and tta in anti_t_dict:
-        outputs, _ = aug.aug_dict[anti_t_dict[tta]](p=1)(outputs)
+        outputs, _ = aug_dict[anti_t_dict[tta]](p=1)(outputs)
 
     return outputs
 

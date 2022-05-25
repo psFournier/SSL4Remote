@@ -1,12 +1,12 @@
 from torch.utils.data._utils.collate import default_collate
 import torch
-import dl_toolbox.augmentations as aug
+from dl_toolbox.torch_datasets.utils import *
 
 class CustomCollate():
 
     def __init__(self, batch_aug):
 
-        self.batch_aug = aug.get_transforms(batch_aug)
+        self.batch_aug = get_transforms(batch_aug)
 
     def __call__(self, batch, *args, **kwargs):
 

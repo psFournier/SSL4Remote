@@ -1,7 +1,7 @@
 import torch
 import torchvision.transforms.functional as F
 import random
-import dl_toolbox.augmentations as aug
+from .utils import OneOf, NoOp
 
 class Vflip(torch.nn.Module):
 
@@ -138,9 +138,9 @@ class Rot270:
 class D4:
 
     def __init__(self):
-        self.d4 = aug.OneOf(
+        self.d4 = OneOf(
             [
-                aug.NoOp(),
+                NoOp(),
                 Hflip(p=1),
                 Vflip(p=1),
                 Transpose1(p=1),
