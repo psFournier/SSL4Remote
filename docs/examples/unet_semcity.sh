@@ -5,8 +5,6 @@ SCRIPT=/d/pfournie/semi-supervised-learning/docs/examples/unet_semcity.py
 
 "${PYTHON}" "${SCRIPT}" \
 --data_path /scratchf/semcity_merged \
---splitfile_path /d/pfournie/split_semcity.csv \
---test_fold 4 \
 --output_dir /d/pfournie/semi-supervised-learning/outputs \
 --sup_batch_size 8 \
 --workers 6 \
@@ -15,7 +13,6 @@ SCRIPT=/d/pfournie/semi-supervised-learning/docs/examples/unet_semcity.py
 --crop_size 256 \
 --num_classes 8 \
 --img_aug d4_color-0 \
---batch_aug no \
 --encoder efficientnet-b5 \
 --in_channels 3 \
 --initial_lr 0.05 \
