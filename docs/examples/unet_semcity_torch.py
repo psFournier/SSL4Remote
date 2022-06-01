@@ -1,6 +1,4 @@
 from argparse import ArgumentParser
-from dl_toolbox.lightning_modules import Unet
-from dl_toolbox.callbacks import SegmentationImagesVisualisation, ConfMatLogger
 import torch
 from rasterio.windows import Window
 from dl_toolbox.torch_datasets import SemcityBdsdDs
@@ -40,7 +38,6 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    torch.backends.cudnn.benchmark = True
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
 
@@ -100,14 +97,14 @@ def main():
         dataset=trainset,
         batch_size=args.sup_batch_size,
         sampler=train_sampler,
-        num_workers=args.num_workers
+        num_workers=args.workers
     )
 
     val_dataloader = DataLoader(
         dataset=valset,
         shuffle=False,
         batch_size=args.sup_batch_size,
-        num_workers=args.num_workers,
+        num_workers=args.workers,
     )
 
     model = smp.Unet(
@@ -150,51 +147,53 @@ def main():
     start_epoch = 0
     columns = ['ep', 'train_loss', 'val_loss', 'time']
 
-    for epoch in range(start_epoch, args.epochs):
+    for epoch in range(start_epoch, args.max_epochs):
 
         time_ep = time.time()
 
-        scheduler.step()
-
+        
         loss_sum = 0.0
 
         model.train()
 
-        for i, (input, target) in enumerate(train_dataloader):
+        for i, batch in enumerate(train_dataloader):
 
-            input = input['image'].to(device)
-            target = input['mask'].to(device)
+            image = batch['image'].to(device)
+            target = batch['mask'].to(device)
+                
+            optimizer.zero_grad()
 
             # mask processing to do here
             #######################
 
-            logits = model(input)
+            logits = model(image)
 
             # loss computation with masks to do here instead
             #######################
             loss = loss_fn(logits, target)
 
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            loss_sum += loss.data[0] * input.size(0)
-
+            loss_sum += loss.item()
+        
         train_res = {'loss': loss_sum / len(train_dataloader)}
 
         loss_sum = 0.0
+        scheduler.step()
+
 
         model.eval()
 
-        for i, (input, target) in enumerate(val_dataloader):
+        for i, batch in enumerate(val_dataloader):
 
-            input = input['image'].to(device)
-            target = input['mask'].to(device)
+            image = batch['image'].to(device)
+            target = batch['mask'].to(device)
 
-            output = model(input)
+            output = model(image)
             loss = loss_fn(output, target)
 
-            loss_sum += loss.data[0] * input.size(0)
+            loss_sum += loss.item()
 
         val_res = {'loss': loss_sum / len(val_dataloader)}
 
