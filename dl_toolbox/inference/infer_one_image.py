@@ -60,6 +60,29 @@ def main():
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
     module.to(device)
+
+    window = get_window(args.tile)
+    m = datasets[dataset_type].DATASET_DESC['min'][row[0]][:3]
+    M = datasets[dataset_type].DATASET_DESC['max'][row[0]][:3]
+
+    dataset = datasets[dataset_type](
+        image_path=image_path,
+        fixed_crops=True,
+        tile=window,
+        crop_size=crop_size,
+        crop_step=crop_step,
+        read_window_fn=partial(
+            read_window_basic, 
+            path=image_path
+        ),
+        norm_fn=partial(
+            minmax,
+            m=m,
+            M=M
+        ),
+        img_aug='no'
+    )
+
     
     print('Computing probas')
     probas = dl_inf.compute_probas(

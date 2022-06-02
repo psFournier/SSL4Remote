@@ -13,7 +13,7 @@ from rasterio.windows import Window
 from dl_toolbox.utils import worker_init_function, get_tiles
 from dl_toolbox.torch_collate import CustomCollate
 from dl_toolbox.torch_datasets import SemcityBdsdDs
-
+from dl_toolbox.torch_datasets.utils import *
 
 class SemcityBdsdDm(LightningDataModule):
 
@@ -88,6 +88,15 @@ class SemcityBdsdDm(LightningDataModule):
                     tile=window,
                     crop_size=self.crop_size,
                     crop_step=self.crop_size,
+                    read_window_fn=partial(
+                        read_window_from_big_raster_gdal, 
+                        raster_path=os.path.join(data_path, row[9])
+                    ),
+                    norm_fn=partial(
+                        minmax,
+                        m=m,
+                        M=M
+                    ),
                     img_aug=aug
                 )
                 if is_val:

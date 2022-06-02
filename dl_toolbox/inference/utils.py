@@ -86,9 +86,7 @@ def get_window(tile):
     return window
 
 def compute_probas(
-    image_path,
-    dataset_type,
-    tile,
+    dataset,
     module,
     crop_size,
     crop_step,
@@ -100,17 +98,7 @@ def compute_probas(
     
     device = module.device
 
-    window = get_window(tile)
-
-    dataset = datasets[dataset_type](
-        image_path=image_path,
-        fixed_crops=True,
-        tile=window,
-        crop_size=crop_size,
-        crop_step=crop_step,
-        img_aug='no'
-    )
-
+    
     dataloader = DataLoader(
         dataset=dataset,
         shuffle=False,
@@ -127,7 +115,7 @@ def compute_probas(
 
     for i, batch in enumerate(dataloader):
         
-        #print('batch ', i)
+        print('batch ', i)
         inputs, _, windows = batch['image'], batch['mask'], batch['window']
 
         outputs = batch_forward(inputs, module)
