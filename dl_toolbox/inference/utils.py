@@ -13,7 +13,6 @@ from dl_toolbox.utils import worker_init_function, get_tiles
 import torchmetrics.functional as  M
 import dl_toolbox.augmentations as aug 
 import pandas as pd
-from sklearn.metrics import confusion_matrix as confusion_matrix
 from sklearn.metrics._plot.confusion_matrix import ConfusionMatrixDisplay
 from dl_toolbox.torch_datasets.utils import *
 
@@ -27,51 +26,10 @@ anti_t_dict = {
     'rot270': 'rot90'
 }
 
-datasets = {
-    'semcity': SemcityBdsdDs,
-    'digitanie': DigitanieDs
-}
-
 
 def probas_to_preds(probas):
 
     return torch.argmax(probas, dim=1)
-
-def labels_to_rgb(labels, color_map=None, dataset=None):
-
-    assert color_map or dataset
-    if not color_map:
-        color_map=datasets[dataset].color_map
-    rgb_label = np.zeros(shape=(*labels.shape, 3), dtype=float)
-    for val, color in color_map.items():
-        mask = np.array(labels == val)
-        rgb_label[mask] = np.array(color)
-    rgb_label = np.transpose(rgb_label, axes=(0, 3, 1, 2))
-
-    return rgb_label
-
-def rgb_to_labels(rgb, color_map=None, dataset=None):
-
-    assert color_map or dataset
-    if not color_map:
-        color_map=datasets[dataset].color_map
-    labels = torch.zeros(size=(rgb.shape[1:]))
-    for val, color in color_map.items():
-        d = rgb[0, :, :] == color[0]
-        d = np.logical_and(d, (rgb[1, :, :] == color[1]))
-        d = np.logical_and(d, (rgb[2, :, :] == color[2]))
-        labels[d] = val
-
-    return labels.long()
-
-def raw_labels_to_labels(labels, dataset=None):
-
-    if dataset=='semcity':
-        return rgb_to_labels(labels, dataset=dataset)
-    elif dataset=='digitanie':
-        return torch.squeeze(torch.from_numpy(labels)).long()
-    else:
-        raise NotImplementedError
 
 def get_window(tile):
 
@@ -87,9 +45,8 @@ def get_window(tile):
 
 def compute_probas(
     dataset,
+    window,
     module,
-    crop_size,
-    crop_step,
     batch_size,
     workers,
     tta,
@@ -98,7 +55,6 @@ def compute_probas(
     
     device = module.device
 
-    
     dataloader = DataLoader(
         dataset=dataset,
         shuffle=False,
@@ -116,7 +72,7 @@ def compute_probas(
     for i, batch in enumerate(dataloader):
         
         print('batch ', i)
-        inputs, _, windows = batch['image'], batch['mask'], batch['window']
+        inputs, labels, windows = batch['image'], batch['mask'], batch['window']
 
         outputs = batch_forward(inputs, module)
         window_list = windows[:]
@@ -265,9 +221,7 @@ def cm2metrics(cm, ignore_index=-1):
 def compute_cm(
     preds,
     label_path,
-    dataset_type,
     tile,
-    eval_with_void,
     num_classes
 ):
     col_off, row_off, width, height = tile

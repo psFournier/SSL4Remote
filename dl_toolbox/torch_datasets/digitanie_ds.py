@@ -15,7 +15,18 @@ from functools import partial
 
 class DigitanieDs(RasterDs):
 
-    def __init__(self, *args, **kwargs):
+    labels = {
+        0: {
+            'name':'other',
+            'color':(0,0,0)
+        },
+
+    }
+
+    def __init__(self,
+                 *args, 
+                 **kwargs
+    ):
 
         self.DATASET_DESC['labels'] = [
             (0, 'other'),
@@ -45,14 +56,51 @@ class DigitanieDs(RasterDs):
         ]
         
         super().__init__(*args, **kwargs)
+        self.label_merger = MergeLabels(
+            [[i] for i in self.labels.keys()]
+        )
+
 
 class DigitanieToulouseDs(DigitanieDs):
 
+    stats = DigitanieDs.stats
+    stats['min'] = np.array([0, 0.0029, 0.0028, 0])
+    stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
+
     def __init__(self, *args, **kwargs):
 
-        self.DATASET_DESC['min'] = np.array([0, 0.0029, 0.0028, 0])
-        self.DATASET_DESC['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
         super().__init__(*args, **kwargs)
+        self.full_raster_path = full_raster_path
+
+    def read_image(self, img_path, window):
+
+        image = read_window_from_big_raster(
+            window=window,
+            path=img_path,
+            raster_path=self.full_raster_path
+        )
+
+        image = minmax(
+            image, 
+            self.stats['min'],
+            self.stats['max']
+        )
+
+        return image
+
+    def read_label(self, label_path, window):
+    
+        label = read_window_basic(
+            window=window,
+            path=label_path
+        )
+        label = self.label_merger(label)
+
+        return label
+
+
+
+
 
 class DigitanieParisDs(DigitanieDs):
 

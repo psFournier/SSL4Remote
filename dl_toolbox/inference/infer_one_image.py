@@ -5,10 +5,12 @@ import rasterio
 from dl_toolbox.lightning_modules import Unet
 import dl_toolbox.inference as dl_inf
 from dl_toolbox.torch_datasets import DigitanieDs, SemcityBdsdDs
+from sklearn.metrics import confusion_matrix as confusion_matrix
 
 datasets = {
     'semcity': SemcityBdsdDs,
-    'digitanie': DigitanieDs
+    'digi_toulouse': DigitanieToulouseDs,
+    'digi_biarritz': DigitanieBiarritzDs
 }
 
 def main():
@@ -56,53 +58,40 @@ def main():
         train_with_void=args.train_with_void
     )
 
-    # module = DummyModule(model=instantiate(config.model), config_loss=config.loss)
     module.load_state_dict(ckpt['state_dict'])
     module.eval()
     module.to(device)
 
     window = get_window(args.tile)
-    m = datasets[dataset_type].DATASET_DESC['min'][row[0]][:3]
-    M = datasets[dataset_type].DATASET_DESC['max'][row[0]][:3]
-
-    dataset = datasets[dataset_type](
-        image_path=image_path,
+    dataset = datasets[args.dataset](
+        image_path=args.image_path,
         fixed_crops=True,
         tile=window,
-        crop_size=crop_size,
-        crop_step=crop_step,
-        read_window_fn=partial(
-            read_window_basic, 
-            path=image_path
-        ),
-        norm_fn=partial(
-            minmax,
-            m=m,
-            M=M
-        ),
+        crop_size=args.crop_size,
+        crop_step=args.crop_step,
         img_aug='no'
     )
-
     
     print('Computing probas')
     probas = dl_inf.compute_probas(
-        image_path=args.image_path,
-        tile=args.tile,
-        dataset_type=args.dataset,
+        dataset=dataset,
+        window=window,
         module=module,
         batch_size=args.batch_size,
         workers=args.workers,
-        crop_size=args.crop_size,
-        crop_step=args.crop_step,
         tta=args.tta,
         mode='sigmoid'
     )
 
-    initial_profile = rasterio.open(args.image_path).profile
-    preds = dl_inf.probas_to_preds(torch.unsqueeze(probas, dim=0)) + int(not args.train_with_void)
+    # Adding batch dimension 1 to probas before extracting predictions
+    preds = dl_inf.probas_to_preds(torch.unsqueeze(probas, dim=0))
+    # Adding 1 to prediction when the void class has been ignored
+    preds += int(not args.train_with_void)
     
+    initial_profile = rasterio.open(args.image_path).profile
+
     if args.output_probas:    
-        
+
         dl_inf.write_array(
             inputs=probas,
             tile=args.tile,
@@ -111,13 +100,11 @@ def main():
         )
 
     if args.output_preds:
+
+        rgb = dataset.labels_to_rgb(preds)
         
-        rgb_preds = dl_inf.labels_to_rgb(
-            preds,
-            dataset=args.dataset
-        )
         dl_inf.write_array(
-            inputs=np.squeeze(rgb_preds),
+            inputs=np.squeeze(rgb),
             tile=args.tile,
             output_path=args.output_preds,
             profile=initial_profile
@@ -127,13 +114,11 @@ def main():
     if args.label_path:
         
         print('Computing metrics')
-        cm = dl_inf.compute_cm(
-            preds=torch.squeeze(preds),
-            label_path=args.label_path,
-            dataset_type=args.dataset,
-            tile=args.tile,
-            eval_with_void=args.eval_with_void,
-            num_classes=args.num_classes
+        labels = dataset.read_label(args.label_path, window=window)
+        cm = confusion_matrix(
+            labels.numpy().flatten(),
+            torch.squeeze(preds).numpy().flatten(),
+            labels = np.arange(args.num_classes)
         )
 
         #ignore_index = None if args.eval_with_void else 0

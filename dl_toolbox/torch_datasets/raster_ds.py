@@ -1,23 +1,18 @@
 import os
 from torch.utils.data import Dataset
 import torch
-from dl_toolbox.torch_datasets.commons import minmax
 from dl_toolbox.utils import get_tiles
 import rasterio
 import imagesize
 import numpy as np
-from rasterio.windows import Window, bounds, from_bounds
+from rasterio.windows import Window
 from dl_toolbox.utils import MergeLabels, OneHot
-from dl_toolbox.torch_datasets.utils import *
 
 
 class RasterDs(Dataset):
 
-    DATASET_DESC = {
-        'labels': [],
-        'label_colors' : []
-    }
-    color_map = {k: v for k, v in enumerate(DATASET_DESC['label_colors'])}
+    labels = {}
+    stats = {}
 
     def __init__(
             self,
@@ -27,19 +22,15 @@ class RasterDs(Dataset):
             crop_size,
             crop_step,
             img_aug,
-            read_window_fn,
-            norm_fn,
             label_path=None,
             merge_labels=None,
-            one_hot_labels=True,
+            one_hot=True,
             *args,
             **kwargs
             ):
 
         self.image_path = image_path
         self.label_path = label_path
-        self.read_window_fn = read_window_fn
-        self.norm_fn = norm_fn
         self.tile = tile
         self.crop_windows = list(get_tiles(
             nols=tile.width, 
@@ -51,18 +42,22 @@ class RasterDs(Dataset):
         self.crop_size = crop_size
         self.img_aug = get_transforms(img_aug)
 
-        self.merge_labels = merge_labels
-        if merge_labels is None:
-            self.labels, self.label_names = map(list, zip(*self.DATASET_DESC['labels']))
-            self.label_merger = None
-        else:
-            labels, self.label_names = merge_labels
-            self.labels = list(range(len(labels)))
-            self.label_merger = MergeLabels(labels)
+       # self.merge_labels = merge_labels
+       # if merge_labels is None:
+       #     self.labels, self.label_names = map(list, zip(*self.DATASET_DESC['labels']))
+       #     self.label_merger = None
+       # else:
+       #     labels, self.label_names = merge_labels
+       #     self.labels = list(range(len(labels)))
+       #     self.label_merger = MergeLabels(labels)
 
-        self.one_hot_labels = one_hot_labels
-        if self.one_hot_labels:
-            self.one_hot = OneHot(self.labels)
+        self.one_hot = OneHot(self.labels.keys()) if one_hot else None
+
+    def read_label(self, label_path, window):
+        pass
+
+    def read_img(self, img_path, window):
+        pass
 
     def __len__(self):
 
@@ -76,18 +71,20 @@ class RasterDs(Dataset):
             cx = self.tile.col_off + np.random.randint(0, self.tile.width - self.crop_size + 1)
             cy = self.tile.row_off + np.random.randint(0, self.tile.height - self.crop_size + 1)
             window = Window(cx, cy, self.crop_size, self.crop_size)
-       
-        image = self.read_window_fn(window=window, path=self.image_path)
-        image = self.norm_fn(image)
+
+        image = self.read_img(
+            img_path=self.image_path,
+            window=window
+        )
         image = torch.from_numpy(image).float().contiguous()
        
         label = None
         if self.label_path:
-            label = read_window_basic(window=window, path=self.label_path)
-            if self.label_merger:
-                label = self.label_merger(label)
-            if self.one_hot:
-                label = self.one_hot(label)
+            label = self.read_label(
+                label_path=self.label_path,
+                window=window
+            )
+            if self.one_hot: label = self.one_hot(label)
             label = torch.from_numpy(label).float().contiguous()
 
         if self.img_aug is not None:
@@ -100,6 +97,41 @@ class RasterDs(Dataset):
                 'image':end_image,
                 'window':window,
                 'mask':end_mask}
+
+    @classmethod
+    def labels_to_rgb(cls, labels):
+
+        rgb = np.zeros(shape=(*labels.shape, 3), dtype=float)
+        for label, info in cls.labels.items():
+            mask = np.array(labels == label)
+            rgb[mask] = np.array(info['color'])
+        rgb = np.transpose(rgb, axes=(0, 3, 1, 2))
+
+        return rgb
+
+    @classmethod
+    def rgb_to_labels(cls, rgb):
+
+        labels = torch.zeros(size=(rgb.shape[1:]))
+        for label, info in cls.labels.items():
+            d = rgb[0, :, :] == info['color'][0]
+            d = np.logical_and(d, (rgb[1, :, :] == info['color'][1]))
+            d = np.logical_and(d, (rgb[2, :, :] == info['color'][2]))
+            labels[d] = label
+
+        return labels.long()
+    
+#    @classmethod
+#    def raw_labels_to_labels(cls, labels):
+#
+#
+#
+#        if dataset=='semcity':
+#            return rgb_to_labels(labels, dataset=dataset)
+#        elif dataset=='digitanie':
+#            return torch.squeeze(torch.from_numpy(labels)).long()
+#        else:
+#            raise NotImplementedError
 
 def main():
 
