@@ -1,6 +1,6 @@
 # from .one_image import OneImage
 from .raster_ds import RasterDs
-from .digitanie_ds import DigitanieDs
+from .digitanie_ds import *
 # from .multiple_images import MultipleImages
 #from .phr_pan_ndvi_ds import PhrPanNdviDs
 #from .phr_pan_ds import PhrPanDs

@@ -13,77 +13,53 @@ from dl_toolbox.torch_datasets import RasterDs
 from dl_toolbox.torch_datasets.utils import *
 from functools import partial
 
+BASE_LABELS = {
+    'other': {'color': (0, 0, 0)},
+    'bare ground': {'color': (100, 50, 0)},
+    'low vegetation': {'color':(0, 250, 50)},
+    'water': {'color': (0, 50, 250)},
+    'building': {'color': (250, 50, 50)},
+    'high vegetation': {'color': (0, 100, 50)},
+    'parking': {'color': (200, 200, 200)},
+    'pedestrian': {'color': (200, 150, 50)},
+    'road': {'color': (100, 100, 100)},
+    'railways': {'color': (200, 100, 200)},
+    'swimming pool': {'color': (50, 150, 250)}
+}
+
+SEMCITY_LABELS = {
+    'other': {'color': (255, 255, 255)},
+    'pervious surface': {'color': (34, 139, 34)},
+    'water': {'color': (0, 0, 238)},
+    'building': {'color': (238, 118, 33)},
+    'high vegetation': {'color': (0, 222, 137)},
+    'transport network': {'color': (38, 38, 38)}
+}
+
+NO_MERGE = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
+MERGE_SEMCITY = [[0], [1, 2], [3, 10], [4], [5], [6, 7, 8, 9]]
+
+
 class DigitanieDs(RasterDs):
-
-    labels = {
-        0: {
-            'name':'other',
-            'color':(0,0,0)
-        },
-
-    }
-
-    def __init__(self,
-                 *args, 
-                 **kwargs
-    ):
-
-        self.DATASET_DESC['labels'] = [
-            (0, 'other'),
-            (1, 'bare ground'),
-            (2, 'low vegetation'),
-            (3, 'water'),
-            (4, 'building'),
-            (5, 'high vegetation'),
-            (6, 'parking'),
-            (7, 'pedestrian'),
-            (8, 'road'),
-            (9, 'railways'),
-            (10, 'swimmingpool')
-        ]
-        self.DATASET_DESC['label_colors'] = [
-            (0,0,0),
-            (100,50,0),
-            (0,250,50),
-            (0,50,250),
-            (250,50,50),
-            (0,100,50),
-            (200,200,200),
-            (200,150,50),
-            (100,100,100),
-            (200,100,200),
-            (50,150,250)
-        ]
-        
-        super().__init__(*args, **kwargs)
-        self.label_merger = MergeLabels(
-            [[i] for i in self.labels.keys()]
-        )
-
-
-class DigitanieToulouseDs(DigitanieDs):
-
-    stats = DigitanieDs.stats
-    stats['min'] = np.array([0, 0.0029, 0.0028, 0])
-    stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
 
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.full_raster_path = full_raster_path
 
-    def read_image(self, img_path, window):
+    def read_image(self, image_path, window):
 
         image = read_window_from_big_raster(
             window=window,
-            path=img_path,
+            path=image_path,
             raster_path=self.full_raster_path
         )
 
+        image = image[:3,...]
+
         image = minmax(
             image, 
-            self.stats['min'],
-            self.stats['max']
+            self.stats['min'][:3,...],
+            self.stats['max'][:3,...]
         )
 
         return image
@@ -94,12 +70,37 @@ class DigitanieToulouseDs(DigitanieDs):
             window=window,
             path=label_path
         )
+        label = np.squeeze(label)
         label = self.label_merger(label)
+
 
         return label
 
+class DigitanieToulouse2Ds(DigitanieDs):
 
+    labels = SEMCITY_LABELS
+    stats = {}
+    stats['min'] = np.array([0, 0.0029, 0.0028, 0])
+    stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
 
+    def __init__(self, full_raster_path, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.label_merger = MergeLabels(MERGE_SEMCITY)
+        self.full_raster_path = full_raster_path
+
+class DigitanieToulouseDs(DigitanieDs):
+
+    labels = BASE_LABELS
+    stats = {}
+    stats['min'] = np.array([0, 0.0029, 0.0028, 0])
+    stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
+
+    def __init__(self, full_raster_path, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.label_merger = MergeLabels(NO_MERGE)
+        self.full_raster_path = full_raster_path
 
 
 class DigitanieParisDs(DigitanieDs):
@@ -137,31 +138,26 @@ class DigitanieStrasbourgDs(DigitanieDs):
 
 def main():
     
-    image_path = '/d/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7_img_normalized.tif'
-    dataset = DigitanieToulouseDs(
+    image_path = '/home/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7_img_normalized.tif'
+    label_path = '/home/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7.tif'
+    full_raster_path = '/home/pfournie/ai4geo/data/DIGITANIE/Toulouse/normalized_mergedTO.tif'
+    dataset = DigitanieToulouse2Ds(
         image_path=image_path,
-        label_path='/d/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7.tif',
-        crop_size=256,
-        crop_step=256,
+        label_path=label_path,
+        full_raster_path=full_raster_path,
+        crop_size=1024,
+        crop_step=1024,
         img_aug='no',
-        tile=Window(col_off=500, row_off=502, width=400, height=400),
-        read_window_fn=partial(
-            read_window_basic,
-            path=image_path
-        ),
-        norm_fn=partial(
-            minmax,
-            m=dataset.DATASET_DESC['min'],
-            M=dataset.DATASET_DESC['max']
-        ),
-        fixed_crops=False
+        tile=Window(col_off=0, row_off=0, width=1024, height=1024),
+        fixed_crops=False,
+        one_hot=False
     )
+    img = dataset[0]['mask']
+    print(img.shape)
+    img = DigitanieToulouse2Ds.labels_to_rgb(img.numpy())
+    #img = img.numpy().transpose((1,2,0))
+    img = plt.imsave('digitanie_ds_test.jpg', img)
 
-    for data in dataset:
-        pass
-    img = plt.imshow(dataset[0]['image'][:3,...].numpy().transpose(1,2,0))
-
-    plt.show()
 
 
 if __name__ == '__main__':
