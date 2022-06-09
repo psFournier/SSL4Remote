@@ -4,7 +4,8 @@ import numpy as np
 import rasterio
 from dl_toolbox.lightning_modules import Unet
 import dl_toolbox.inference as dl_inf
-from dl_toolbox.torch_datasets import DigitanieDs, SemcityBdsdDs
+from dl_toolbox.torch_datasets import *
+#from dl_toolbox.torch_datasets.utils import *
 from sklearn.metrics import confusion_matrix as confusion_matrix
 
 datasets = {
@@ -62,7 +63,7 @@ def main():
     module.eval()
     module.to(device)
 
-    window = get_window(args.tile)
+    window = dl_inf.get_window(args.tile)
     dataset = datasets[args.dataset](
         image_path=args.image_path,
         fixed_crops=True,
@@ -101,10 +102,10 @@ def main():
 
     if args.output_preds:
 
-        rgb = dataset.labels_to_rgb(preds)
+        rgb = DigitanieToulouseDs.labels_to_rgb(preds)
         
         dl_inf.write_array(
-            inputs=np.squeeze(rgb),
+            inputs=np.squeeze(rgb).transpose((2,0,1)),
             tile=args.tile,
             output_path=args.output_preds,
             profile=initial_profile
