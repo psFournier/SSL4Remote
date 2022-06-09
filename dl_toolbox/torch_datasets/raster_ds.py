@@ -23,7 +23,6 @@ class RasterDs(Dataset):
             crop_step,
             img_aug,
             label_path=None,
-            merge_labels=None,
             one_hot=True,
             *args,
             **kwargs
