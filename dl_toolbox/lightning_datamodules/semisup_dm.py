@@ -51,7 +51,7 @@ class SemisupDm(SupervisedDm):
                 test_folds=(),
                 img_aug=self.img_aug,
                 data_path=self.data_path,
-                crop_size = self.crop_size,
+                crop_size = self.unsup_crop_size,
                 one_hot=True
             )
        # unlabeled_paths = [
