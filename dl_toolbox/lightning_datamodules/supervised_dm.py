@@ -11,6 +11,10 @@ from dl_toolbox.torch_collate import CustomCollate
 from dl_toolbox.torch_datasets import *
 
 
+dataset_cls_dict = {
+    'DigitanieToulouseDs': DigitanieToulouseDs
+}
+
 class SupervisedDm(LightningDataModule):
 
     def __init__(self,
@@ -30,7 +34,7 @@ class SupervisedDm(LightningDataModule):
 
         super().__init__()
         self.data_path = data_path
-        self.dataset_cls = dataset_cls
+        self.dataset_cls = dataset_cls_dict[dataset_cls]
         self.splitfile_path = splitfile_path
         self.test_folds = test_folds
         self.train_folds = train_folds

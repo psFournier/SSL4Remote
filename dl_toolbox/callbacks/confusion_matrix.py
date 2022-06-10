@@ -42,10 +42,15 @@ def plot_confusion_matrix(cm, class_names):
 
 class ConfMatLogger(pl.Callback):
 
+    def __init__(self, labels, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+        self.labels = labels
+
     def on_fit_start(self, trainer, pl_module):
 
         self.conf_mat = ConfusionMatrix(
-            num_classes=pl_module.num_classes,
+            num_classes=len(self.labels),
             normalize="true",
             compute_on_step=False
         )
@@ -64,7 +69,7 @@ class ConfMatLogger(pl.Callback):
     def on_validation_epoch_end(self, trainer, pl_module):
 
         cm = self.conf_mat.compute()
-        figure = plot_confusion_matrix(cm.numpy(), class_names=trainer.datamodule.class_names)
+        figure = plot_confusion_matrix(cm.numpy(), class_names=self.labels)
         trainer.logger.experiment.add_figure(
             "Confusion matrix", figure, global_step=trainer.global_step
         )

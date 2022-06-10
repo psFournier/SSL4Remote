@@ -44,7 +44,7 @@ def build_split_from_csv(
         }
 
         try:
-            orig_img = row[10]
+            orig_img = row[9]
             kwargs['full_raster_path'] = os.path.join(data_path, city, orig_img)
         except:
             pass
