@@ -27,17 +27,18 @@ BASE_LABELS = {
     'swimming pool': {'color': (50, 150, 250)}
 }
 
-SEMCITY_LABELS = {
+MERGE_SEMCITY_LABELS_1 = {
     'other': {'color': (255, 255, 255)},
     'pervious surface': {'color': (34, 139, 34)},
     'water': {'color': (0, 0, 238)},
     'building': {'color': (238, 118, 33)},
     'high vegetation': {'color': (0, 222, 137)},
-    'transport network': {'color': (38, 38, 38)}
+    'impervious surface': {'color': (38, 38, 38)}
 }
 
 NO_MERGE = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
-MERGE_SEMCITY = [[0], [1, 2], [3, 10], [4], [5], [6, 7, 8, 9]]
+MERGE_SEMCITY_1 = [[0, 9], [1, 2], [3, 10], [4], [5], [6, 7, 8]]
+#MERGE_SEMCITY_2 = [[0], [1, 2], [3, 10], [4], [5], [6, 7, 8, 9]]
 
 
 class DigitanieDs(RasterDs):
@@ -78,7 +79,7 @@ class DigitanieDs(RasterDs):
 
 class DigitanieToulouse2Ds(DigitanieDs):
 
-    labels = SEMCITY_LABELS
+    labels = MERGE_SEMCITY_LABELS_1
     stats = {}
     stats['min'] = np.array([0, 0.0029, 0.0028, 0])
     stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
@@ -86,7 +87,7 @@ class DigitanieToulouse2Ds(DigitanieDs):
     def __init__(self, full_raster_path, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.label_merger = MergeLabels(MERGE_SEMCITY)
+        self.label_merger = MergeLabels(MERGE_SEMCITY_1)
         self.full_raster_path = full_raster_path
 
 class DigitanieToulouseDs(DigitanieDs):

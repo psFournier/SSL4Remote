@@ -7,9 +7,11 @@ import dl_toolbox.inference as dl_inf
 from dl_toolbox.torch_datasets import *
 #from dl_toolbox.torch_datasets.utils import *
 from sklearn.metrics import confusion_matrix as confusion_matrix
+from dl_toolbox.utils import MergeLabels, OneHot
 
 datasets = {
     'semcity': SemcityBdsdDs,
+
     'digi_toulouse': DigitanieToulouseDs,
     'digi_biarritz': DigitanieBiarritzDs
 }
@@ -85,10 +87,13 @@ def main():
     )
 
     # Adding batch dimension 1 to probas before extracting predictions
-    preds = dl_inf.probas_to_preds(torch.unsqueeze(probas, dim=0))
+    preds = np.argmax(np.expand_dims(probas, 0), 1)
     # Adding 1 to prediction when the void class has been ignored
     preds += int(not args.train_with_void)
     
+    MERGE_DIGI_TO_SEMCITY = [[0, 9], [1, 2], [3, 10], [4], [5], [6, 7, 8]]
+    preds = MergeLabels(MERGE_DIGI_TO_SEMCITY)(preds)
+
     initial_profile = rasterio.open(args.image_path).profile
 
     if args.output_probas:    
@@ -116,17 +121,19 @@ def main():
         
         print('Computing metrics')
         labels = dataset.read_label(args.label_path, window=window)
+        MERGE_SEMCITY = [[0,7], [3], [6], [2], [4], [1, 5]]
+        labels = MergeLabels(MERGE_SEMCITY)(labels)
         cm = confusion_matrix(
-            labels.numpy().flatten(),
-            torch.squeeze(preds).numpy().flatten(),
-            labels = np.arange(args.num_classes)
+            labels.flatten(),
+            np.squeeze(preds).flatten(),
+            labels = np.arange(6)
         )
 
         #ignore_index = None if args.eval_with_void else 0
         metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(cm, ignore_index=-1)
-        labels = datasets[args.dataset].DATASET_DESC['labels']
+        labels = SemcityBdsd2Ds.labels.keys()
         metrics_per_class_df.rename(
-            index=dict(labels),
+            index=dict([(i, l) for i, l in enumerate(labels)]),
             inplace=True
         )
 

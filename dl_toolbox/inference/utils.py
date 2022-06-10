@@ -103,7 +103,7 @@ def compute_probas(
                 
     probas = torch.div(pred_sum, mask_sum)
 
-    return probas
+    return probas.detach().cpu().numpy()
 
 def batch_forward(inputs, module, tta=None):
     
