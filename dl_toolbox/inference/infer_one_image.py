@@ -78,7 +78,6 @@ def main():
     print('Computing probas')
     probas = dl_inf.compute_probas(
         dataset=dataset,
-        window=window,
         module=module,
         batch_size=args.batch_size,
         workers=args.workers,
@@ -131,9 +130,8 @@ def main():
 
         #ignore_index = None if args.eval_with_void else 0
         metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(cm, ignore_index=-1)
-        labels = SemcityBdsd2Ds.labels.keys()
         metrics_per_class_df.rename(
-            index=dict([(i, l) for i, l in enumerate(labels)]),
+            index=dict([(i, l) for i, l in enumerate(SemcityBdsd2Ds.labels.keys())]),
             inplace=True
         )
 

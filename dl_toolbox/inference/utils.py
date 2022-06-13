@@ -45,7 +45,6 @@ def get_window(tile):
 
 def compute_probas(
     dataset,
-    window,
     module,
     batch_size,
     workers,
@@ -66,8 +65,8 @@ def compute_probas(
     )
 
     num_classes = module.num_classes - int(not module.train_with_void)
-    pred_sum = torch.zeros(size=(num_classes, window.height, window.width))
-    mask_sum = torch.zeros(size=(window.height, window.width))
+    pred_sum = torch.zeros(size=(num_classes, dataset.tile.height, dataset.tile.width))
+    mask_sum = torch.zeros(size=(dataset.tile.height, dataset.tile.width))
 
     for i, batch in enumerate(dataloader):
         
@@ -93,12 +92,12 @@ def compute_probas(
                 prob = torch.sigmoid(pred)
             pred_sum[
                 :, 
-                w.row_off-window.row_off:w.row_off-window.row_off+w.height,
-                w.col_off-window.col_off:w.col_off-window.col_off+w.width
+                w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
+                w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
             ] += prob
             mask_sum[
-                w.row_off-window.row_off:w.row_off-window.row_off+w.height,
-                w.col_off-window.col_off:w.col_off-window.col_off+w.width
+                w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
+                w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
             ] += 1
                 
     probas = torch.div(pred_sum, mask_sum)
@@ -220,8 +219,7 @@ def cm2metrics(cm, ignore_index=-1):
 
 def compute_cm(
     preds,
-    label_path,
-    tile,
+    labels,
     num_classes
 ):
     col_off, row_off, width, height = tile

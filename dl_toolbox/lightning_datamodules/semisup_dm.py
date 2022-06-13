@@ -44,7 +44,7 @@ class SemisupDm(SupervisedDm):
 
         super().setup(stage=stage)
         with open(self.unsup_splitfile_path, newline='') as splitfile:
-            self.unsup_train_set, _ = build_split_from_csv(
+            train_sets, _ = build_split_from_csv(
                 splitfile=splitfile,
                 dataset_cls=self.dataset_cls,
                 train_folds=self.unsup_train_folds,
@@ -54,6 +54,7 @@ class SemisupDm(SupervisedDm):
                 crop_size = self.unsup_crop_size,
                 one_hot=True
             )
+        self.unsup_train_set = ConcatDataset(train_sets)
        # unlabeled_paths = [
        #     #('Toulouse','normalized_mergedTO.tif'),
        #     #('Strasbourg','ORT_P1BPX-2018062038865324CP_epsg32632_decoup.tif'),

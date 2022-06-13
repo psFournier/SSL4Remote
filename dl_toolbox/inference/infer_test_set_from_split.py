@@ -76,56 +76,87 @@ def main():
         'accu_per_class': []
     }
     global_cm = np.zeros(shape=(args.num_classes, args.num_classes))
-    with open(args.splitfile_path, newline='') as splitfile:
-        reader = csv.reader(splitfile)
-        next(reader)
-        for row in reader:
-            city,tile_num, img_path, label_path, x0, y0, patch_width, patch_height, fold_id = row
-            if int(fold_id) in args.test_fold:
-                print(row)
-                image_path = os.path.join(args.data_path, img_path)
-                tile=(int(x0), int(y0), int(patch_width), int(patch_height))
-                probas = dl_inf.compute_probas(
-                    image_path=image_path,
-                    tile=tile,
-                    dataset_type=args.dataset,
-                    module=module,
-                    batch_size=args.batch_size,
-                    workers=args.workers,
-                    crop_size=args.crop_size,
-                    crop_step=args.crop_step,
-                    tta=args.tta,
-                    mode='sigmoid'
-                )
-                if args.write_probas:
-                    initial_profile = rasterio.open(image_path).profile
-                    pathlib.Path(args.output_path).mkdir(parents=True, exist_ok=True)
-                    output_probas = os.path.join(args.output_path, '_'.join([city, tile_num, x0, y0]) + '.tif')
-                    dl_inf.write_array(
-                        inputs=probas[[4],...],
-                        tile=tile,
-                        output_path=output_probas,
-                        profile=initial_profile
-                    )
 
-                preds = dl_inf.probas_to_preds(
-                    torch.unsqueeze(probas, dim=0)
-                ) + int(not args.train_with_void)
-                row_cm = dl_inf.compute_cm(
-                    preds=torch.squeeze(preds),
-                    label_path=os.path.join(args.data_path, label_path),
-                    dataset_type=args.dataset,
-                    tile=(int(x0), int(y0), int(patch_width), int(patch_height)),
-                    eval_with_void=args.eval_with_void,
-                    num_classes=args.num_classes
-                )
-                global_cm += row_cm
+    with open(self.splitfile_path, newline='') as splitfile:
+        train_sets, val_sets = build_split_from_csv(
+            splitfile=splitfile,
+            dataset_cls=self.dataset_cls,
+            train_folds=self.train_folds,
+            test_folds=self.test_folds,
+            img_aug=self.img_aug,
+            data_path=self.data_path,
+            crop_size = self.crop_size,
+            one_hot=True
+        )
+
+    for dataset in val_sets:
+
+        print('Computing probas')
+        probas = dl_inf.compute_probas(
+            dataset=dataset,
+            module=module,
+            batch_size=args.batch_size,
+            workers=args.workers,
+            tta=args.tta,
+            mode='sigmoid'
+        )
+        preds = np.argmax(np.expand_dims(probas, 0), 1)
+        preds += int(not args.train_with_void)
+
+        labels = dataset.read_label(label_path=dataset.label_path, window=dataset.tile)
+        MERGE_SEMCITY = [[0,7], [3], [6], [2], [4], [1, 5]]
+        labels = MergeLabels(MERGE_SEMCITY)(labels)
+        row_cm = confusion_matrix(
+            labels.flatten(),
+            np.squeeze(preds).flatten(),
+            labels = np.arange(6)
+        )
+
+        global_cm += row_cm
+
+#    with open(args.splitfile_path, newline='') as splitfile:
+#        reader = csv.reader(splitfile)
+#        next(reader)
+#        for row in reader:
+#            city,tile_num, img_path, label_path, x0, y0, patch_width, patch_height, fold_id = row
+#            if int(fold_id) in args.test_fold:
+#                print(row)
+#                image_path = os.path.join(args.data_path, img_path)
+#                tile=(int(x0), int(y0), int(patch_width), int(patch_height))
+#                probas = dl_inf.compute_probas(
+#                    image_path=image_path,
+#                    tile=tile,
+#                    dataset_type=args.dataset,
+#                    module=module,
+#                    batch_size=args.batch_size,
+#                    workers=args.workers,
+#                    crop_size=args.crop_size,
+#                    crop_step=args.crop_step,
+#                    tta=args.tta,
+#                    mode='sigmoid'
+#                )
+#
+#                if args.write_probas:
+#                    initial_profile = rasterio.open(image_path).profile
+#                    pathlib.Path(args.output_path).mkdir(parents=True, exist_ok=True)
+#                    output_probas = os.path.join(args.output_path, '_'.join([city, tile_num, x0, y0]) + '.tif')
+#                    dl_inf.write_array(
+#                        inputs=probas[[4],...],
+#                        tile=tile,
+#                        output_path=output_probas,
+#                        profile=initial_profile
+#                    )
+#
+#                preds = dl_inf.probas_to_preds(
+#                    torch.unsqueeze(probas, dim=0)
+#                ) + int(not args.train_with_void)
+
     
     #ignore_index = -1 if args.eval_with_void else 0
+    print('Computing metrics')
     metrics_per_class_df, average_metrics_df = dl_inf.cm2metrics(global_cm, ignore_index=-1)
-    labels = datasets[args.dataset].DATASET_DESC['labels']
     metrics_per_class_df.rename(
-        index=dict(labels),
+        index=dict([(i, l) for i, l in enumerate(SemcityBdsd2Ds.labels.keys())]),
         inplace=True
     )
     with pd.ExcelWriter(os.path.join(args.output_path, 'metrics.xlsx')) as writer:

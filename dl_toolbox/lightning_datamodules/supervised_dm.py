@@ -69,10 +69,8 @@ class SupervisedDm(LightningDataModule):
 
     def setup(self, stage=None):
         
-        train_datasets = []
-        validation_datasets = []
         with open(self.splitfile_path, newline='') as splitfile:
-            self.train_set, self.val_set = build_split_from_csv(
+            train_sets, val_sets = build_split_from_csv(
                 splitfile=splitfile,
                 dataset_cls=self.dataset_cls,
                 train_folds=self.train_folds,
@@ -82,7 +80,8 @@ class SupervisedDm(LightningDataModule):
                 crop_size = self.crop_size,
                 one_hot=True
             )
-
+        if train_sets: self.train_set = ConcatDataset(train_sets)
+        if val_sets: self.val_set = ConcatDataset(val_sets)
 
     def train_dataloader(self):
 

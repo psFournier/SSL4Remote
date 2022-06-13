@@ -61,7 +61,4 @@ def build_split_from_csv(
         else:
             pass
 
-    if train_datasets: train_set = ConcatDataset(train_datasets)
-    if test_datasets: test_set = ConcatDataset(test_datasets)
-
-    return train_set, test_set
+    return train_datasets, test_datasets
