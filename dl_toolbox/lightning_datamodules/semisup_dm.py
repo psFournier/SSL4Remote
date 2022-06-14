@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
 from rasterio.windows import Window
 
 from dl_toolbox.lightning_datamodules import SupervisedDm
-from dl_toolbox.utils import worker_init_function, build_split_from_csv
+from dl_toolbox.utils import worker_init_function, build_split_from_csv, read_splitfile
 from dl_toolbox.torch_collate import CustomCollate
 from dl_toolbox.torch_datasets import *
 
