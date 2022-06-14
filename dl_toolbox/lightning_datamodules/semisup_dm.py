@@ -43,18 +43,39 @@ class SemisupDm(SupervisedDm):
     def setup(self, stage=None):
 
         super().setup(stage=stage)
+        #with open(self.unsup_splitfile_path, newline='') as splitfile:
+        #    train_sets, _ = build_split_from_csv(
+        #        splitfile=splitfile,
+        #        dataset_cls=self.dataset_cls,
+        #        train_folds=self.unsup_train_folds,
+        #        test_folds=(),
+        #        img_aug=self.img_aug,
+        #        data_path=self.data_path,
+        #        crop_size = self.unsup_crop_size,
+        #        one_hot=True
+        #    )
+        #self.unsup_train_set = ConcatDataset(train_sets)
+
         with open(self.unsup_splitfile_path, newline='') as splitfile:
-            train_sets, _ = build_split_from_csv(
+            train_args, _ = read_splitfile(
                 splitfile=splitfile,
-                dataset_cls=self.dataset_cls,
-                train_folds=self.unsup_train_folds,
-                test_folds=(),
-                img_aug=self.img_aug,
                 data_path=self.data_path,
-                crop_size = self.unsup_crop_size,
-                one_hot=True
+                train_folds=self.unsup_train_folds,
+                test_folds=()
             )
-        self.unsup_train_set = ConcatDataset(train_sets)
+
+        if train_args:
+            self.unsup_train_set = ConcatDataset([
+                self.dataset_cls(
+                    img_aug=self.img_aug,
+                    crop_size=self.unsup_crop_size,
+                    crop_step=self.unsup_crop_size,
+                    one_hot=True,
+                    **kwarg
+                ) for kwarg in train_args
+            ])
+
+
        # unlabeled_paths = [
        #     #('Toulouse','normalized_mergedTO.tif'),
        #     #('Strasbourg','ORT_P1BPX-2018062038865324CP_epsg32632_decoup.tif'),

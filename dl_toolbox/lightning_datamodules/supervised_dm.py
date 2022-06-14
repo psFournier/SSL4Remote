@@ -6,7 +6,7 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
 from rasterio.windows import Window
 
-from dl_toolbox.utils import worker_init_function, build_split_from_csv
+from dl_toolbox.utils import worker_init_function, build_split_from_csv, read_splitfile
 from dl_toolbox.torch_collate import CustomCollate
 from dl_toolbox.torch_datasets import *
 
@@ -69,19 +69,49 @@ class SupervisedDm(LightningDataModule):
 
     def setup(self, stage=None):
         
+        #with open(self.splitfile_path, newline='') as splitfile:
+        #    train_sets, val_sets = build_split_from_csv(
+        #        splitfile=splitfile,
+        #        dataset_cls=self.dataset_cls,
+        #        train_folds=self.train_folds,
+        #        test_folds=self.test_folds,
+        #        img_aug=self.img_aug,
+        #        data_path=self.data_path,
+        #        crop_size = self.crop_size,
+        #        one_hot=True
+        #    )
+        #if train_sets: self.train_set = ConcatDataset(train_sets)
+        #if val_sets: self.val_set = ConcatDataset(val_sets)
+
         with open(self.splitfile_path, newline='') as splitfile:
-            train_sets, val_sets = build_split_from_csv(
+            train_args, val_args = read_splitfile(
                 splitfile=splitfile,
-                dataset_cls=self.dataset_cls,
-                train_folds=self.train_folds,
-                test_folds=self.test_folds,
-                img_aug=self.img_aug,
                 data_path=self.data_path,
-                crop_size = self.crop_size,
-                one_hot=True
+                train_folds=self.train_folds,
+                test_folds=self.test_folds
             )
-        if train_sets: self.train_set = ConcatDataset(train_sets)
-        if val_sets: self.val_set = ConcatDataset(val_sets)
+
+        if train_args:
+            self.train_set = ConcatDataset([
+                self.dataset_cls(
+                    img_aug=self.img_aug,
+                    crop_size=self.crop_size,
+                    crop_step=self.crop_size,
+                    one_hot=True,
+                    **kwarg
+                ) for kwarg in train_args
+            ])
+
+        if val_args:
+            self.val_set = ConcatDataset([
+                self.dataset_cls(
+                    img_aug='no',
+                    crop_size=self.crop_size,
+                    crop_step=self.crop_size,
+                    one_hot=True,
+                    **kwarg
+                ) for kwarg in val_args
+            ])
 
     def train_dataloader(self):
 
