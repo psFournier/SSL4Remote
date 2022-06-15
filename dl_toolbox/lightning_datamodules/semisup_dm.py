@@ -7,9 +7,10 @@ from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
 from rasterio.windows import Window
 
 from dl_toolbox.lightning_datamodules import SupervisedDm
-from dl_toolbox.utils import worker_init_function, build_split_from_csv, read_splitfile
+from dl_toolbox.utils import worker_init_function
 from dl_toolbox.torch_collate import CustomCollate
 from dl_toolbox.torch_datasets import *
+from .utils import read_splitfile
 
 
 class SemisupDm(SupervisedDm):
@@ -66,7 +67,7 @@ class SemisupDm(SupervisedDm):
 
         if train_args:
             self.unsup_train_set = ConcatDataset([
-                self.dataset_cls(
+                cls(
                     labels=self.labels,
                     label_merger=self.label_merger,
                     img_aug=self.img_aug,
@@ -74,7 +75,7 @@ class SemisupDm(SupervisedDm):
                     crop_step=self.unsup_crop_size,
                     one_hot=True,
                     **kwarg
-                ) for kwarg in train_args
+                ) for cls, kwarg in train_args
             ])
 
 
