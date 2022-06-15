@@ -15,6 +15,7 @@ import dl_toolbox.augmentations as aug
 import pandas as pd
 from sklearn.metrics._plot.confusion_matrix import ConfusionMatrixDisplay
 from dl_toolbox.torch_datasets.utils import *
+from functools import partial
 
 anti_t_dict = {
     'hflip': 'hflip',
@@ -68,6 +69,24 @@ def compute_probas(
     pred_sum = torch.zeros(size=(num_classes, dataset.tile.height, dataset.tile.width))
     mask_sum = torch.zeros(size=(dataset.tile.height, dataset.tile.width))
 
+    def dist_to_edge(i, j, h, w):
+
+        mi = np.minimum(i+1, h-i)
+        mj = np.minimum(j+1, w-j)
+        return np.minimum(mi, mj)
+
+    crop_mask = np.fromfunction(
+        function=partial(
+            dist_to_edge,
+            h=dataset.crop_size,
+            w=dataset.crop_size
+        ),
+        shape=(dataset.crop_size, dataset.crop_size),
+        dtype=int
+    )
+    crop_mask = torch.from_numpy(crop_mask).float()
+    print(torch.max(crop_mask))
+
     for i, batch in enumerate(dataloader):
         
         print('batch ', i)
@@ -94,11 +113,11 @@ def compute_probas(
                 :, 
                 w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
                 w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
-            ] += prob
+            ] += prob*crop_mask 
             mask_sum[
                 w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
                 w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
-            ] += 1
+            ] += crop_mask
                 
     probas = torch.div(pred_sum, mask_sum)
 
