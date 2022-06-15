@@ -3,6 +3,15 @@ import csv
 
 from torch.utils.data import ConcatDataset
 from rasterio.windows import Window
+from dl_toolbox.torch_datasets import *
+
+dataset_dict = {
+    'Toulouse': DigitanieToulouseDs,
+    'Biarritz': DigitanieBiarritzDs,
+    'Montpellier': DigitanieMontpellierDs,
+    'Paris': DigitanieParisDs,
+    'Strasbourg': DigitanieStrasbourgDs
+}
 
 def read_splitfile(
     splitfile,
@@ -43,9 +52,9 @@ def read_splitfile(
             kwargs['label_path'] = os.path.join(data_path, label_path)
  
         if is_train:
-            train_datasets_args.append(kwargs)
+            train_datasets_args.append((dataset_dict[city], kwargs))
         elif is_test:
-            test_datasets_args.append(kwargs)
+            test_datasets_args.append((dataset_dict[city], kwargs))
         else:
             pass
 

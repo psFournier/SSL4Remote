@@ -49,16 +49,8 @@ digitanie_label_mergers = {
     'binary_merger' : [[0,1,2,3,5,6,7,8,9,10],[4]]
 }
 
-#
 
-#MERGE_SEMCITY_2 = [[0], [1, 2], [3, 10], [4], [5], [6, 7, 8, 9]]
-
-
-class DigitanieToulouseDs(RasterDs):
-
-    stats = {}
-    stats['min'] = np.array([0, 0.0029, 0.0028, 0])
-    stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
+class DigitanieDs(RasterDs):
 
     def __init__(self, labels, label_merger, full_raster_path, *args, **kwargs):
  
@@ -97,38 +89,55 @@ class DigitanieToulouseDs(RasterDs):
 
         return label
 
+class DigitanieToulouseDs(DigitanieDs):
 
-#class DigitanieParisDs(DigitanieDs):
-#
-#    def __init__(self, *args, **kwargs):
-#
-#        self.DATASET_DESC['min'] = np.array([0, 0, 0, 0])
-#        self.DATASET_DESC['max'] = np.array([19051, 16216, 15239, 29244])
-#        super().__init__(*args, **kwargs)
-#
-#class DigitanieMontpellierDs(DigitanieDs):
-#
-#    def __init__(self, *args, **kwargs):
-#
-#        self.DATASET_DESC['min'] = np.array([1,1,1,2])
-#        self.DATASET_DESC['max'] = np.array([4911,4736,4753,5586])
-#        super().__init__(*args, **kwargs)
-#
-#class DigitanieBiarritzDs(DigitanieDs):
-#
-#    def __init__(self, *args, **kwargs):
-#
-#        self.DATASET_DESC['min'] = np.array([-544, -503, 473, -652])
-#        self.DATASET_DESC['max'] = np.array([19498, 19829, 17822, 27880])
-#        super().__init__(*args, **kwargs)
-#
-#class DigitanieStrasbourgDs(DigitanieDs):
-#
-#    def __init__(self, *args, **kwargs):
-#
-#        self.DATASET_DESC['min'] = np.array([89, 159, 202,92])
-#        self.DATASET_DESC['max'] = np.array([4670, 4311, 4198, 6188])
-#        super().__init__(*args, **kwargs)
+    stats = {}
+    stats['min'] = np.array([0, 0.0029, 0.0028, 0])
+    stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+class DigitanieParisDs(DigitanieDs):
+    
+    stats = {}
+    stats['min'] = np.array([0, 0, 0, 0])
+    stats['max'] = np.array([19051, 16216, 15239, 29244])
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+class DigitanieMontpellierDs(DigitanieDs):
+    
+    stats = {}
+    stats['min'] = np.array([1,1,1,2])
+    stats['max'] = np.array([4911,4736,4753,5586])
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+class DigitanieBiarritzDs(DigitanieDs):
+
+    stats = {}
+    stats['min'] = np.array([-544, -503, 473, -652])
+    stats['max'] = np.array([19498, 19829, 17822, 27880])
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
+
+class DigitanieStrasbourgDs(DigitanieDs):
+
+    stats = {}
+    stats['min'] = np.array([89, 159, 202,92])
+    stats['max'] = np.array([4670, 4311, 4198, 6188])
+
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
 
 
 def main():

@@ -6,20 +6,16 @@ from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, RandomSampler, ConcatDataset
 from rasterio.windows import Window
 
-from dl_toolbox.utils import worker_init_function, build_split_from_csv, read_splitfile
+from dl_toolbox.utils import worker_init_function 
 from dl_toolbox.torch_collate import CustomCollate
 from dl_toolbox.torch_datasets import *
+from .utils import read_splitfile
 
-
-dataset_cls_dict = {
-    'DigitanieToulouseDs': DigitanieToulouseDs
-}
 
 class SupervisedDm(LightningDataModule):
 
     def __init__(self,
                  data_path,
-                 dataset_cls,
                  labels,
                  label_merger,
                  splitfile_path,
@@ -36,7 +32,6 @@ class SupervisedDm(LightningDataModule):
 
         super().__init__()
         self.data_path = data_path
-        self.dataset_cls = dataset_cls_dict[dataset_cls]
         self.labels = labels
         self.label_merger = label_merger
         self.splitfile_path = splitfile_path
@@ -54,7 +49,6 @@ class SupervisedDm(LightningDataModule):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_path", type=str)
-        parser.add_argument("--dataset_cls", type=str)
         parser.add_argument("--labels", type=str)
         parser.add_argument("--label_merger", type=str)
         parser.add_argument("--splitfile_path", type=str)
@@ -99,7 +93,7 @@ class SupervisedDm(LightningDataModule):
 
         if train_args:
             self.train_set = ConcatDataset([
-                self.dataset_cls(
+                cls(
                     labels=self.labels,
                     label_merger=self.label_merger,
                     img_aug=self.img_aug,
@@ -107,12 +101,12 @@ class SupervisedDm(LightningDataModule):
                     crop_step=self.crop_size,
                     one_hot=True,
                     **kwarg
-                ) for kwarg in train_args
+                ) for cls, kwarg in train_args
             ])
 
         if val_args:
             self.val_set = ConcatDataset([
-                self.dataset_cls(
+                cls(
                     labels=self.labels,
                     label_merger=self.label_merger,
                     img_aug='no',
@@ -120,7 +114,7 @@ class SupervisedDm(LightningDataModule):
                     crop_step=self.crop_size,
                     one_hot=True,
                     **kwarg
-                ) for kwarg in val_args
+                ) for cls, kwarg in val_args
             ])
 
     def train_dataloader(self):
