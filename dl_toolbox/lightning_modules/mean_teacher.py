@@ -12,7 +12,6 @@ class MeanTeacher(Unet):
                  supervised_warmup,
                  pseudo_labelling=False,
                  consistency_training=False,
-                 do_semisup=False,
                  *args,
                  **kwargs):
 
@@ -27,7 +26,6 @@ class MeanTeacher(Unet):
         self.pseudo_labelling = pseudo_labelling
         self.consistency_training = consistency_training
         self.consistency_aug = get_transforms(consistency_aug)
-        self.do_semisup = do_semisup
         
         # Unsupervised leaning loss
         self.unsup_loss = nn.MSELoss(reduction='none')
@@ -40,7 +38,6 @@ class MeanTeacher(Unet):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--ema", type=float, default=0.95)
-        parser.add_argument("--do_semisup", action='store_true')
         parser.add_argument("--consistency_training", action='store_true')
         parser.add_argument('--consistency_aug', type=str, default='no')
         parser.add_argument('--pseudo_labelling', action='store_true')
@@ -50,22 +47,19 @@ class MeanTeacher(Unet):
 
     def on_train_epoch_start(self) -> None:
 
-        if self.do_semisup:
-            #s = self.trainer.max_steps
-            #b = self.trainer.datamodule.sup_batch_size
-            #l = self.trainer.datamodule.epoch_len
-            #m = s * b / l # max number of epochs
-            m = self.trainer.max_epochs           
-            w = self.supervised_warmup
-            e = self.trainer.current_epoch
-            if e <= w:
-                self.alpha = 0.
-            elif e <= 0.7 * m:
-                self.alpha = ((e - w) / (0.7 * m - w)) * 1000
-            else:
-                self.alpha = 1000.
-        else:
+        #s = self.trainer.max_steps
+        #b = self.trainer.datamodule.sup_batch_size
+        #l = self.trainer.datamodule.epoch_len
+        #m = s * b / l # max number of epochs
+        m = self.trainer.max_epochs           
+        w = self.supervised_warmup
+        e = self.trainer.current_epoch
+        if e <= w:
             self.alpha = 0.
+        elif e <= 0.7 * m:
+            self.alpha = ((e - w) / (0.7 * m - w)) * 1000
+        else:
+            self.alpha = 1000.
 
     def update_teacher(self):
 
