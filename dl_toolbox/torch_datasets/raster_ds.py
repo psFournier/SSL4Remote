@@ -6,8 +6,9 @@ import rasterio
 import imagesize
 import numpy as np
 from rasterio.windows import Window
-from dl_toolbox.utils import MergeLabels, OneHot
+from dl_toolbox.utils import MergeLabels, OneHot, LabelsToRGB, RGBToLabels
 from dl_toolbox.torch_datasets.utils import *
+
 
 class RasterDs(Dataset):
 
@@ -51,6 +52,8 @@ class RasterDs(Dataset):
        #     self.label_merger = MergeLabels(labels)
 
         self.one_hot = OneHot(list(range(len(self.labels)))) if one_hot else None
+        self.labels_to_rgb = LabelsToRGB(self.labels)
+        self.rgb_to_labels = RGBToLabels(self.labels)
 
     def read_label(self, label_path, window):
         pass
@@ -83,7 +86,7 @@ class RasterDs(Dataset):
                 label_path=self.label_path,
                 window=window
             )
-            if self.one_hot: label = self.one_hot(label)
+            
             label = torch.from_numpy(label).float().contiguous()
 
         if self.img_aug is not None:
@@ -97,34 +100,6 @@ class RasterDs(Dataset):
                 'window':window,
                 'mask':end_mask}
 
-    @classmethod
-    def labels_to_rgb(cls, labels):
-
-        # Inputs shape : B,H,W or H,W
-        # Outputs shape : B,H,W,3 or H,W,3
-        
-        rgb = np.zeros(shape=(*labels.shape, 3), dtype=np.uint8)
-        for label, key in enumerate(cls.labels):
-            mask = np.array(labels == label)
-            rgb[mask] = np.array(cls.labels[key]['color'])
-
-        return rgb
-
-    @classmethod
-    def rgb_to_labels(cls, rgb):
-
-        # Inputs shape : B,H,W,3 or H,W,3
-        # Outputs shape : B,H,W or H,W
-
-        labels = np.zeros(shape=rgb.shape[:-1], dtype=np.uint8)
-        for label, key in enumerate(cls.labels):
-            c = cls.labels[key]['color']
-            d = rgb[..., 0] == c[0]
-            d = np.logical_and(d, (rgb[..., 1] == c[1]))
-            d = np.logical_and(d, (rgb[..., 2] == c[2]))
-            labels[d] = label
-
-        return labels
     
 #    @classmethod
 #    def raw_labels_to_labels(cls, labels):

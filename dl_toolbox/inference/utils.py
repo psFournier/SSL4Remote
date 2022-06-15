@@ -85,7 +85,6 @@ def compute_probas(
         dtype=int
     )
     crop_mask = torch.from_numpy(crop_mask).float()
-    print(torch.max(crop_mask))
 
     for i, batch in enumerate(dataloader):
         
@@ -113,11 +112,11 @@ def compute_probas(
                 :, 
                 w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
                 w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
-            ] += prob*crop_mask 
+            ] += prob
             mask_sum[
                 w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
                 w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
-            ] += crop_mask
+            ] += 1
                 
     probas = torch.div(pred_sum, mask_sum)
 

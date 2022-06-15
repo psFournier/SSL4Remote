@@ -20,6 +20,8 @@ class SupervisedDm(LightningDataModule):
     def __init__(self,
                  data_path,
                  dataset_cls,
+                 labels,
+                 label_merger,
                  splitfile_path,
                  test_folds,
                  train_folds,
@@ -35,6 +37,8 @@ class SupervisedDm(LightningDataModule):
         super().__init__()
         self.data_path = data_path
         self.dataset_cls = dataset_cls_dict[dataset_cls]
+        self.labels = labels
+        self.label_merger = label_merger
         self.splitfile_path = splitfile_path
         self.test_folds = test_folds
         self.train_folds = train_folds
@@ -51,6 +55,8 @@ class SupervisedDm(LightningDataModule):
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         parser.add_argument("--data_path", type=str)
         parser.add_argument("--dataset_cls", type=str)
+        parser.add_argument("--labels", type=str)
+        parser.add_argument("--label_merger", type=str)
         parser.add_argument("--splitfile_path", type=str)
         parser.add_argument("--test_folds", nargs='+', type=int)
         parser.add_argument("--train_folds", nargs='+', type=int)
@@ -94,6 +100,8 @@ class SupervisedDm(LightningDataModule):
         if train_args:
             self.train_set = ConcatDataset([
                 self.dataset_cls(
+                    labels=self.labels,
+                    label_merger=self.label_merger,
                     img_aug=self.img_aug,
                     crop_size=self.crop_size,
                     crop_step=self.crop_size,
@@ -105,6 +113,8 @@ class SupervisedDm(LightningDataModule):
         if val_args:
             self.val_set = ConcatDataset([
                 self.dataset_cls(
+                    labels=self.labels,
+                    label_merger=self.label_merger,
                     img_aug='no',
                     crop_size=self.crop_size,
                     crop_step=self.crop_size,

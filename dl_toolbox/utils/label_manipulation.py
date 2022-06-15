@@ -32,3 +32,38 @@ class OneHot:
         onehot_masks = [(L==val).astype(float).squeeze() for val in self.labels]
 
         return np.stack(onehot_masks, axis=0)
+
+class LabelsToRGB:
+    # Inputs shape : B,H,W or H,W
+    # Outputs shape : B,H,W,3 or H,W,3
+
+    def __init__(self, labels):
+
+        self.labels = labels
+
+    def __call__(self, labels):
+        rgb = np.zeros(shape=(*labels.shape, 3), dtype=np.uint8)
+        for label, key in enumerate(self.labels):
+            mask = np.array(labels == label)
+            rgb[mask] = np.array(self.labels[key]['color'])
+
+        return rgb
+
+class RGBToLabels:
+    # Inputs shape : B,H,W,3 or H,W,3
+    # Outputs shape : B,H,W or H,W
+    def __init__(self, labels):
+
+        self.labels = labels
+
+    def __call__(self, rgb):
+
+        labels = np.zeros(shape=rgb.shape[:-1], dtype=np.uint8)
+        for label, key in enumerate(self.labels):
+            c = self.labels[key]['color']
+            d = rgb[..., 0] == c[0]
+            d = np.logical_and(d, (rgb[..., 1] == c[1]))
+            d = np.logical_and(d, (rgb[..., 2] == c[2]))
+            labels[d] = label
+
+        return labels
