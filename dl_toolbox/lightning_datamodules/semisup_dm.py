@@ -67,6 +67,8 @@ class SemisupDm(SupervisedDm):
         if train_args:
             self.unsup_train_set = ConcatDataset([
                 self.dataset_cls(
+                    labels=self.labels,
+                    label_merger=self.label_merger,
                     img_aug=self.img_aug,
                     crop_size=self.unsup_crop_size,
                     crop_step=self.unsup_crop_size,
