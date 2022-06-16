@@ -57,9 +57,9 @@ class MeanTeacher(Unet):
         if e <= w:
             self.alpha = 0.
         elif e <= 0.7 * m:
-            self.alpha = ((e - w) / (0.7 * m - w)) * 1000
+            self.alpha = ((e - w) / (0.7 * m - w)) * 100.
         else:
-            self.alpha = 1000.
+            self.alpha = 100.
 
     def update_teacher(self):
 
