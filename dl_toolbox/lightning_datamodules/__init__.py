@@ -8,3 +8,4 @@
 #from .digitanie_dm import DigitanieDm, DigitanieSemisupDm
 from .supervised_dm import SupervisedDm
 from .semisup_dm import SemisupDm
+from .utils import read_splitfile
