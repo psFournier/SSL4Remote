@@ -177,63 +177,139 @@ def read_probas(input_path):
 
     return probas
 
+
 def cm2metrics(cm, ignore_index=-1):
-        """Compute metrics directly from a confusion matrix.
-        Return per-class and average metrics.
-        Per-class metrics: 
-            F1 score, Recall, Precision, IoU
-        Average metrics: 
-            Overall Accuracy (micro average), Kappa score, 
-            macro averages for F1, Recall, Precision and IoU.
-        """ 
-        labels = np.arange(cm.shape[0])
-        TP = np.array([cm[i, i] for i in labels if i != ignore_index])
-        FN = np.array([
-            sum([cm[i, j] for j in labels if j!=i]) for i in labels if i != ignore_index])
-        FP = np.array([
-            sum([cm[i, j] for i in labels if i!=j]) for j in labels if j != ignore_index])
-            
-        f1 = (2 * TP) / (2 * TP + FP + FN)
-        recall = TP / (TP + FN)
-        precision = TP / (TP + FP)
-        iou = TP / (TP + FN + FP)
+    """Compute metrics directly from a confusion matrix.
+    Return per-class and average metrics.
+    Per-class metrics: 
+        F1 score, Recall, Precision, IoU
+    Average metrics: 
+        Overall Accuracy (micro average), Kappa score, 
+        macro averages for F1, Recall, Precision and IoU.
+    """ 
+    labels = np.arange(cm.shape[0])
+    TP = np.array([cm[i, i] for i in labels if i != ignore_index])
+    FN = np.array([
+        sum([cm[i, j] for j in labels if j!=i]) for i in labels if i != ignore_index])
+    FP = np.array([
+        sum([cm[i, j] for i in labels if i!=j]) for j in labels if j != ignore_index])
 
-        metrics_per_class = pd.DataFrame({
-            "F1": f1,
-            "Recall": recall,
-            "Precision": precision,
-            "IoU": iou
-        })
+    e = 1e-5    
+    f1 = (2 * TP + e) / (2 * TP + FP + FN + e)
+    recall = (TP + e) / (TP + FN + e)
+    precision = (TP + e) / (TP + FP + e)
+    iou = (TP + e) / (TP + FN + FP + e)
 
-        #mF1 = (2*np.sum(TP)) / (2 * np.sum(TP) + np.sum(FP) +np.sum(FN))
-        #mRecall = np.sum(TP) / (np.sum(TP) + np.sum(FN))
-        #mPrecision = np.sum(TP) / (np.sum(TP) + np.sum(FP))
-        #mIou = np.sum(TP) / (np.sum(TP) + np.sum(FP) + np.sum(FN))
+    metrics_per_class = pd.DataFrame({
+        "F1": f1,
+        "Recall": recall,
+        "Precision": precision,
+        "IoU": iou
+    })
 
-        # Accuracy
-        obs_acc = sum(TP) / np.sum(cm[np.array([l for l in labels if l != ignore_index]), :])
-        # KAPPA
-        marg_freq = np.sum(cm, axis=0) * np.sum(cm, axis=1) / np.sum(cm)
-        exp_acc = sum(marg_freq) / np.sum(cm)
-        kappa = (obs_acc - exp_acc) / (1 - exp_acc)
-        #average_metrics = pd.DataFrame({
-        #    "mF1": [mF1],
-        #    "mRecall": [mRecall],
-        #    "mPrecision": [mPrecision],
-        #    "mIoU": [mIou],
-        #    "OAccuracy": [obs_acc],
-        #    "Kappa": [kappa]
-        #})
-       
-        average_metrics = pd.DataFrame({
-            "mF1": [np.mean(f1)],
-            "mRecall": [np.mean(recall)],
-            "mPrecision": [np.mean(precision)],
-            "mIoU": [np.mean(iou)],
-            "OAccuracy": [obs_acc],
-            "Kappa": [kappa]
-        })
-        return metrics_per_class, average_metrics
+    # Accuracy
+    obs_acc = sum(TP) / np.sum(cm[np.array([l for l in labels if l != ignore_index]), :])
+    # KAPPA
+    marg_freq = np.sum(cm, axis=0) * np.sum(cm, axis=1) / np.sum(cm)
+    exp_acc = sum(marg_freq) / np.sum(cm)
+    kappa = (obs_acc - exp_acc) / (1 - exp_acc)
+    #average_metrics = pd.DataFrame({
+    #    "mF1": [mF1],
+    #    "mRecall": [mRecall],
+    #    "mPrecision": [mPrecision],
+    #    "mIoU": [mIou],
+    #    "OAccuracy": [obs_acc],
+    #    "Kappa": [kappa]
+    #})
+   
+    macro_average_metrics = pd.DataFrame({
+        "macroF1": [np.mean(f1)],
+        "macroRecall": [np.mean(recall)],
+        "macroPrecision": [np.mean(precision)],
+        "macroIoU": [np.mean(iou)],
+        "OAccuracy": [obs_acc],
+        "Kappa": [kappa]
+    })
+
+    microF1 = (2*np.sum(TP)) / (2 * np.sum(TP) + np.sum(FP) +np.sum(FN))
+    microRecall = np.sum(TP) / (np.sum(TP) + np.sum(FN))
+    microPrecision = np.sum(TP) / (np.sum(TP) + np.sum(FP))
+    microIou = np.sum(TP) / (np.sum(TP) + np.sum(FP) + np.sum(FN))
+
+    micro_average_metrics = pd.DataFrame({
+        "microF1": [microF1],
+        "microRecall": [microRecall],
+        "microPrecision": [microPrecision],
+        "microIoU": [microIou]
+    })
+
+    return metrics_per_class, macro_average_metrics, micro_average_metrics
+
+def compute_metrics(
+    preds,
+    labels,
+    num_classes,
+    ignore_index=None
+):
+    f1 = M.f1_score(
+        preds,
+        labels,
+        average=None,
+        mdmc_average='global',
+        ignore_index=ignore_index,
+        num_classes=num_classes
+    )
+    recall = M.recall(
+        preds,
+        labels,
+        average=None,
+        mdmc_average='global',
+        ignore_index=ignore_index,
+        num_classes=num_classes
+    )
+    precision = M.precision(
+        preds,
+        labels,
+        average=None,
+        mdmc_average='global',
+        ignore_index=ignore_index,
+        num_classes=num_classes
+    )
+    iou = M.jaccard_index(
+        preds,
+        labels,
+        ignore_index=ignore_index,
+        num_classes=num_classes
+    )
+    metrics_per_class = pd.DataFrame({
+        "F1": f1,
+        "Recall": recall,
+        "Precision": precision,
+        "IoU": iou
+    })
+    accuracy = M.accuracy(
+        preds,
+        labels,
+        average='micro',
+        mdmc_average='global',
+        num_classes=num_classes,
+        ignore_index=ignore_index
+    )
+    kappa = M.cohen_kappa(
+        preds,
+        labels,
+        num_classes=num_classes
+    )
+
+    average_metrics = pd.DataFrame({
+        "mF1": [np.mean(f1)],
+        "mRecall": [np.mean(recall)],
+        "mPrecision": [np.mean(precision)],
+        "mIoU": [np.mean(iou)],
+        "OAccuracy": [obs_acc],
+        "Kappa": [kappa]
+    })
+    return metrics_per_class, average_metrics
 
 def compute_cm(
     preds,

@@ -85,7 +85,7 @@ class DigitanieDs(RasterDs):
         )
         label = np.squeeze(label)
         label = self.label_merger(label)
-        if self.one_hot: label = self.one_hot(label)
+        
 
         return label
 

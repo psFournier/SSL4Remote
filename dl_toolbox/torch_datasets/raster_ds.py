@@ -86,7 +86,7 @@ class RasterDs(Dataset):
                 label_path=self.label_path,
                 window=window
             )
-            
+            if self.one_hot: label = self.one_hot(label)
             label = torch.from_numpy(label).float().contiguous()
 
         if self.img_aug is not None:
