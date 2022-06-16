@@ -44,7 +44,7 @@ def read_splitfile(
 
         try:
             orig_img = row[9]
-            kwargs['full_raster_path'] = os.path.join(data_path, city, orig_img)
+            kwargs['full_raster_path'] = os.path.join(data_path, orig_img)
         except:
             pass
 
