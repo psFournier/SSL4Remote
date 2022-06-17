@@ -23,41 +23,50 @@ from dl_toolbox.utils import MergeLabels, OneHot
 #         'sport venues', 1825718)
 #    ]
 
-BASE_LABELS = {
-    'void': {'color': (255, 255, 255)},
-    'impervious surface': {'color': (38, 38, 38)},
-    'building': {'color': (238, 118, 33)},
-    'pervious surface': {'color': (34, 139, 34)},
-    'high vegetation': {'color': (0, 222, 137)},
-    'car': {'color': (255, 0, 0)},
-    'water': {'color': (0, 0, 238)},
-    'sport venue': {'color': (160, 30, 230)}
+semcity_labels = {
+
+    'base_labels' : {
+        'void': {'color': (255, 255, 255)},
+        'impervious surface': {'color': (38, 38, 38)},
+        'building': {'color': (238, 118, 33)},
+        'pervious surface': {'color': (34, 139, 34)},
+        'high vegetation': {'color': (0, 222, 137)},
+        'car': {'color': (255, 0, 0)},
+        'water': {'color': (0, 0, 238)},
+        'sport venue': {'color': (160, 30, 230)}
+    },
+    'six_class_labels' : {
+        'other': {'color': (255, 255, 255)},
+        'pervious surface': {'color': (34, 139, 34)},
+        'water': {'color': (0, 0, 238)},
+        'building': {'color': (238, 118, 33)},
+        'high vegetation': {'color': (0, 222, 137)},
+        'impervious surface': {'color': (38, 38, 38)}
+    },
+    'binary_labels': {
+        'background': {'color': (0,0,0)},
+        'building': {'color': (255, 255, 255)}
+    }
 }
 
-MERGE_SEMCITY_LABELS = {
-    'other': {'color': (255, 255, 255)},
-    'pervious surface': {'color': (34, 139, 34)},
-    'water': {'color': (0, 0, 238)},
-    'building': {'color': (238, 118, 33)},
-    'high vegetation': {'color': (0, 222, 137)},
-    'impervious surface': {'color': (38, 38, 38)}
+semcity_label_mergers = {
+    'no_merge' : [[0], [1], [2], [3], [4], [5], [6], [7]],
+    'six_class_merger' : [[0,7], [3], [6], [2], [4], [1, 5]],
+    'binary_merger' : [[0,1,4,3,5,6,7],[2]]
 }
-
-NO_MERGE = [[0], [1], [2], [3], [4], [5], [6], [7]]
-MERGE_SEMCITY = [[0,7], [3], [6], [2], [4], [1, 5]]
 
 class SemcityBdsdDs(RasterDs):
 
-    labels = BASE_LABELS
     stats = {
         'min': np.array([0, 0, 0, 0, 0, 0, 0, 0]),
         'max': np.array([2902,4174,4726,5196,4569,4653,5709,3939])
     }
 
-    def __init__(self, *args, **kwargs):
-
+    def __init__(self, labels, label_merger, *args, **kwargs):
+        
+        self.labels = semcity_labels[labels]
         super().__init__(*args, **kwargs)
-        self.label_merger = MergeLabels(NO_MERGE)
+        self.label_merger = MergeLabels(semcity_label_mergers[label_merger])
 
     def read_image(self, image_path, window):
 
@@ -84,25 +93,15 @@ class SemcityBdsdDs(RasterDs):
         )
         rgb = rgb.transpose((1,2,0))
         labels = np.zeros(shape=rgb.shape[:-1], dtype=np.uint8)
-        for label, key in enumerate(BASE_LABELS):
-            c = BASE_LABELS[key]['color']
+        for label, key in enumerate(semcity_labels['base_labels']):
+            c = semcity_labels['base_labels'][key]['color']
             d = rgb[..., 0] == c[0]
             d = np.logical_and(d, (rgb[..., 1] == c[1]))
             d = np.logical_and(d, (rgb[..., 2] == c[2]))
             labels[d] = label
         label = self.label_merger(labels)
 
-        return label
-
-class SemcityBdsd2Ds(SemcityBdsdDs):
-
-    labels = MERGE_SEMCITY_LABELS
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-        self.label_merger = MergeLabels(MERGE_SEMCITY)
-           
+        return label           
 
 def main():
 

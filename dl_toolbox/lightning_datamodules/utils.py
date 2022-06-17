@@ -6,11 +6,12 @@ from rasterio.windows import Window
 from dl_toolbox.torch_datasets import *
 
 dataset_dict = {
-    'Toulouse': DigitanieToulouseDs,
-    'Biarritz': DigitanieBiarritzDs,
-    'Montpellier': DigitanieMontpellierDs,
-    'Paris': DigitanieParisDs,
-    'Strasbourg': DigitanieStrasbourgDs
+    'DigitanieToulouse': DigitanieToulouseDs,
+    'DigitanieBiarritz': DigitanieBiarritzDs,
+    'DigitanieMontpellier': DigitanieMontpellierDs,
+    'DigitanieParis': DigitanieParisDs,
+    'DigitanieStrasbourg': DigitanieStrasbourgDs,
+    'SemcityToulouse': SemcityBdsdDs
 }
 
 def read_splitfile(
