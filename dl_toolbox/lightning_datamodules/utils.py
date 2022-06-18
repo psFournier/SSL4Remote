@@ -11,7 +11,8 @@ dataset_dict = {
     'DigitanieMontpellier': DigitanieMontpellierDs,
     'DigitanieParis': DigitanieParisDs,
     'DigitanieStrasbourg': DigitanieStrasbourgDs,
-    'SemcityToulouse': SemcityBdsdDs
+    'SemcityToulouse': SemcityBdsdDs,
+    'MiniworldChristchurch': MiniworldChristchurchDs
 }
 
 def read_splitfile(

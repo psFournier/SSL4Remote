@@ -41,13 +41,7 @@ class MiniworldDs(RasterDs):
             path=image_path,
         )
 
-        image = image[:3,...]
-
-        image = minmax(
-            image, 
-            self.stats['min'][:3,...],
-            self.stats['max'][:3,...]
-        )
+        image /= 255.
 
         return image
 
@@ -86,10 +80,11 @@ class MiniworldViennaDs(MiniworldDs):
 
 def main():
     
-    image_path = '/home/pfournie/ai4geo/data/miniworld/Christchurch' \
-                 '/toulouse_tuile_7_img_normalized.tif'
-    label_path = '/home/pfournie/ai4geo/data/DIGITANIE/Toulouse/toulouse_tuile_7.tif'
+    image_path = '/d/pfournie/ai4geo/data/miniworld_tif/christchurch/train/320_x.tif'
+    label_path = '/d/pfournie/ai4geo/data/miniworld_tif/christchurch/train/320_y.tif'
     dataset = MiniworldChristchurchDs(
+        labels='base_labels',
+        label_merger='no_merge',
         image_path=image_path,
         label_path=label_path,
         crop_size=1024,
@@ -101,9 +96,9 @@ def main():
     )
     img = dataset[0]['mask']
     print(img.shape)
-    img = LabelsToRGB(img.numpy())
+    #img = LabelsToRGB(dataset.labels)(img.numpy())
     #img = img.numpy().transpose((1,2,0))
-    img = plt.imsave('digitanie_ds_test.jpg', img)
+    #img = plt.imsave('digitanie_ds_test.jpg', img)
 
 
 
