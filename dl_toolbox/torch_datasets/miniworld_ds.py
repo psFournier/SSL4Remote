@@ -51,6 +51,7 @@ class MiniworldDs(RasterDs):
             window=window,
             path=label_path
         )
+        label = np.any(label != [0], axis=0)
         label = np.squeeze(label)
         label = self.label_merger(label)
         
@@ -58,10 +59,6 @@ class MiniworldDs(RasterDs):
         return label
 
 class MiniworldChristchurchDs(MiniworldDs):
-
-    stats = {}
-    stats['min'] = np.array([0, 0.0029, 0.0028, 0])
-    stats['max'] = np.array([1.5431, 1.1549, 1.1198, 2.0693])
 
     def __init__(self, *args, **kwargs):
 
