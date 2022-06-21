@@ -49,6 +49,7 @@ class Unet(pl.LightningModule):
         # Reduction = none is necessary to compute properly the mean when using
         # a masked loss
         self.ce_loss = nn.CrossEntropyLoss(reduction='none')
+        self.bce = nn.BCEWithLogitsLoss()
         # The Dice loss is not a pixel-wise loss, so it seems that the masked
         # loss works properly by just masking preds and labels
         self.dice_loss = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
@@ -80,24 +81,31 @@ class Unet(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        self.optimizer = SGD(
-            self.parameters(),
-            lr=self.initial_lr,
-            momentum=0.9,
-            weight_decay=self.wd
+        self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
+        scheduler = MultiStepLR(
+            optimizer,
+            milestones=[250, 350, 450],
+            gamma=0.3
         )
 
-        def lambda_lr(epoch):
-            return ramp_down(epoch,
-                             initial_lr=self.initial_lr,
-                             final_lr=self.final_lr,
-                             max_epochs=self.trainer.max_epochs,
-                             milestones=self.lr_milestones)
+        #self.optimizer = SGD(
+        #    self.parameters(),
+        #    lr=self.initial_lr,
+        #    momentum=0.9,
+        #    weight_decay=self.wd
+        #)
 
-        scheduler = LambdaLR(
-            self.optimizer,
-            lr_lambda=lambda_lr
-        )
+        #def lambda_lr(epoch):
+        #    return ramp_down(epoch,
+        #                     initial_lr=self.initial_lr,
+        #                     final_lr=self.final_lr,
+        #                     max_epochs=self.trainer.max_epochs,
+        #                     milestones=self.lr_milestones)
+
+        #scheduler = LambdaLR(
+        #    self.optimizer,
+        #    lr_lambda=lambda_lr
+        #)
 
         return [self.optimizer], [scheduler]
 
@@ -125,7 +133,7 @@ class Unet(pl.LightningModule):
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
-        return loss1, loss2, loss1 + 2*loss2
+        return loss1, loss2, loss1 + loss2
 
     def compute_metrics(self, preds, labels):
 
@@ -145,14 +153,7 @@ class Unet(pl.LightningModule):
             ignore_index=ignore_index
         )
 
-        weighted_f1_score = torchmetrics.f1_score(
-            preds + int(not self.train_with_void),
-            labels,
-            num_classes=self.num_classes,
-            ignore_index=ignore_index,
-            average='weighted',
-            mdmc_average='global'
-        )
+
         f1_score = torchmetrics.f1_score(
             preds + int(not self.train_with_void),
             labels,
@@ -161,7 +162,7 @@ class Unet(pl.LightningModule):
         )
 
 
-        return weighted_f1_score, f1_score, accuracy
+        return f1_score, accuracy
 
     def log_metric_per_class(self, mode, metrics):
 
@@ -177,7 +178,10 @@ class Unet(pl.LightningModule):
         inputs = batch['image']
         labels_onehot, loss_mask = self.get_masked_labels(batch['mask'])
         logits = self.network(inputs)
-        loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
+        loss1 = self.bce(logits, labels_onehot)
+        loss2 = self.dice(logits, labels_onehot)
+        loss = loss1 + loss2
+        #loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
         # preds = logits.argmax(dim=1)
         # labels = torch.argmax(batch['mask'], dim=1).long()
         # iou, accuracy = self.compute_metrics(preds, labels)
@@ -194,20 +198,23 @@ class Unet(pl.LightningModule):
         inputs = batch['image']
         labels_onehot, loss_mask = self.get_masked_labels(batch['mask'])
         logits = self.network(inputs)
-        loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
-        preds = logits.argmax(dim=1)
-        labels = torch.argmax(batch['mask'], dim=1).long()
-
-        weighted_f1_score, f1_score, accuracy = self.compute_metrics(preds, labels)
-
+        #loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
+        loss1 = self.bce(logits, labels_onehot)
+        loss2 = self.dice(logits, labels_onehot)
+        loss = loss1 + loss2
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
+
+        preds = logits.argmax(dim=1)
+        labels = torch.argmax(labels_onehot, dim=1).long()
+
+        f1_score, accuracy = self.compute_metrics(preds, labels)
+
         self.log(f'Val_acc', accuracy)
         self.log(f'Val_f1', f1_score)
-        self.log(f'Val_weighted_f1', weighted_f1_score)
 
-        return {'batch': batch, 'logits': logits, 'f1': f1_score, 'accuracy' : accuracy, 'weighted_f1': weighted_f1_score}
+        return {'batch': batch, 'logits': logits, 'f1': f1_score, 'accuracy' : accuracy}
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:
