@@ -164,10 +164,10 @@ class MeanTeacher(Unet):
                 self.log('Pseudo label loss', pseudo_loss)
                 unsup_loss += pseudo_loss
 
-        self.log("Train_unsup_loss", unsup_loss)
 
         self.update_teacher()
         self.log('Prop unsup train', self.alpha)
         loss = sup_loss + self.alpha * unsup_loss
+        self.log("Train_loss", loss)
 
         return {'batch': sup_batch, 'logits': sup_logits.detach(), "loss": loss}
