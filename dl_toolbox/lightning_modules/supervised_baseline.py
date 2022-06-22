@@ -49,7 +49,7 @@ class Unet(pl.LightningModule):
         # Reduction = none is necessary to compute properly the mean when using
         # a masked loss
         self.ce_loss = nn.CrossEntropyLoss(reduction='none')
-        self.bce = nn.BCEWithLogitsLoss()
+        self.bce_loss = nn.BCEWithLogitsLoss(reduction='none')
         # The Dice loss is not a pixel-wise loss, so it seems that the masked
         # loss works properly by just masking preds and labels
         self.dice_loss = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
@@ -81,127 +81,152 @@ class Unet(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
-        scheduler = MultiStepLR(
-            optimizer,
-            milestones=[250, 350, 450],
-            gamma=0.3
+        #self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
+        #scheduler = MultiStepLR(
+        #    self.optimizer,
+        #    milestones=[250, 350, 450],
+        #    gamma=0.3
+        #)
+
+        self.optimizer = SGD(
+            self.parameters(),
+            lr=self.initial_lr,
+            momentum=0.9,
+            weight_decay=self.wd
         )
 
-        #self.optimizer = SGD(
-        #    self.parameters(),
-        #    lr=self.initial_lr,
-        #    momentum=0.9,
-        #    weight_decay=self.wd
-        #)
+        def lambda_lr(epoch):
+            return ramp_down(epoch,
+                             initial_lr=self.initial_lr,
+                             final_lr=self.final_lr,
+                             max_epochs=self.trainer.max_epochs,
+                             milestones=self.lr_milestones)
 
-        #def lambda_lr(epoch):
-        #    return ramp_down(epoch,
-        #                     initial_lr=self.initial_lr,
-        #                     final_lr=self.final_lr,
-        #                     max_epochs=self.trainer.max_epochs,
-        #                     milestones=self.lr_milestones)
-
-        #scheduler = LambdaLR(
-        #    self.optimizer,
-        #    lr_lambda=lambda_lr
-        #)
+        scheduler = LambdaLR(
+            self.optimizer,
+            lr_lambda=lambda_lr
+        )
 
         return [self.optimizer], [scheduler]
 
-    def get_masked_labels(self, mask):
-
-        if not self.train_with_void:
-            # Granted that the first label is the void/unknown label, this extracts
-            # from labels the mask to use to ignore this class
-            labels_onehot = mask[:, 1:, :, :]
-            loss_mask = 1. - mask[:, [0], :, :]
-        else:
-            b, c, h, w = mask.shape
-            labels_onehot, loss_mask = mask, torch.ones(
-                b, 1, h, w, 
-                dtype=mask.dtype,
-                device=mask.device
-            )
-
-        return labels_onehot, loss_mask
-
-    def compute_sup_loss(self, logits, labels_onehot, loss_mask):
-
-        loss1_noreduce = self.ce_loss(logits, labels_onehot)
-        # The mean over all pixels is replaced with a mean over unmasked ones
-        loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
-        loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
-
-        return loss1, loss2, loss1 + loss2
-
-    def compute_metrics(self, preds, labels):
-
-        ignore_index = None if self.eval_with_void else 0
-
-#        iou = torchmetrics.iou(
+#    def get_masked_labels(self, mask):
+#
+#        if not self.train_with_void:
+#            # Granted that the first label is the void/unknown label, this extracts
+#            # from labels the mask to use to ignore this class
+#            labels_onehot = mask[:, 1:, :, :]
+#            loss_mask = 1. - mask[:, [0], :, :]
+#        else:
+#            b, c, h, w = mask.shape
+#            labels_onehot, loss_mask = mask, torch.ones(
+#                b, 1, h, w, 
+#                dtype=mask.dtype,
+#                device=mask.device
+#            )
+#
+#        return labels_onehot, loss_mask
+#
+#    def compute_sup_loss(self, logits, labels_onehot, loss_mask):
+#
+#        loss1_noreduce = self.ce_loss(logits, labels_onehot)
+#        # The mean over all pixels is replaced with a mean over unmasked ones
+#        loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
+#        loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
+#
+#        return loss1, loss2, loss1 + loss2
+#
+#    def compute_metrics(self, preds, labels):
+#
+#        ignore_index = None if self.eval_with_void else 0
+#
+##        iou = torchmetrics.iou(
+##            preds + int(not self.train_with_void),
+##            labels,
+##            reduction='none',
+##            num_classes=self.num_classes, 
+##            ignore_index=ignore_index
+##        )
+#
+#        accuracy = torchmetrics.accuracy(
 #            preds + int(not self.train_with_void),
 #            labels,
-#            reduction='none',
-#            num_classes=self.num_classes, 
 #            ignore_index=ignore_index
 #        )
-
-        accuracy = torchmetrics.accuracy(
-            preds + int(not self.train_with_void),
-            labels,
-            ignore_index=ignore_index
-        )
-
-
-        f1_score = torchmetrics.f1_score(
-            preds + int(not self.train_with_void),
-            labels,
-            ignore_index=ignore_index,
-            mdmc_average='global'
-        )
-
-
-        return f1_score, accuracy
-
-    def log_metric_per_class(self, mode, metrics):
-
-        class_names = self.trainer.datamodule.class_names[
-            int(not self.eval_with_void):
-        ]
-        for metric_name, vals in metrics.items():
-            for val, class_name in zip(vals, class_names):
-                self.log(f'{mode}_{metric_name}_{class_name}', val)
+#
+#
+#        f1_score = torchmetrics.f1_score(
+#            preds + int(not self.train_with_void),
+#            labels,
+#            ignore_index=ignore_index,
+#            mdmc_average='global'
+#        )
+#
+#
+#        return f1_score, accuracy
+#
+#    def log_metric_per_class(self, mode, metrics):
+#
+#        class_names = self.trainer.datamodule.class_names[
+#            int(not self.eval_with_void):
+#        ]
+#        for metric_name, vals in metrics.items():
+#            for val, class_name in zip(vals, class_names):
+#                self.log(f'{mode}_{metric_name}_{class_name}', val)
 
     def training_step(self, batch, batch_idx):
 
         inputs = batch['image']
-        labels_onehot, loss_mask = self.get_masked_labels(batch['mask'])
+        labels_onehot = batch['mask']
+
+        if self.train_with_void:
+            b,c,h,w = labels_onehot.shape
+            loss_mask = torch.ones(
+                    b,1,h,w,
+                    dtype=labels_onehot.dtype,
+                    device=labels_onehot.device)
+        else:
+            labels_onehot = labels_onehot[:,1,...]
+            loss_mask = 1. - mask[:,[0],...]
+
         logits = self.network(inputs)
-        loss1 = self.bce(logits, labels_onehot)
-        loss2 = self.dice(logits, labels_onehot)
+        
+        loss1_noreduce = self.bce_loss(logits, labels_onehot)
+        # The mean over all pixels is replaced with a mean over unmasked ones
+        loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
+        loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
+
         loss = loss1 + loss2
-        #loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
-        # preds = logits.argmax(dim=1)
-        # labels = torch.argmax(batch['mask'], dim=1).long()
-        # iou, accuracy = self.compute_metrics(preds, labels)
 
         self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
-        # self.log_metrics(mode='Train', metrics={'iou': iou, 'acc': accuracy})
 
         return {'batch': batch, 'logits': logits.detach(), "loss": loss}
 
     def validation_step(self, batch, batch_idx):
 
         inputs = batch['image']
-        labels_onehot, loss_mask = self.get_masked_labels(batch['mask'])
+        labels_onehot = batch['mask']
+
+        if self.train_with_void:
+            b,c,h,w = labels_onehot.shape
+            loss_mask = torch.ones(
+                    b,1,h,w,
+                    dtype=labels_onehot.dtype,
+                    device=labels_onehot.device)
+        else:
+            labels_onehot = labels_onehot[:,1,...]
+            loss_mask = 1. - mask[:,[0],...]
+
         logits = self.network(inputs)
-        #loss1, loss2, loss = self.compute_sup_loss(logits, labels_onehot, loss_mask)
-        loss1 = self.bce(logits, labels_onehot)
-        loss2 = self.dice(logits, labels_onehot)
+        
+        loss1_noreduce = self.bce_loss(logits, labels_onehot)
+        # The mean over all pixels is replaced with a mean over unmasked ones
+        loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
+        loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
+
         loss = loss1 + loss2
+
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
@@ -209,7 +234,20 @@ class Unet(pl.LightningModule):
         preds = logits.argmax(dim=1)
         labels = torch.argmax(labels_onehot, dim=1).long()
 
-        f1_score, accuracy = self.compute_metrics(preds, labels)
+        ignore_index = None if self.eval_with_void else 0
+
+        accuracy = torchmetrics.accuracy(
+            preds + int(not self.train_with_void),
+            labels,
+            ignore_index=ignore_index
+        )
+
+        f1_score = torchmetrics.f1_score(
+            preds + int(not self.train_with_void),
+            labels,
+            ignore_index=ignore_index,
+            mdmc_average='global'
+        )
 
         self.log(f'Val_acc', accuracy)
         self.log(f'Val_f1', f1_score)

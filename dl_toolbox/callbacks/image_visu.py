@@ -63,12 +63,15 @@ class SegmentationImagesVisualisation(pl.Callback):
             final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
 
             trainer.logger.experiment.add_image(f'Images/{prefix}_batch_{batch_idx}_part_{idx}', final_grid, global_step=trainer.global_step)
+            break
 
     def on_validation_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
         """Called when the validation batch ends."""
+
+        nb_val_batch = len(trainer.val_dataloader)
         
-        if trainer.current_epoch % 10 == 0 and batch_idx <= 4:
+        if trainer.current_epoch % 10 == 0 and batch_idx % (nb_val_batch // 5):
             self.display_batch(trainer, pl_module, outputs, batch_idx=batch_idx, prefix='Val')
 
