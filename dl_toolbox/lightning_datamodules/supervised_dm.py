@@ -148,6 +148,7 @@ class SupervisedDm(LightningDataModule):
             pin_memory=True,
             worker_init_fn=worker_init_function
         )
+        self.nb_val_batch = len(self.val_set) // self.sup_batch_size
 
         return val_dataloader
     
