@@ -186,7 +186,7 @@ class Unet(pl.LightningModule):
                     device=labels_onehot.device)
         else:
             labels_onehot = labels_onehot[:,1,...]
-            loss_mask = 1. - mask[:,[0],...]
+            loss_mask = 1. - labels_onehot[:,[0],...]
 
         logits = self.network(inputs)
         
