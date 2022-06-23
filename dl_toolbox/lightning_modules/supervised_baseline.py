@@ -268,7 +268,7 @@ class Unet(pl.LightningModule):
             self.log(f'Val_iou_{i}', iou)
         
         tp, fp, tn, fn, supp = torch.sum(class_stat_scores, dim=0)
-        accuracy = (tp + tn) / (tp + tn + fp + fn)
+        accuracy = tp / supp
         self.log('Val_acc', accuracy)
 
         #f1 = cum_stat_scores[i, 
