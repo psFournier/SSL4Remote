@@ -177,6 +177,7 @@ class Unet(pl.LightningModule):
 
         inputs = batch['image']
         labels_onehot = batch['mask']
+        logits = self.network(inputs)
 
         if self.train_with_void:
             b,c,h,w = labels_onehot.shape
@@ -188,10 +189,7 @@ class Unet(pl.LightningModule):
             labels_onehot = labels_onehot[:,1,...]
             loss_mask = 1. - labels_onehot[:,[0],...]
 
-        logits = self.network(inputs)
-        
         loss1_noreduce = self.bce_loss(logits, labels_onehot)
-        # The mean over all pixels is replaced with a mean over unmasked ones
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
@@ -207,6 +205,7 @@ class Unet(pl.LightningModule):
 
         inputs = batch['image']
         labels_onehot = batch['mask']
+        logits = self.network(inputs)
 
         if self.train_with_void:
             b,c,h,w = labels_onehot.shape
@@ -217,11 +216,8 @@ class Unet(pl.LightningModule):
         else:
             labels_onehot = labels_onehot[:,1,...]
             loss_mask = 1. - mask[:,[0],...]
-
-        logits = self.network(inputs)
         
         loss1_noreduce = self.bce_loss(logits, labels_onehot)
-        # The mean over all pixels is replaced with a mean over unmasked ones
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
         loss2 = self.dice_loss(logits * loss_mask, labels_onehot * loss_mask)
 
@@ -236,26 +232,50 @@ class Unet(pl.LightningModule):
 
         ignore_index = None if self.eval_with_void else 0
 
-        accuracy = torchmetrics.accuracy(
-            preds + int(not self.train_with_void),
-            labels,
-            ignore_index=ignore_index
-        )
+        #accuracy = torchmetrics.accuracy(
+        #    preds + int(not self.train_with_void),
+        #    labels,
+        #    ignore_index=ignore_index
+        #)
+        #self.log(f'Val_acc', accuracy)
 
-        f1_score = torchmetrics.f1_score(
+        stat_scores = torchmetrics.stat_scores(
             preds + int(not self.train_with_void),
             labels,
             ignore_index=ignore_index,
-            mdmc_average='global'
+            mdmc_reduce='global',
+            reduce='macro',
+            num_classes=self.num_classes
         )
 
-        self.log(f'Val_acc', accuracy)
-        self.log(f'Val_f1', f1_score)
-
-        return {'batch': batch, 'logits': logits, 'f1': f1_score, 'accuracy' : accuracy}
+        return {'batch': batch, 'logits': logits.detach(), 'stat_scores': stat_scores.detach()}
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:
             self.log(f'learning_rate', param_group['lr'])
             break
 
+    def validation_epoch_end(self, outs):
+        
+        stat_scores = [out['stat_scores'].cpu() for out in outs]
+
+        class_stat_scores = torch.sum(torch.stack(stat_scores), dim=0)
+        for i in range(self.num_classes):
+            tp, fp, tn, fn, supp = class_stat_scores[i, :]
+            f1 = tp / (tp + 0.5 * (fp + fn))
+            iou = tp / (tp + fp + tn)
+            self.log(f'Val_f1_{i}', f1)
+            self.log(f'Val_iou_{i}', iou)
+        
+        tp, fp, tn, fn, supp = torch.sum(class_stat_scores, dim=0)
+        accuracy = (tp + tn) / (tp + tn + fp + fn)
+        self.log('Val_acc', accuracy)
+
+        #f1 = cum_stat_scores[i, 
+        #val_precision_0 = cum_stat_scores[0, 0] / (cum_stat_scores[0, 0] + cum_stat_scores[0, 1])
+        #val_precision_1 = cum_stat_scores[1, 0] / (cum_stat_scores[1, 0] + cum_stat_scores[1, 1])
+        #self.log('Val_precision_0', val_precision_0)
+        #self.log('Val_precision_1', val_precision_1)
+        #for i, val in metrics.items():
+        #    for val, class_name in zip(vals, class_names):
+        #        self.log(f'{mode}_{metric_name}_{class_name}', val)
