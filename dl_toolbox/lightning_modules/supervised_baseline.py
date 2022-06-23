@@ -186,7 +186,7 @@ class Unet(pl.LightningModule):
                     dtype=labels_onehot.dtype,
                     device=labels_onehot.device)
         else:
-            labels_onehot = labels_onehot[:,1,...]
+            labels_onehot = labels_onehot[:,1:,...]
             loss_mask = 1. - labels_onehot[:,[0],...]
 
         loss1_noreduce = self.bce_loss(logits, labels_onehot)
@@ -214,7 +214,7 @@ class Unet(pl.LightningModule):
                     dtype=labels_onehot.dtype,
                     device=labels_onehot.device)
         else:
-            labels_onehot = labels_onehot[:,1,...]
+            labels_onehot = labels_onehot[:,1:,...]
             loss_mask = 1. - mask[:,[0],...]
         
         loss1_noreduce = self.bce_loss(logits, labels_onehot)
