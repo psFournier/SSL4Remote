@@ -215,7 +215,7 @@ class Unet(pl.LightningModule):
                     device=labels_onehot.device)
         else:
             labels_onehot = labels_onehot[:,1:,...]
-            loss_mask = 1. - mask[:,[0],...]
+            loss_mask = 1. - labels_onehot[:,[0],...]
         
         loss1_noreduce = self.bce_loss(logits, labels_onehot)
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
