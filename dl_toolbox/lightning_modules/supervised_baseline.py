@@ -257,7 +257,7 @@ class Unet(pl.LightningModule):
 
     def validation_epoch_end(self, outs):
         
-        stat_scores = [out['stat_scores'].cpu() for out in outs]
+        stat_scores = [out['stat_scores'] for out in outs]
 
         class_stat_scores = torch.sum(torch.stack(stat_scores), dim=0)
         for i in range(self.num_classes):
