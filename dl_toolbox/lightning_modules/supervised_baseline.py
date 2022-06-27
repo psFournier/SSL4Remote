@@ -40,6 +40,7 @@ class Unet(pl.LightningModule):
         )
         self.train_with_void = train_with_void
         self.eval_with_void = eval_with_void
+        self.ignore_index = None if (self.train_with_void and self.eval_with_void) else 0
         self.in_channels = in_channels
         self.network = network
         self.initial_lr = initial_lr
@@ -68,7 +69,7 @@ class Unet(pl.LightningModule):
         parser.add_argument("--initial_lr", type=float)
         parser.add_argument("--final_lr", type=float)
         parser.add_argument("--weight_decay", type=float)
-        parser.add_argument("--lr_milestones", nargs=2, type=float)
+        parser.add_argument("--lr_milestones", nargs='+', type=float)
 
         return parser
 
@@ -81,31 +82,31 @@ class Unet(pl.LightningModule):
 
     def configure_optimizers(self):
 
-        #self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
-        #scheduler = MultiStepLR(
-        #    self.optimizer,
-        #    milestones=[250, 350, 450],
-        #    gamma=0.3
+        self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
+        scheduler = MultiStepLR(
+            self.optimizer,
+            milestones=self.lr_milestones,
+            gamma=0.1
+        )
+
+        #self.optimizer = SGD(
+        #    self.parameters(),
+        #    lr=self.initial_lr,
+        #    momentum=0.9,
+        #    weight_decay=self.wd
         #)
 
-        self.optimizer = SGD(
-            self.parameters(),
-            lr=self.initial_lr,
-            momentum=0.9,
-            weight_decay=self.wd
-        )
+        #def lambda_lr(epoch):
+        #    return ramp_down(epoch,
+        #                     initial_lr=self.initial_lr,
+        #                     final_lr=self.final_lr,
+        #                     max_epochs=self.trainer.max_epochs,
+        #                     milestones=self.lr_milestones)
 
-        def lambda_lr(epoch):
-            return ramp_down(epoch,
-                             initial_lr=self.initial_lr,
-                             final_lr=self.final_lr,
-                             max_epochs=self.trainer.max_epochs,
-                             milestones=self.lr_milestones)
-
-        scheduler = LambdaLR(
-            self.optimizer,
-            lr_lambda=lambda_lr
-        )
+        #scheduler = LambdaLR(
+        #    self.optimizer,
+        #    lr_lambda=lambda_lr
+        #)
 
         return [self.optimizer], [scheduler]
 
@@ -186,8 +187,8 @@ class Unet(pl.LightningModule):
                     dtype=labels_onehot.dtype,
                     device=labels_onehot.device)
         else:
-            labels_onehot = labels_onehot[:,1:,...]
             loss_mask = 1. - labels_onehot[:,[0],...]
+            labels_onehot = labels_onehot[:,1:,...]
 
         loss1_noreduce = self.bce_loss(logits, labels_onehot)
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
@@ -214,8 +215,8 @@ class Unet(pl.LightningModule):
                     dtype=labels_onehot.dtype,
                     device=labels_onehot.device)
         else:
-            labels_onehot = labels_onehot[:,1:,...]
             loss_mask = 1. - labels_onehot[:,[0],...]
+            labels_onehot = labels_onehot[:,1:,...]
         
         loss1_noreduce = self.bce_loss(logits, labels_onehot)
         loss1 = torch.sum(loss_mask * loss1_noreduce) / torch.sum(loss_mask)
@@ -227,22 +228,13 @@ class Unet(pl.LightningModule):
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
 
-        preds = logits.argmax(dim=1)
-        labels = torch.argmax(labels_onehot, dim=1).long()
-
-        ignore_index = None if self.eval_with_void else 0
-
-        #accuracy = torchmetrics.accuracy(
-        #    preds + int(not self.train_with_void),
-        #    labels,
-        #    ignore_index=ignore_index
-        #)
-        #self.log(f'Val_acc', accuracy)
+        preds = logits.argmax(dim=1) + int(not self.train_with_void)
+        labels = torch.argmax(batch['mask'], dim=1).long()
 
         stat_scores = torchmetrics.stat_scores(
-            preds + int(not self.train_with_void),
+            preds,
             labels,
-            ignore_index=ignore_index,
+            ignore_index=self.ignore_index,
             mdmc_reduce='global',
             reduce='macro',
             num_classes=self.num_classes
