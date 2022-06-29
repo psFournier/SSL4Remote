@@ -49,11 +49,12 @@ class Unet(pl.LightningModule):
         self.lr_milestones = list(lr_milestones)
         # Reduction = none is necessary to compute properly the mean when using
         # a masked loss
-        self.ce_loss = nn.CrossEntropyLoss(reduction='none')
+        #self.ce_loss = nn.CrossEntropyLoss(reduction='none')
         self.bce_loss = nn.BCEWithLogitsLoss(reduction='none')
         # The Dice loss is not a pixel-wise loss, so it seems that the masked
         # loss works properly by just masking preds and labels
         self.dice_loss = DiceLoss(mode="multilabel", log_loss=False, from_logits=True)
+        #self.dice_loss = DiceLoss(mode="multiclass", log_loss=False, from_logits=True)
         self.save_hyperparameters()
 
     @classmethod
