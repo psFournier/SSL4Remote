@@ -255,7 +255,7 @@ class Unet(pl.LightningModule):
         for i in range(self.num_classes):
             tp, fp, tn, fn, supp = class_stat_scores[i, :]
             f1 = tp / (tp + 0.5 * (fp + fn))
-            iou = tp / (tp + fp + tn)
+            iou = tp / (tp + fp + fn)
             self.log(f'Val_f1_{i}', f1)
             self.log(f'Val_iou_{i}', iou)
         
