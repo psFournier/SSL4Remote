@@ -6,6 +6,7 @@ from rasterio.windows import Window
 from dl_toolbox.torch_datasets import *
 
 dataset_dict = {
+    'DigitanieOld': DigitanieOldDs,
     'DigitanieToulouse': DigitanieToulouseDs,
     'DigitanieBiarritz': DigitanieBiarritzDs,
     'DigitanieMontpellier': DigitanieMontpellierDs,

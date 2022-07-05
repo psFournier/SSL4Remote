@@ -1,13 +1,14 @@
+import torchvision.transforms.functional as F
 
 
-
-class Hflip:
+class ImagenetNormalize:
 
     def __call__(self, img, label=None):
 
-        if torch.rand(1).item() < self.p:
-            img = F.hflip(img)
-            if label is not None: label = F.hflip(label)
-            return img, label
-
+        img = F.normalize(
+                img,
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+                )
         return img, label
+

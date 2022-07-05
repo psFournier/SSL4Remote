@@ -6,5 +6,6 @@ from .histograms import HistEq
 from .mixup import Mixup
 from .cutmix import Cutmix
 from .merge_label import MergeLabels
+from .normalizations import ImagenetNormalize
 #from .getters import get_image_level_aug, get_batch_level_aug, image_level_aug
 from .crop import RandomCrop2

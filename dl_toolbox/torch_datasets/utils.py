@@ -64,6 +64,7 @@ def read_window_basic(window, path):
 
 aug_dict = {
     'no': aug.NoOp,
+    'imagenet': aug.ImagenetNormalize, 
     'd4': aug.D4,
     'hflip': aug.Hflip,
     'vflip': aug.Vflip,
