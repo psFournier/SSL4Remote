@@ -29,12 +29,11 @@ class Unet1(pl.LightningModule):
         super().__init__()
 
         self.num_classes = num_classes
-        self.network = smp.Unet(
-            encoder_name=encoder,
-            encoder_weights='imagenet' if pretrained else None,
-            in_channels=in_channels,
-            classes=num_classes,
-            decoder_use_batchnorm=True
+        self.network = self.init_network(
+            encoder,
+            pretrained,
+            in_channels,
+            num_classes
         )
         self.ignore_index = None if ignore_index < 0 else ignore_index
         self.in_channels = in_channels
@@ -51,6 +50,18 @@ class Unet1(pl.LightningModule):
             ignore_index=self.ignore_index
         )
         self.save_hyperparameters()
+
+    def init_network(self, encoder, pretrained, in_channels, num_classes):
+
+        network = smp.Unet(
+            encoder_name=encoder,
+            encoder_weights='imagenet' if pretrained else None,
+            in_channels=in_channels,
+            classes=num_classes,
+            decoder_use_batchnorm=True
+        )
+
+        return network
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):

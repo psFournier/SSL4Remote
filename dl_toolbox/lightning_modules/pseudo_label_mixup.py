@@ -1,11 +1,11 @@
 import torch.nn as nn
 import copy
-from dl_toolbox.lightning_modules import Unet
+from dl_toolbox.lightning_modules import Unet1
 import torch
 from dl_toolbox.torch_datasets.utils import *
 from dl_toolbox.augmentations import Mixup
 
-class PseudoLabelling(Unet):
+class Unet1_CPS(Unet1):
 
     def __init__(self,
                  ema,
