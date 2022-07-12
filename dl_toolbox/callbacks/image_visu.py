@@ -38,7 +38,7 @@ class SegmentationImagesVisualisation(pl.Callback):
 
         labels = torch.argmax(mask, dim=1) # torch tensor of dim B,H,W
         preds = torch.argmax(logits, dim=1)
-        preds += int(not pl_module.train_with_void) # torch tensor of dim B,H,W
+        #preds += int(not pl_module.train_with_void) # torch tensor of dim B,H,W
         labels_rgb = self.visu_fn(labels).transpose((0,3,1,2))
         preds_rgb = self.visu_fn(preds).transpose((0,3,1,2))
         mask_rgb = torch.from_numpy(labels_rgb).float()

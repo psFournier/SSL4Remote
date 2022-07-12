@@ -29,7 +29,7 @@ class OneHot:
 
     def __call__(self, L):
 
-        onehot_masks = [(L==val).astype(float).squeeze() for val in self.labels]
+        onehot_masks = [(L==val).astype(int).squeeze() for val in self.labels]
 
         return np.stack(onehot_masks, axis=0)
 

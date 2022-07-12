@@ -87,7 +87,7 @@ class RasterDs(Dataset):
                 window=window
             )
             if self.one_hot: label = self.one_hot(label)
-            label = torch.from_numpy(label).float().contiguous()
+            label = torch.from_numpy(label).long().contiguous()
 
         if self.img_aug is not None:
             end_image, end_mask = self.img_aug(img=image, label=label)
