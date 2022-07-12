@@ -88,10 +88,10 @@ class Unet1(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         inputs = batch['image']
-        labels_onehot = batch['mask']
+        labels = batch['mask']
         logits = self.network(inputs)
-        loss1 = self.loss1(logits, labels_onehot)
-        loss2 = self.loss2(logits, labels_onehot)
+        loss1 = self.loss1(logits, labels)
+        loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
         self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
@@ -102,17 +102,16 @@ class Unet1(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
 
         inputs = batch['image']
-        labels_onehot = batch['mask']
+        labels = batch['mask']
         logits = self.network(inputs)
-        loss1 = self.loss1(logits, labels_onehot)
-        loss2 = self.loss2(logits, labels_onehot)
+        loss1 = self.loss1(logits, labels)
+        loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
 
         preds = logits.argmax(dim=1)
-        labels = torch.argmax(batch['mask'], dim=1).long()
         stat_scores = torchmetrics.stat_scores(
             preds,
             labels,

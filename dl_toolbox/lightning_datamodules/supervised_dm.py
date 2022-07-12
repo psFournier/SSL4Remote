@@ -99,7 +99,7 @@ class SupervisedDm(LightningDataModule):
                     img_aug=self.img_aug,
                     crop_size=self.crop_size,
                     crop_step=self.crop_size,
-                    one_hot=True,
+                    one_hot=False,
                     **kwarg
                 ) for cls, kwarg in train_args
             ])
@@ -112,7 +112,7 @@ class SupervisedDm(LightningDataModule):
                     img_aug='no',
                     crop_size=self.crop_size,
                     crop_step=self.crop_size,
-                    one_hot=True,
+                    one_hot=False,
                     **kwarg
                 ) for cls, kwarg in val_args
             ])
