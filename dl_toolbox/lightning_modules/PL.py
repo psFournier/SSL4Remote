@@ -12,7 +12,9 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 
-class Pseudolabelling(pl.LightningModule):
+class PL(pl.LightningModule):
+    
+    # PL = Pseudo Labelling
 
     def __init__(self,
                  encoder,

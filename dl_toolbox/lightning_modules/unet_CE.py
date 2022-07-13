@@ -12,7 +12,9 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 
-class Unet1(pl.LightningModule):
+class Unet_CE(pl.LightningModule):
+
+    # CE = Cross Entropy
 
     def __init__(self,
                  encoder,
