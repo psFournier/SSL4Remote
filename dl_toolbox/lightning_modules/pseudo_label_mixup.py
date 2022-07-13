@@ -5,7 +5,7 @@ import torch
 from dl_toolbox.torch_datasets.utils import *
 from dl_toolbox.augmentations import Mixup
 
-class Unet1_CPS(Unet1):
+class CPS(Unet1):
 
     def __init__(self,
                  ema,
@@ -16,10 +16,13 @@ class Unet1_CPS(Unet1):
         super().__init__(*args, **kwargs)
 
         self.network_1 = self.network
-        self.network_2 = copy.deepcopy(self.network_1)
+        self.network_2 = self.init_network(
+            kwargs['encoder'],
+            kwargs['pretrained'],
+            kwargs['in_channels'],
+            kwargs['num_classes']
+        )
 
-        # Exponential moving average
-        self.ema = ema
         self.supervised_warmup = supervised_warmup
         
         # Unsupervised leaning loss
@@ -32,7 +35,6 @@ class Unet1_CPS(Unet1):
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
-        parser.add_argument("--ema", type=float, default=0.95)
         parser.add_argument("--supervised_warmup", type=int, default=10)
 
         return parser
@@ -55,9 +57,40 @@ class Unet1_CPS(Unet1):
 
     def training_step(self, batch, batch_idx):
 
-        sup_batch, semisup_batch = batch["sup"], batch["unsup"]
+        batch, semisup_batch = batch["sup"], batch["unsup"]
+
+        inputs = batch['image']
+        labels = batch['mask']
+        logits1 = self.network1(inputs)
+        loss1 = self.loss1(logits1, labels)
+        loss2 = self.loss2(logits1, labels)
+        loss = loss1 + loss2
+        self.log('Train_sup_CE', loss1)
+        self.log('Train_sup_Dice', loss2)
+        self.log('Train_sup_loss', loss)
 
         res_dict = super().training_step(sup_batch, batch_idx)
+
+        if self.trainer.current_epoch >= self.supervised_warmup:
+
+            unsup_inputs = unsup_batch['image']
+            unsup_outputs = self.network_1(unsup_inputs)
+
+            with torch.no_grad():
+                pseudo_logits = self.network_2(unsup_inputs)
+            
+            pseudo_probas, pseudo_preds = torch.max(pseudo_logits.softmax(dim=1), dim=1)
+            loss_no_reduce = self.unsup_loss(
+                student_outputs,
+                pseudo_preds
+            )
+            pseudo_certain = pseudo_probas > 0.5
+            pseudo_loss = torch.sum(pseudo_certain * loss_no_reduce) / torch.sum(pseudo_certain)
+            self.log('Pseudo label loss', pseudo_loss)
+
+        self.log('Prop unsup train', self.alpha)
+        loss = sup_loss + self.alpha * pseudo_loss
+        self.log("Train_loss", loss)
 
         if self.trainer.current_epoch >= self.supervised_warmup:
 

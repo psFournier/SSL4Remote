@@ -12,12 +12,13 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 
-class Unet1(pl.LightningModule):
+class CPS(pl.LightningModule):
 
     def __init__(self,
                  encoder,
                  in_channels,
                  num_classes,
+                 supervised_warmup,
                  ignore_index=0,
                  pretrained=True,
                  initial_lr=0.05,
@@ -29,12 +30,23 @@ class Unet1(pl.LightningModule):
         super().__init__()
 
         self.num_classes = num_classes
-        self.network = self.init_network(
-            encoder,
-            pretrained,
-            in_channels,
-            num_classes
+
+        self.network1 = smp.Unet(
+            encoder_name=encoder,
+            encoder_weights='imagenet' if pretrained else None,
+            in_channels=in_channels,
+            classes=num_classes,
+            decoder_use_batchnorm=True
         )
+
+        self.network2 = smp.Unet(
+            encoder_name=encoder,
+            encoder_weights='imagenet' if pretrained else None,
+            in_channels=in_channels,
+            classes=num_classes,
+            decoder_use_batchnorm=True
+        )
+
         self.ignore_index = None if ignore_index < 0 else ignore_index
         self.in_channels = in_channels
         self.initial_lr = initial_lr
@@ -49,24 +61,15 @@ class Unet1(pl.LightningModule):
             from_logits=True,
             ignore_index=self.ignore_index
         )
+        self.unsup_loss = nn.CrossEntropyLoss(reduction='none')
+        self.supervised_warmup = supervised_warmup
         self.save_hyperparameters()
-
-    def init_network(self, encoder, pretrained, in_channels, num_classes):
-
-        network = smp.Unet(
-            encoder_name=encoder,
-            encoder_weights='imagenet' if pretrained else None,
-            in_channels=in_channels,
-            classes=num_classes,
-            decoder_use_batchnorm=True
-        )
-
-        return network
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser.add_argument("--supervised_warmup", type=int, default=10)
         parser.add_argument("--num_classes", type=int)
         parser.add_argument("--ignore_index", type=int)
         parser.add_argument("--in_channels", type=int)
@@ -98,15 +101,38 @@ class Unet1(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
+        batch, unsup_batch = batch["sup"], batch["unsup"]
+
         inputs = batch['image']
         labels = batch['mask']
         logits = self.network(inputs)
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
-        self.log('Train_sup_BCE', loss1)
+        self.log('Train_sup_CE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
+
+        if self.trainer.current_epoch >= self.supervised_warmup:
+
+            unsup_inputs = unsup_batch['image']
+            unsup_outputs = self.network(unsup_inputs)
+
+            with torch.no_grad():
+                pseudo_logits = self.network(unsup_inputs)
+            
+            pseudo_probas, pseudo_preds = torch.max(pseudo_logits.softmax(dim=1), dim=1)
+            loss_no_reduce = self.unsup_loss(
+                unsup_outputs,
+                pseudo_preds
+            )
+            pseudo_certain = pseudo_probas > 0.5
+            pseudo_loss = torch.sum(pseudo_certain * loss_no_reduce) / torch.sum(pseudo_certain)
+            self.log('Pseudo label loss', pseudo_loss)
+
+        self.log('Prop unsup train', self.alpha)
+        loss += self.alpha * pseudo_loss
+        self.log("Train_loss", loss)
 
         return {'batch': batch, 'logits': logits.detach(), "loss": loss}
 
@@ -118,7 +144,7 @@ class Unet1(pl.LightningModule):
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
-        self.log('Val_BCE', loss1)
+        self.log('Val_CE', loss1)
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
 
@@ -147,16 +173,18 @@ class Unet1(pl.LightningModule):
         f1_sum = 0
         tp_sum = 0
         supp_sum = 0
+        nc = 0
         for i in range(self.num_classes):
             if i != self.ignore_index:
                 tp, fp, tn, fn, supp = class_stat_scores[i, :]
-                f1 = tp / (tp + 0.5 * (fp + fn))
-                self.log(f'Val_f1_{i}', f1)
-                f1_sum += f1
-                tp_sum += tp
-                supp_sum += supp
+                if supp > 0:
+                    nc += 1
+                    f1 = tp / (tp + 0.5 * (fp + fn))
+                    self.log(f'Val_f1_{i}', f1)
+                    f1_sum += f1
+                    tp_sum += tp
+                    supp_sum += supp
         
         self.log('Val_acc', tp_sum / supp_sum)
-        nc = self.num_classes if self.ignore_index is None else self.num_classes - 1 
         self.log('Val_f1', f1_sum / nc) 
 
