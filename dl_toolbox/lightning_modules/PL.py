@@ -125,10 +125,12 @@ class PL(pl.LightningModule):
 
         inputs = batch['image']
         labels = batch['mask']
+
         logits = self.network(inputs)
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
+
         self.log('Train_sup_CE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
@@ -150,9 +152,9 @@ class PL(pl.LightningModule):
             certain = torch.sum(pseudo_certain)
             pseudo_loss = torch.sum(pseudo_certain * loss_no_reduce) / certain
             self.log('Pseudo label loss', pseudo_loss)
-            self.log('Prop unsup train', self.alpha)
             loss += self.alpha * pseudo_loss
 
+        self.log('Prop unsup train', self.alpha)
         self.log("Train_loss", loss)
 
         return {'batch': batch, 'logits': logits.detach(), "loss": loss}
@@ -169,14 +171,14 @@ class PL(pl.LightningModule):
         self.log('Val_Dice', loss2)
         self.log('hp/Val_loss', loss)
 
-        preds = logits.argmax(dim=1)
+        probas = logits.softmax(dim=1)
 
         # Checking calibration
-        calib_probas, calib_preds = torch.max(logits.softmax(dim=1), dim=1)
-        calib_certain = calib_probas > self.pseudo_threshold
-        self.log('Pseudo label certainty', torch.mean(calib_certain))
+        top_pred_probas, preds = torch.max(probas, dim=1)
+        calib_certain = top_pred_probas > self.pseudo_threshold
+        self.log('Pseudo label certainty', torch.mean(calib_certain.float()))
         calib_error = torchmetrics.calibration_error(
-            preds,
+            probas,
             labels
         )
         self.log('Calibration error', calib_error)

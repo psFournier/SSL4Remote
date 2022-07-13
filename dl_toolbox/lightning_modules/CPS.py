@@ -14,11 +14,15 @@ from dl_toolbox.lightning_modules.utils import *
 
 class CPS(pl.LightningModule):
 
+    # CPS = Cross Pseudo Supervision
+
     def __init__(self,
                  encoder,
                  in_channels,
                  num_classes,
-                 supervised_warmup,
+                 final_alpha,
+                 alpha_milestones,
+                 pseudo_threshold,
                  ignore_index=0,
                  pretrained=True,
                  initial_lr=0.05,
@@ -29,7 +33,6 @@ class CPS(pl.LightningModule):
 
         super().__init__()
 
-        self.num_classes = num_classes
 
         self.network1 = smp.Unet(
             encoder_name=encoder,
@@ -47,11 +50,13 @@ class CPS(pl.LightningModule):
             decoder_use_batchnorm=True
         )
 
+        self.num_classes = num_classes
         self.ignore_index = None if ignore_index < 0 else ignore_index
         self.in_channels = in_channels
         self.initial_lr = initial_lr
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
+
         self.loss1 = nn.CrossEntropyLoss(
             ignore_index=self.ignore_index
         )
@@ -61,15 +66,24 @@ class CPS(pl.LightningModule):
             from_logits=True,
             ignore_index=self.ignore_index
         )
-        self.unsup_loss = nn.CrossEntropyLoss(reduction='none')
-        self.supervised_warmup = supervised_warmup
+
+        self.unsup_loss = nn.CrossEntropyLoss(
+            reduction='none'
+        )
+
+        self.final_alpha = final_alpha
+        self.alpha_milestones = alpha_milestones
+        self.alpha = 0.
+        self.pseudo_threshold = pseudo_threshold
         self.save_hyperparameters()
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--supervised_warmup", type=int, default=10)
+        parser.add_argument("--final_alpha", type=float)
+        parser.add_argument("--alpha_milestones", nargs=2, type=int)
+        parser.add_argument("--pseudo_threshold", type=float)
         parser.add_argument("--num_classes", type=int)
         parser.add_argument("--ignore_index", type=int)
         parser.add_argument("--in_channels", type=int)
@@ -84,6 +98,20 @@ class CPS(pl.LightningModule):
     def on_train_start(self):
         self.logger.log_hyperparams(self.hparams, {"hp/Val_loss": 0})
 
+    def on_train_epoch_start(self):
+
+        start = self.alpha_milestones[0]
+        end = self.alpha_milestones[1]
+        e = self.trainer.current_epoch
+        alpha = self.final_alpha
+
+        if e <= start:
+            self.alpha = 0.
+        elif e <= end:
+            self.alpha = ((e - start) / (end - start)) * alpha
+        else:
+            self.alpha = alpha
+            
     def forward(self, x):
         
         return self.network(x)
@@ -105,42 +133,64 @@ class CPS(pl.LightningModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        logits = self.network(inputs)
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
+
+        logits1 = self.network1(inputs)
+        logits2 = self.network2(inputs)
+        loss1 = self.loss1(logits1, labels) 
+        loss1 += self.loss1(logits2, labels)
+        loss1 /= 2
+        loss2 = self.loss2(logits1, labels)
+        loss2 += self.loss2(logits2, labels)
+        loss2 /= 2
         loss = loss1 + loss2
+
         self.log('Train_sup_CE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
 
-        if self.trainer.current_epoch >= self.supervised_warmup:
+        if self.trainer.current_epoch > self.alpha_milestones[0]:
 
             unsup_inputs = unsup_batch['image']
-            unsup_outputs = self.network(unsup_inputs)
+            unsup_outputs_1 = self.network1(unsup_inputs)
+            unsup_outputs_2 = self.network2(unsup_inputs)
 
-            with torch.no_grad():
-                pseudo_logits = self.network(unsup_inputs)
+            # Supervising network 1 with pseudolabels from network 2
             
-            pseudo_probas, pseudo_preds = torch.max(pseudo_logits.softmax(dim=1), dim=1)
-            loss_no_reduce = self.unsup_loss(
-                unsup_outputs,
-                pseudo_preds
+            pseudo_probs_2 = unsup_outputs_2.detach().softmax(dim=1)
+            top_probs_2, pseudo_preds_2 = torch.max(pseudo_probs_2, dim=1)
+            loss_no_reduce_1 = self.unsup_loss(
+                unsup_outputs_1,
+                pseudo_preds_2
             )
-            pseudo_certain = pseudo_probas > 0.5
-            pseudo_loss = torch.sum(pseudo_certain * loss_no_reduce) / torch.sum(pseudo_certain)
+            pseudo_certain_2 = top_probs_2 > self.pseudo_threshold
+            pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / torch.sum(pseudo_certain_2)
+
+            # Supervising network 2 with pseudolabels from network 1
+
+            pseudo_probs_1 = unsup_outputs_1.detach().softmax(dim=1)
+            top_probs_1, pseudo_preds_1 = torch.max(pseudo_probs_1, dim=1)
+            loss_no_reduce_2 = self.unsup_loss(
+                unsup_outputs_2,
+                pseudo_preds_1
+            )
+            pseudo_certain_1 = top_probs_1 > self.pseudo_threshold
+            pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / torch.sum(pseudo_certain_1)
+
+            pseudo_loss = (pseudo_loss_1 + pseudo_loss_2) / 2
+
             self.log('Pseudo label loss', pseudo_loss)
+            loss += self.alpha * pseudo_loss
 
         self.log('Prop unsup train', self.alpha)
-        loss += self.alpha * pseudo_loss
         self.log("Train_loss", loss)
 
-        return {'batch': batch, 'logits': logits.detach(), "loss": loss}
+        return {'batch': batch, "loss": loss}
 
     def validation_step(self, batch, batch_idx):
 
         inputs = batch['image']
         labels = batch['mask']
-        logits = self.network(inputs)
+        logits = self.network1(inputs)
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2

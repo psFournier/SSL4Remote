@@ -18,7 +18,6 @@ class SemisupDm(SupervisedDm):
     def __init__(
         self,
         unsup_batch_size,
-        unsup_crop_size,
         unsup_splitfile_path,
         unsup_train_folds,
         *args,
@@ -27,7 +26,6 @@ class SemisupDm(SupervisedDm):
         
         super().__init__(*args, **kwargs)
         self.unsup_batch_size = unsup_batch_size
-        self.unsup_crop_size = unsup_crop_size
         self.unsup_splitfile_path = unsup_splitfile_path
         self.unsup_train_folds = unsup_train_folds
 
@@ -36,7 +34,6 @@ class SemisupDm(SupervisedDm):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--unsup_batch_size", type=int, default=16)
-        parser.add_argument("--unsup_crop_size", type=int, default=160)
         parser.add_argument("--unsup_splitfile_path", type=str)
         parser.add_argument("--unsup_train_folds", nargs='+', type=int)
         return parser
@@ -71,9 +68,9 @@ class SemisupDm(SupervisedDm):
                     labels=self.labels,
                     label_merger=self.label_merger,
                     img_aug=self.img_aug,
-                    crop_size=self.unsup_crop_size,
-                    crop_step=self.unsup_crop_size,
-                    one_hot=True,
+                    crop_size=self.crop_size,
+                    crop_step=self.crop_size,
+                    one_hot=False,
                     **kwarg
                 ) for cls, kwarg in train_args
             ])
