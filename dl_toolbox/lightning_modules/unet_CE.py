@@ -27,7 +27,8 @@ class Unet_CE(BaseModule):
                  *args,
                  **kwargs):
 
-        super().__init__()
+        super().__init__(*args, **kwargs)
+        
         self.network = smp.Unet(
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
@@ -53,7 +54,7 @@ class Unet_CE(BaseModule):
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
-        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--in_channels", type=int)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str)

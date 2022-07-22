@@ -26,7 +26,6 @@ class BaseModule(pl.LightningModule):
 
         self.num_classes = num_classes
         self.ignore_index = None if ignore_index < 0 else ignore_index
-        self.save_hyperparameters()
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
