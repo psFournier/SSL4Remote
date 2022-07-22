@@ -63,7 +63,7 @@ class RasterDs(Dataset):
 
     def __len__(self):
 
-        return len(self.crop_windows) if self.crop_windows else 1
+        return len(self.crop_windows)
 
     def __getitem__(self, idx):
         
