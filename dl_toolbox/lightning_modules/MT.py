@@ -12,10 +12,12 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
+import numpy as np
+from dl_toolbox.augmentations import Cutmix
 
-class PL(BaseModule):
-    
-    # PL = Pseudo Labelling
+class MT(BaseModule):
+
+    # MT = Mean Teacher
 
     def __init__(self,
                  encoder,
@@ -23,6 +25,7 @@ class PL(BaseModule):
                  final_alpha,
                  alpha_milestones,
                  pseudo_threshold,
+                 ema,
                  pretrained=True,
                  initial_lr=0.05,
                  final_lr=0.001,
@@ -32,13 +35,15 @@ class PL(BaseModule):
 
         super().__init__(*args, **kwargs)
 
-        self.network = smp.Unet(
+        self.network1 = smp.Unet(
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
             classes=self.num_classes,
             decoder_use_batchnorm=True
         )
+
+        self.network2 = deepcopy(self.network1)
 
         self.in_channels = in_channels
         self.initial_lr = initial_lr
@@ -48,7 +53,6 @@ class PL(BaseModule):
         self.loss1 = nn.CrossEntropyLoss(
             ignore_index=self.ignore_index
         )
-
         self.loss2 = DiceLoss(
             mode="multiclass",
             log_loss=False,
@@ -60,16 +64,20 @@ class PL(BaseModule):
             reduction='none'
         )
 
+        self.ema = ema
         self.final_alpha = final_alpha
         self.alpha_milestones = alpha_milestones
         self.alpha = 0.
         self.pseudo_threshold = pseudo_threshold
+        self.cutmix = Cutmix(alpha=0.4)
         self.save_hyperparameters()
+
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
         parser = super().add_model_specific_args(parent_parser)
+        parser.add_argument("--ema", type=float)
         parser.add_argument("--final_alpha", type=float)
         parser.add_argument("--alpha_milestones", nargs=2, type=int)
         parser.add_argument("--pseudo_threshold", type=float)
@@ -81,6 +89,22 @@ class PL(BaseModule):
         parser.add_argument("--lr_milestones", nargs='+', type=float)
 
         return parser
+
+
+    def forward(self, x):
+ 
+        return self.network2(x)
+
+    def configure_optimizers(self):
+
+        self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
+        scheduler = MultiStepLR(
+            self.optimizer,
+            milestones=self.lr_milestones,
+            gamma=0.1
+        )
+
+        return [self.optimizer], [scheduler]
 
     def on_train_epoch_start(self):
 
@@ -96,20 +120,13 @@ class PL(BaseModule):
         else:
             self.alpha = alpha
 
-    def forward(self, x):
-        
-        return self.network(x)
+    def update_teacher(self):
 
-    def configure_optimizers(self):
-
-        self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
-        scheduler = MultiStepLR(
-            self.optimizer,
-            milestones=self.lr_milestones,
-            gamma=0.1
-        )
-
-        return [self.optimizer], [scheduler]
+        # Update teacher model in place AFTER EACH BATCH?
+        ema = min(1.0 - 1.0 / float(self.global_step + 1), self.ema)
+        for param_t, param in zip(self.network2.parameters(),
+                                  self.network1.parameters()):
+            param_t.data.mul_(ema).add_(param.data, alpha=1 - ema)
 
     def training_step(self, batch, batch_idx):
 
@@ -118,38 +135,46 @@ class PL(BaseModule):
         inputs = batch['image']
         labels = batch['mask']
 
-        logits = self.network(inputs)
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
+        logits1 = self.network1(inputs)
+        loss1 = self.loss1(logits1, labels) 
+        loss2 = self.loss2(logits1, labels)
         loss = loss1 + loss2
-
         self.log('Train_sup_CE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
 
         if self.trainer.current_epoch > self.alpha_milestones[0]:
-
+            
             unsup_inputs = unsup_batch['image']
-            unsup_outputs = self.network(unsup_inputs)
-            
-            pseudo_probs = unsup_outputs.detach().softmax(dim=1)
-            
-            pseudo_probas, pseudo_preds = torch.max(pseudo_probs, dim=1)
-            loss_no_reduce = self.unsup_loss(
-                unsup_outputs,
-                pseudo_preds
-            )
-            pseudo_certain = pseudo_probas > self.pseudo_threshold
-            certain = torch.sum(pseudo_certain)
-            pseudo_loss = torch.sum(pseudo_certain * loss_no_reduce) / certain
-            self.log('Pseudo label loss', pseudo_loss)
-            loss += self.alpha * pseudo_loss
 
+            with torch.no_grad():
+                teacher_probs = self.network2(unsup_inputs).softmax(dim=1)
+
+            cutmixed_inputs, cutmixed_probs = self.cutmix(
+                input_batch=unsup_inputs,
+                target_batch=teacher_probs
+            )
+
+            cutmix_confs, cutmix_preds = torch.max(cutmixed_probs, dim=1)
+            cutmixed_logits = self.network1(cutmixed_inputs)
+            loss_no_reduce = self.unsup_loss(
+                cutmixed_logits,
+                cutmix_preds
+            )
+
+            cutmix_certain = cutmix_confs > self.pseudo_threshold
+            certain = torch.sum(cutmix_certain)
+            cutmix_loss = torch.sum(cutmix_certain * loss_no_reduce) / certain
+
+            self.log('Cutmix consistency loss', cutmix_loss)
+
+            loss += self.alpha * cutmix_loss
+
+        self.update_teacher()
         self.log('Prop unsup train', self.alpha)
         self.log("Train_loss", loss)
 
         return {'batch': batch, "loss": loss}
-
 
     def validation_step(self, batch, batch_idx):
 

@@ -11,19 +11,18 @@ from copy import deepcopy
 import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
+from dl_toolbox.lightning_modules import BaseModule
 
-class CPS(pl.LightningModule):
+class CPS(BaseModule):
 
     # CPS = Cross Pseudo Supervision
 
     def __init__(self,
                  encoder,
                  in_channels,
-                 num_classes,
                  final_alpha,
                  alpha_milestones,
                  pseudo_threshold,
-                 ignore_index=0,
                  pretrained=True,
                  initial_lr=0.05,
                  final_lr=0.001,
@@ -31,14 +30,13 @@ class CPS(pl.LightningModule):
                  *args,
                  **kwargs):
 
-        super().__init__()
-
+        super().__init__(*args, **kwargs)
 
         self.network1 = smp.Unet(
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
-            classes=num_classes,
+            classes=self.num_classes,
             decoder_use_batchnorm=True
         )
 
@@ -46,12 +44,10 @@ class CPS(pl.LightningModule):
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
-            classes=num_classes,
+            classes=self.num_classes,
             decoder_use_batchnorm=True
         )
 
-        self.num_classes = num_classes
-        self.ignore_index = None if ignore_index < 0 else ignore_index
         self.in_channels = in_channels
         self.initial_lr = initial_lr
         self.final_lr = final_lr
@@ -80,12 +76,10 @@ class CPS(pl.LightningModule):
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
-        parser = ArgumentParser(parents=[parent_parser], add_help=False)
+        parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--final_alpha", type=float)
         parser.add_argument("--alpha_milestones", nargs=2, type=int)
         parser.add_argument("--pseudo_threshold", type=float)
-        parser.add_argument("--num_classes", type=int)
-        parser.add_argument("--ignore_index", type=int)
         parser.add_argument("--in_channels", type=int)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str)
@@ -94,9 +88,6 @@ class CPS(pl.LightningModule):
         parser.add_argument("--lr_milestones", nargs='+', type=float)
 
         return parser
-
-    def on_train_start(self):
-        self.logger.log_hyperparams(self.hparams, {"hp/Val_loss": 0})
 
     def on_train_epoch_start(self):
 
@@ -113,8 +104,11 @@ class CPS(pl.LightningModule):
             self.alpha = alpha
             
     def forward(self, x):
+
+        logits1 = self.network1(x)
+        logits2 = self.network2(x)
         
-        return self.network(x)
+        return (logits1 + logits2) / 2
 
     def configure_optimizers(self):
 
@@ -163,7 +157,8 @@ class CPS(pl.LightningModule):
                 pseudo_preds_2
             )
             pseudo_certain_2 = top_probs_2 > self.pseudo_threshold
-            pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / torch.sum(pseudo_certain_2)
+            certain_2 = torch.sum(pseudo_certain_2)
+            pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
 
             # Supervising network 2 with pseudolabels from network 1
 
@@ -174,7 +169,8 @@ class CPS(pl.LightningModule):
                 pseudo_preds_1
             )
             pseudo_certain_1 = top_probs_1 > self.pseudo_threshold
-            pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / torch.sum(pseudo_certain_1)
+            certain_1 = torch.sum(pseudo_certain_1)
+            pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / certain_1
 
             pseudo_loss = (pseudo_loss_1 + pseudo_loss_2) / 2
 
@@ -188,53 +184,27 @@ class CPS(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        inputs = batch['image']
+        res_dict = super().validation_step(batch, batch_idx)
+        logits = res_dict['logits']
         labels = batch['mask']
-        logits = self.network1(inputs)
+        
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
         self.log('Val_CE', loss1)
         self.log('Val_Dice', loss2)
-        self.log('hp/Val_loss', loss)
+        self.log('Val_loss', loss)
 
-        preds = logits.argmax(dim=1)
-        stat_scores = torchmetrics.stat_scores(
-            preds,
-            labels,
-            ignore_index=self.ignore_index,
-            mdmc_reduce='global',
-            reduce='macro',
-            num_classes=self.num_classes
+        probas = logits.softmax(dim=1)
+        calib_error = torchmetrics.calibration_error(
+            probas,
+            labels
         )
+        self.log('Calibration error', calib_error)
 
-        return {'batch': batch, 'logits': logits.detach(), 'stat_scores': stat_scores.detach()}
+        return {**res_dict, **{'probas': probas.detach()}}
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:
             self.log(f'learning_rate', param_group['lr'])
             break
-
-    def validation_epoch_end(self, outs):
-        
-        stat_scores = [out['stat_scores'] for out in outs]
-
-        class_stat_scores = torch.sum(torch.stack(stat_scores), dim=0)
-        f1_sum = 0
-        tp_sum = 0
-        supp_sum = 0
-        nc = 0
-        for i in range(self.num_classes):
-            if i != self.ignore_index:
-                tp, fp, tn, fn, supp = class_stat_scores[i, :]
-                if supp > 0:
-                    nc += 1
-                    f1 = tp / (tp + 0.5 * (fp + fn))
-                    self.log(f'Val_f1_{i}', f1)
-                    f1_sum += f1
-                    tp_sum += tp
-                    supp_sum += supp
-        
-        self.log('Val_acc', tp_sum / supp_sum)
-        self.log('Val_f1', f1_sum / nc) 
-

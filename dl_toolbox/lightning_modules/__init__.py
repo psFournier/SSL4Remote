@@ -4,3 +4,4 @@ from .mean_teacher import MeanTeacher
 from .unet_CE import Unet_CE
 from .PL import PL
 from .CPS import CPS
+from .MT import MT
