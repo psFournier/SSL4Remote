@@ -25,7 +25,7 @@ class BaseModule(pl.LightningModule):
         super().__init__()
 
         self.num_classes = num_classes
-        self.ignore_index = None if ignore_index < 0 else ignore_index
+        self.ignore_index = ignore_index
 
     @classmethod
     def add_model_specific_args(cls, parent_parser):
@@ -49,7 +49,7 @@ class BaseModule(pl.LightningModule):
         stat_scores = torchmetrics.stat_scores(
             preds,
             labels,
-            ignore_index=self.ignore_index,
+            ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
             mdmc_reduce='global',
             reduce='macro',
             num_classes=self.num_classes

@@ -113,7 +113,7 @@ class Unet_CE(BaseModule):
         )
         self.log('Calibration error', calib_error)
 
-        return res_dict
+        return {**res_dict, **{'probas': probas.detach()}}
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:

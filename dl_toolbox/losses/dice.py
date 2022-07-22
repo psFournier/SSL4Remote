@@ -100,7 +100,7 @@ class DiceLoss(_Loss):
             y_true = y_true.view(bs, 1, -1)
             y_pred = y_pred.view(bs, 1, -1)
 
-            if self.ignore_index is not None:
+            if self.ignore_index is not None and self.ignore_index >= 0:
                 mask = y_true != self.ignore_index
                 y_pred = y_pred * mask
                 y_true = y_true * mask
@@ -109,7 +109,7 @@ class DiceLoss(_Loss):
             y_true = y_true.view(bs, -1)
             y_pred = y_pred.view(bs, num_classes, -1)
 
-            if self.ignore_index is not None:
+            if self.ignore_index is not None and self.ignore_index >= 0:
                 mask = y_true != self.ignore_index
                 y_pred = y_pred * mask.unsqueeze(1)
 
@@ -123,7 +123,7 @@ class DiceLoss(_Loss):
             y_true = y_true.reshape(bs, num_classes, -1)
             y_pred = y_pred.reshape(bs, num_classes, -1)
 
-            if self.ignore_index is not None:
+            if self.ignore_index is not None and self.ignore_index >= 0:
                 mask = y_true != self.ignore_index
                 y_pred = y_pred * mask
                 y_true = y_true * mask
