@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 class MergeLabels:
 
@@ -20,6 +21,20 @@ class MergeLabels:
                 ret[L == j] = i
 
         return ret
+
+class TorchOneHot:
+
+    def __init__(self, labels):
+
+        self.labels = labels
+
+    def __call__(self, L):
+
+        onehot_masks = [
+            (L==val).long().squeeze() for val in self.labels
+        ]
+
+        return torch.stack(onehot_masks, axis=1)
 
 class OneHot:
 

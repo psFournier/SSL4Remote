@@ -20,3 +20,25 @@ class Mixup():
         batch = (all_inputs[idx, :], all_targets[idx, :])
 
         return batch
+
+class Mixup2():
+
+    def __init__(self, alpha=0.4):
+
+        self.alpha = alpha
+
+    def __call__(
+        self,
+        input_batch_1,
+        target_batch_1,
+        input_batch_2,
+        target_batch_2
+    ):
+
+        lam = np.random.beta(self.alpha, self.alpha)
+        mixed_inputs = lam * input_batch_1 + (1 - lam) * input_batch_2
+        mixed_targets = lam * target_batch_1 + (1 - lam) * target_batch_2
+        batch = (mixed_inputs, mixed_targets)
+
+        return batch
+

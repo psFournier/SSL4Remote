@@ -5,3 +5,5 @@ from .unet_CE import Unet_CE
 from .PL import PL
 from .CPS import CPS
 from .MT import MT
+from .PLM import PLM
+#from .DCT import DCT

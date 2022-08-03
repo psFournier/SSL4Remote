@@ -3,7 +3,7 @@ from .color import Saturation, Contrast, Brightness, Gamma, Color
 from .d4 import Vflip, Hflip, Transpose1, Transpose2, D4, Rot90, Rot270, Rot180
 from .geometric import Sharpness
 from .histograms import HistEq
-from .mixup import Mixup
+from .mixup import Mixup, Mixup2
 from .cutmix import Cutmix
 from .merge_label import MergeLabels
 from .normalizations import ImagenetNormalize
