@@ -137,6 +137,32 @@ class CPS(BaseModule):
         loss2 += self.loss2(logits2, labels)
         loss2 /= 2
         loss = loss1 + loss2
+        
+        # Supervising network 1 with pseudolabels from network 2
+            
+        pseudo_probs_2 = logits2.detach().softmax(dim=1)
+        top_probs_2, pseudo_preds_2 = torch.max(pseudo_probs_2, dim=1)
+        loss_no_reduce_1 = self.unsup_loss(
+            logits1,
+            pseudo_preds_2
+        )
+        pseudo_certain_2 = top_probs_2 > self.pseudo_threshold
+        certain_2 = torch.sum(pseudo_certain_2)
+        pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
+
+        # Supervising network 2 with pseudolabels from network 1
+
+        pseudo_probs_1 = logits1.detach().softmax(dim=1)
+        top_probs_1, pseudo_preds_1 = torch.max(pseudo_probs_1, dim=1)
+        loss_no_reduce_2 = self.unsup_loss(
+            logits2,
+            pseudo_preds_1
+        )
+        pseudo_certain_1 = top_probs_1 > self.pseudo_threshold
+        certain_1 = torch.sum(pseudo_certain_1)
+        pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / certain_1
+
+        pseudo_loss = (pseudo_loss_1 + pseudo_loss_2) / 2
 
         self.log('Train_sup_CE', loss1)
         self.log('Train_sup_Dice', loss2)
@@ -172,10 +198,10 @@ class CPS(BaseModule):
             certain_1 = torch.sum(pseudo_certain_1)
             pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / certain_1
 
-            pseudo_loss = (pseudo_loss_1 + pseudo_loss_2) / 2
+            pseudo_loss += (pseudo_loss_1 + pseudo_loss_2) / 2
 
-            self.log('Pseudo label loss', pseudo_loss)
-            loss += self.alpha * pseudo_loss
+        self.log('Pseudo label loss', pseudo_loss)
+        loss += self.alpha * pseudo_loss
 
         self.log('Prop unsup train', self.alpha)
         self.log("Train_loss", loss)
