@@ -118,17 +118,6 @@ class DCT(BaseModule):
         
         return (logits1 + logits2) / 2
 
-    def configure_optimizers(self):
-
-        self.optimizer = Adam(self.parameters(), lr=self.initial_lr)
-        scheduler = MultiStepLR(
-            self.optimizer,
-            milestones=self.lr_milestones,
-            gamma=0.1
-        )
-
-        return [self.optimizer], [scheduler]
-
     def on_train_epoch_start(self):
 
         start = self.alpha_milestones[0]
