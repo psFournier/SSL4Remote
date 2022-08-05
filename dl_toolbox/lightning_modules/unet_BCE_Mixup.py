@@ -49,7 +49,6 @@ class Unet_BCE_Mixup(BaseModule):
             mode="multilabel",
             log_loss=False,
             from_logits=True,
-            ignore_index=-1
         )
         self.save_hyperparameters()
 

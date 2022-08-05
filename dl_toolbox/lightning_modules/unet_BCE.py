@@ -49,7 +49,6 @@ class Unet_BCE(BaseModule):
             mode="multilabel",
             log_loss=False,
             from_logits=True,
-            ignore_index=-1
         )
         self.save_hyperparameters()
 
@@ -92,22 +91,24 @@ class Unet_BCE(BaseModule):
         labels = batch['mask']
         logits = self.forward(inputs).squeeze()
         probas = torch.sigmoid(logits)
+        if self.num_classes == 1:
+            probas = torch.stack([1-probas, probas], dim=1)
 
-        # calib_error = torchmetrics.calibration_error(
-        #     probas,
-        #     labels
-        # )
-        # self.log('Calibration error', calib_error)
+        calib_error = torchmetrics.calibration_error(
+            probas,
+            labels
+        )
+        self.log('Calibration error', calib_error)
 
         stat_scores = torchmetrics.stat_scores(
             probas,
             labels,
             ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
             mdmc_reduce='global',
-            reduce='micro' if self.num_classes==1 else 'macro',
+            reduce='macro',
             threshold=0.5,
-            top_k=None if self.num_classes==1 else 1,
-            num_classes=None if self.num_classes==1 else self.num_classes
+            top_k=1,
+            num_classes=2 if self.num_classes == 1 else self.num_classes
         )
         
         if self.num_classes != 1:
@@ -121,6 +122,6 @@ class Unet_BCE(BaseModule):
 
         return {'batch': batch,
                 'logits': logits.detach(),
-                'stat_scores': stat_scores.reshape(self.num_classes, 5).detach(),
+                'stat_scores': stat_scores.detach(),
                 'probas': probas.detach()
                 }

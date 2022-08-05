@@ -42,8 +42,7 @@ class CalibrationLogger(pl.Callback):
 
         _, labels = batch['image'], batch['mask']
         probas = outputs['probas']
-        if pl_module.num_classes == 1:
-            probas = torch.stack([1-probas, probas], dim=1)
+
         self.calibration(probas.cpu(), labels.cpu())
 
     def on_validation_epoch_end(self, trainer, pl_module):

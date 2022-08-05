@@ -77,7 +77,8 @@ class BaseModule(pl.LightningModule):
         tp_sum = 0
         supp_sum = 0
         nc = 0
-        for i in range(self.num_classes):
+        num_classes = 2 if self.num_classes == 1 else self.num_classes
+        for i in range(num_classes):
             if i != self.ignore_index:
                 tp, fp, tn, fn, supp = class_stat_scores[i, :]
                 if supp > 0:
