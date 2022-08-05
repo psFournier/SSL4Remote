@@ -11,14 +11,15 @@ from copy import deepcopy
 import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
+from dl_toolbox.lightning_modules import BaseModule
 
-class Unet1(pl.LightningModule):
+class Unet_BCE(BaseModule):
+
+    # BCE = Binary Cross Entropy
 
     def __init__(self,
                  encoder,
                  in_channels,
-                 num_classes,
-                 ignore_index=0,
                  pretrained=True,
                  initial_lr=0.05,
                  final_lr=0.001,
@@ -26,26 +27,24 @@ class Unet1(pl.LightningModule):
                  *args,
                  **kwargs):
 
-        super().__init__()
-
-        self.num_classes = num_classes
+        super().__init__(*args, **kwargs)
+        
         self.network = smp.Unet(
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
-            classes=num_classes,
+            classes=self.num_classes,
             decoder_use_batchnorm=True
         )
-        self.ignore_index = None if ignore_index < 0 else ignore_index
         self.in_channels = in_channels
         self.initial_lr = initial_lr
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
-        self.loss1 = nn.CrossEntropyLoss(
+        self.loss1 = nn.BCEWithLogitsLoss(
             ignore_index=self.ignore_index
         )
         self.loss2 = DiceLoss(
-            mode="multiclass",
+            mode="multilabel",
             log_loss=False,
             from_logits=True,
             ignore_index=self.ignore_index
@@ -55,9 +54,7 @@ class Unet1(pl.LightningModule):
     @classmethod
     def add_model_specific_args(cls, parent_parser):
 
-        parser = ArgumentParser(parents=[parent_parser], add_help=False)
-        parser.add_argument("--num_classes", type=int)
-        parser.add_argument("--ignore_index", type=int)
+        parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--in_channels", type=int)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str)
@@ -66,9 +63,6 @@ class Unet1(pl.LightningModule):
         parser.add_argument("--lr_milestones", nargs='+', type=float)
 
         return parser
-
-    def on_train_start(self):
-        self.logger.log_hyperparams(self.hparams, {"hp/Val_loss": 0})
 
     def forward(self, x):
         
@@ -93,7 +87,7 @@ class Unet1(pl.LightningModule):
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
-        self.log('Train_sup_CE', loss1)
+        self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
 
@@ -101,53 +95,27 @@ class Unet1(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        inputs = batch['image']
+        res_dict = super().validation_step(batch, batch_idx)
+        logits = res_dict['logits']
         labels = batch['mask']
-        logits = self.network(inputs)
+        
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
-        self.log('Val_CE', loss1)
+        self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
-        self.log('hp/Val_loss', loss)
+        self.log('Val_loss', loss)
 
-        preds = logits.argmax(dim=1)
-        stat_scores = torchmetrics.stat_scores(
-            preds,
-            labels,
-            ignore_index=self.ignore_index,
-            mdmc_reduce='global',
-            reduce='macro',
-            num_classes=self.num_classes
+        probas = torch.sigmoid(logits)
+        calib_error = torchmetrics.calibration_error(
+            probas,
+            labels
         )
+        self.log('Calibration error', calib_error)
 
-        return {'batch': batch, 'logits': logits.detach(), 'stat_scores': stat_scores.detach()}
+        return {**res_dict, **{'probas': probas.detach()}}
 
     def on_train_epoch_end(self):
         for param_group in self.optimizer.param_groups:
             self.log(f'learning_rate', param_group['lr'])
             break
-
-    def validation_epoch_end(self, outs):
-        
-        stat_scores = [out['stat_scores'] for out in outs]
-
-        class_stat_scores = torch.sum(torch.stack(stat_scores), dim=0)
-        f1_sum = 0
-        tp_sum = 0
-        supp_sum = 0
-        nc = 0
-        for i in range(self.num_classes):
-            if i != self.ignore_index:
-                tp, fp, tn, fn, supp = class_stat_scores[i, :]
-                if supp > 0:
-                    nc += 1
-                    f1 = tp / (tp + 0.5 * (fp + fn))
-                    self.log(f'Val_f1_{i}', f1)
-                    f1_sum += f1
-                    tp_sum += tp
-                    supp_sum += supp
-        
-        self.log('Val_acc', tp_sum / supp_sum)
-        self.log('Val_f1', f1_sum / nc) 
-

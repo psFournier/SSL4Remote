@@ -18,7 +18,7 @@ class BaseModule(pl.LightningModule):
 
     def __init__(self,
                  num_classes,
-                 ignore_index=0,
+                 ignore_index,
                  *args,
                  **kwargs):
 
