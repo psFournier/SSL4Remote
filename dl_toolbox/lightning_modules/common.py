@@ -42,7 +42,7 @@ class BaseModule(pl.LightningModule):
         scheduler = MultiStepLR(
             self.optimizer,
             milestones=self.lr_milestones,
-            gamma=0.1
+            gamma=0.3
         )
 
         return [self.optimizer], [scheduler]
@@ -54,7 +54,7 @@ class BaseModule(pl.LightningModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        logits = self.forward(inputs)
+        logits = self.forward(inputs).squeeze()
         preds = logits.argmax(dim=1)
 
         stat_scores = torchmetrics.stat_scores(

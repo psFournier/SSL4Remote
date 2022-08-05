@@ -2,6 +2,8 @@ from .supervised_baseline import Unet
 from .common import BaseModule
 from .mean_teacher import MeanTeacher
 from .unet_CE import Unet_CE
+from .unet_BCE import Unet_BCE
+from .unet_BCE_Mixup import Unet_BCE_Mixup
 from .PL import PL
 from .CPS import CPS
 from .MT import MT

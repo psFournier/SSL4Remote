@@ -16,8 +16,8 @@ class Cutmix():
         # Use a more generic mask rather than bboxes ?
         bbx1, bby1, bbx2, bby2 = rand_bbox(input_batch.size(), lam)
         cutmix_inputs, cutmix_targets = input_batch, target_batch
-        cutmix_inputs[:, :, bbx1:bbx2, bby1:bby2] = input_batch[idx, :, bbx1:bbx2, bby1:bby2]
-        cutmix_targets[:, :, bbx1:bbx2, bby1:bby2] = target_batch[idx, :, bbx1:bbx2, bby1:bby2]
+        cutmix_inputs[:, ..., bbx1:bbx2, bby1:bby2] = input_batch[idx, ..., bbx1:bbx2, bby1:bby2]
+        cutmix_targets[:, ..., bbx1:bbx2, bby1:bby2] = target_batch[idx, ..., bbx1:bbx2, bby1:bby2]
 
         # all_inputs = torch.vstack([input_batch, cutmix_inputs])
         # all_targets = torch.vstack([target_batch, cutmix_targets])

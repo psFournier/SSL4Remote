@@ -12,10 +12,11 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
+from dl_toolbox.augmentations import Mixup
 
-class Unet_BCE(BaseModule):
+class Unet_BCE_Mixup(BaseModule):
 
-    # BCE = Binary Cross Entropy
+    # BCE_Mixup = Binary Cross Entropy + mixup
 
     def __init__(self,
                  encoder,
@@ -41,6 +42,8 @@ class Unet_BCE(BaseModule):
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
         self.loss1 = nn.BCEWithLogitsLoss()
+        self.onehot = TorchOneHot(range(self.num_classes))
+        self.mixup = Mixup(alpha=0.4)
         self.loss2 = DiceLoss(
             mode="multilabel",
             log_loss=False,
@@ -70,9 +73,11 @@ class Unet_BCE(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        logits = self.network(inputs).squeeze()
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
+        onehot_labels = self.onehot(labels)
+        mixed_inputs, mixed_labels = self.mixup(inputs, onehot_labels)
+        logits = self.network(mixed_inputs)
+        loss1 = self.loss1(logits, mixed_labels)
+        loss2 = self.loss2(logits, mixed_labels)
         loss = loss1 + loss2
         self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
