@@ -77,8 +77,8 @@ class Unet_BCE(BaseModule):
         if self.num_classes != 1:
             labels = self.onehot(labels)
         logits = self.network(inputs).squeeze()
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
+        loss1 = self.loss1(logits, labels.float())
+        loss2 = self.loss2(logits, labels.float())
         loss = loss1 + loss2
         self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
@@ -93,18 +93,18 @@ class Unet_BCE(BaseModule):
         logits = self.forward(inputs).squeeze()
         probas = torch.sigmoid(logits)
 
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
+        # calib_error = torchmetrics.calibration_error(
+        #     probas,
+        #     labels
+        # )
+        # self.log('Calibration error', calib_error)
 
         stat_scores = torchmetrics.stat_scores(
             probas,
             labels,
             ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
             mdmc_reduce='global',
-            reduce='macro',
+            reduce='micro' if self.num_classes==1 else 'macro',
             threshold=0.5,
             top_k=None if self.num_classes==1 else 1,
             num_classes=None if self.num_classes==1 else self.num_classes
@@ -112,8 +112,8 @@ class Unet_BCE(BaseModule):
         
         if self.num_classes != 1:
             labels = self.onehot(labels)
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
+        loss1 = self.loss1(logits, labels.float())
+        loss2 = self.loss2(logits, labels.float())
         loss = loss1 + loss2
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
@@ -121,6 +121,6 @@ class Unet_BCE(BaseModule):
 
         return {'batch': batch,
                 'logits': logits.detach(),
-                'stat_scores': stat_scores.detach(),
+                'stat_scores': stat_scores.reshape(self.num_classes, 5).detach(),
                 'probas': probas.detach()
                 }

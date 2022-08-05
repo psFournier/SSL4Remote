@@ -60,8 +60,10 @@ class ConfMatLogger(pl.Callback):
     ):
 
         inputs, labels = batch['image'], batch['mask']
-
-        preds = torch.argmax(outputs['logits'], dim=1)
+        if pl_module.num_classes == 1:
+            preds = (outputs['probas'] > 0.5).long()
+        else:
+            preds = torch.argmax(outputs['probas'], dim=1)
 
         self.conf_mat(preds.cpu(), labels.cpu())
 

@@ -31,7 +31,7 @@ class TorchOneHot:
     def __call__(self, L):
 
         onehot_masks = [
-            (L==val).long().squeeze() for val in self.labels
+            (L==val).squeeze() for val in self.labels
         ]
 
         return torch.stack(onehot_masks, axis=1)
