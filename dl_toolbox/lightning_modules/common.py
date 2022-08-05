@@ -54,7 +54,7 @@ class BaseModule(pl.LightningModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        logits = self.forward(inputs).squeeze()
+        logits = self.forward(inputs)
         preds = logits.argmax(dim=1)
 
         stat_scores = torchmetrics.stat_scores(
@@ -91,3 +91,7 @@ class BaseModule(pl.LightningModule):
         self.log('Val_acc', tp_sum / supp_sum)
         self.log('Val_f1', f1_sum / nc) 
 
+    def on_train_epoch_end(self):
+        for param_group in self.optimizer.param_groups:
+            self.log(f'learning_rate', param_group['lr'])
+            break

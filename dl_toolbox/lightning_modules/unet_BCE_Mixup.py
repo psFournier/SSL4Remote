@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
 from dl_toolbox.augmentations import Mixup
+from dl_toolbox.utils import TorchOneHot
 
 class Unet_BCE_Mixup(BaseModule):
 
@@ -87,10 +88,29 @@ class Unet_BCE_Mixup(BaseModule):
 
     def validation_step(self, batch, batch_idx):
 
-        res_dict = super().validation_step(batch, batch_idx)
-        logits = res_dict['logits']
+        inputs = batch['image']
         labels = batch['mask']
+        logits = self.forward(inputs).squeeze()
+        probas = torch.sigmoid(logits)
+
+        calib_error = torchmetrics.calibration_error(
+            probas,
+            labels
+        )
+        self.log('Calibration error', calib_error)
+
+        stat_scores = torchmetrics.stat_scores(
+            probas,
+            labels,
+            ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
+            mdmc_reduce='global',
+            reduce='macro',
+            threshold=0.5,
+            top_k=1,
+            num_classes=self.num_classes
+        )
         
+        labels = self.onehot(labels)
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
@@ -98,16 +118,8 @@ class Unet_BCE_Mixup(BaseModule):
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
 
-        probas = torch.sigmoid(logits)
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
-
-        return {**res_dict, **{'probas': probas.detach()}}
-
-    def on_train_epoch_end(self):
-        for param_group in self.optimizer.param_groups:
-            self.log(f'learning_rate', param_group['lr'])
-            break
+        return {'batch': batch,
+                'logits': logits.detach(),
+                'stat_scores': stat_scores.detach(),
+                'probas': probas.detach()
+                }

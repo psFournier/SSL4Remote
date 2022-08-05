@@ -12,6 +12,7 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
+from dl_toolbox.utils import TorchOneHot
 
 class Unet_BCE(BaseModule):
 
@@ -41,6 +42,9 @@ class Unet_BCE(BaseModule):
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
         self.loss1 = nn.BCEWithLogitsLoss()
+        if self.num_classes != 1:
+            # multiclass multilabel case, otherwise binary classif
+            self.onehot = TorchOneHot(range(self.num_classes))
         self.loss2 = DiceLoss(
             mode="multilabel",
             log_loss=False,
@@ -70,6 +74,8 @@ class Unet_BCE(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
+        if self.num_classes != 1:
+            labels = self.onehot(labels)
         logits = self.network(inputs).squeeze()
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
@@ -82,10 +88,30 @@ class Unet_BCE(BaseModule):
 
     def validation_step(self, batch, batch_idx):
 
-        res_dict = super().validation_step(batch, batch_idx)
-        logits = res_dict['logits']
+        inputs = batch['image']
         labels = batch['mask']
+        logits = self.forward(inputs).squeeze()
+        probas = torch.sigmoid(logits)
+
+        calib_error = torchmetrics.calibration_error(
+            probas,
+            labels
+        )
+        self.log('Calibration error', calib_error)
+
+        stat_scores = torchmetrics.stat_scores(
+            probas,
+            labels,
+            ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
+            mdmc_reduce='global',
+            reduce='macro',
+            threshold=0.5,
+            top_k=None if self.num_classes==1 else 1,
+            num_classes=None if self.num_classes==1 else self.num_classes
+        )
         
+        if self.num_classes != 1:
+            labels = self.onehot(labels)
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
         loss = loss1 + loss2
@@ -93,16 +119,8 @@ class Unet_BCE(BaseModule):
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
 
-        probas = torch.sigmoid(logits)
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
-
-        return {**res_dict, **{'probas': probas.detach()}}
-
-    def on_train_epoch_end(self):
-        for param_group in self.optimizer.param_groups:
-            self.log(f'learning_rate', param_group['lr'])
-            break
+        return {'batch': batch,
+                'logits': logits.detach(),
+                'stat_scores': stat_scores.detach(),
+                'probas': probas.detach()
+                }
