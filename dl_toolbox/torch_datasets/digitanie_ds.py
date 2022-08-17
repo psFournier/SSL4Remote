@@ -91,12 +91,18 @@ class DigitanieDs(RasterDs):
         self.full_raster_path = full_raster_path
 
     def read_image(self, image_path, window):
-
-        image = read_window_from_big_raster(
-            window=window,
-            path=image_path,
-            raster_path=self.full_raster_path
-        )
+        
+        if self.full_raster_path == image_path:
+            image = read_window_basic(
+                window=window,
+                path=image_path
+            )
+        else:
+            image = read_window_from_big_raster(
+                window=window,
+                path=image_path,
+                raster_path=self.full_raster_path
+            )
 
         image = image[:3,...]
 
