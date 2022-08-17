@@ -17,7 +17,7 @@ from dl_toolbox.utils import TorchOneHot
 
 class Unet_BCE_Mixup(BaseModule):
 
-    # BCE_Mixup = Binary Cross Entropy + mixup
+    # BCE_Mixup = Binary Cross Entropy multilabel + mixup
 
     def __init__(self,
                  encoder,
@@ -42,13 +42,13 @@ class Unet_BCE_Mixup(BaseModule):
         self.initial_lr = initial_lr
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
-        self.loss1 = nn.BCEWithLogitsLoss()
+        self.loss1 = nn.BCEWithLogitsLoss(reduction='none')
         self.onehot = TorchOneHot(range(self.num_classes))
         self.mixup = Mixup(alpha=0.4)
         self.loss2 = DiceLoss(
             mode="multilabel",
             log_loss=False,
-            from_logits=True,
+            from_logits=True
         )
         self.save_hyperparameters()
 
@@ -73,6 +73,9 @@ class Unet_BCE_Mixup(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
+        mask = torch.ones_like(labels)
+        mask[torch.where(labels == self.ignore_index)] = 0
+        mask = torch.unsqueeze(mask, dim=1)
         onehot_labels = self.onehot(labels)
         mixed_inputs, mixed_labels = self.mixup(inputs, onehot_labels)
         logits = self.network(mixed_inputs)
