@@ -50,7 +50,8 @@ def compute_probas(
     batch_size,
     workers,
     tta,
-    mode
+    mode,
+    merge
 ):
     
     device = module.device
@@ -68,23 +69,26 @@ def compute_probas(
     num_classes = module.num_classes
     pred_sum = torch.zeros(size=(num_classes, dataset.tile.height, dataset.tile.width))
     mask_sum = torch.zeros(size=(dataset.tile.height, dataset.tile.width))
+    
+    if merge:
+        def dist_to_edge(i, j, h, w):
 
-    def dist_to_edge(i, j, h, w):
+            mi = np.minimum(i+1, h-i)
+            mj = np.minimum(j+1, w-j)
+            return np.minimum(mi, mj)
 
-        mi = np.minimum(i+1, h-i)
-        mj = np.minimum(j+1, w-j)
-        return np.minimum(mi, mj)
-
-    crop_mask = np.fromfunction(
-        function=partial(
-            dist_to_edge,
-            h=dataset.crop_size,
-            w=dataset.crop_size
-        ),
-        shape=(dataset.crop_size, dataset.crop_size),
-        dtype=int
-    )
-    crop_mask = torch.from_numpy(crop_mask).float()
+        crop_mask = np.fromfunction(
+            function=partial(
+                dist_to_edge,
+                h=dataset.crop_size,
+                w=dataset.crop_size
+            ),
+            shape=(dataset.crop_size, dataset.crop_size),
+            dtype=int
+        )
+        crop_mask = torch.from_numpy(crop_mask).float()
+    else:
+        crop_mask = torch.ones(dataset.crop_size, dataset.crop_size)
 
     for i, batch in enumerate(dataloader):
         
@@ -108,15 +112,16 @@ def compute_probas(
                 prob = pred.softmax(dim=0)
             elif mode=='sigmoid':
                 prob = torch.sigmoid(pred)
+
             pred_sum[
                 :, 
                 w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
                 w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
-            ] += prob
+            ] += prob * crop_mask
             mask_sum[
                 w.row_off-dataset.tile.row_off:w.row_off-dataset.tile.row_off+w.height,
                 w.col_off-dataset.tile.col_off:w.col_off-dataset.tile.col_off+w.width
-            ] += 1
+            ] += crop_mask
                 
     probas = torch.div(pred_sum, mask_sum)
 
