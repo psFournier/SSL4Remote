@@ -41,9 +41,9 @@ class Unet_BCE_multilabel(BaseModule):
         self.initial_lr = initial_lr
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
-        self.loss1 = nn.BCEWithLogitsLoss(reduction='none')
+        self.bce = nn.BCEWithLogitsLoss(reduction='none')
         self.onehot = TorchOneHot(range(self.num_classes))
-        self.loss2 = DiceLoss(
+        self.dice = DiceLoss(
             mode="multilabel",
             log_loss=False,
             from_logits=True
@@ -71,13 +71,15 @@ class Unet_BCE_multilabel(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        mask = torch.ones_like(labels)
-        mask[torch.where(labels == self.ignore_index)] = 0
+        mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
+        ignore_idx = torch.where(labels == self.ignore_index)
+        mask[ignore_idx] = 0
         mask = torch.unsqueeze(mask, dim=1)
-        labels = self.onehot(labels)
-        logits = self.network(inputs).squeeze()
-        bce = self.loss1(logits * mask, labels.float() * mask)
-        dice = self.loss2(logits * mask, labels.float() * mask)
+        labels = self.onehot(labels).float()
+        logits = self.network(inputs)
+        bce = self.bce(logits, labels)
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.dice(logits * mask, labels * mask)
         loss = bce + dice
         self.log('Train_sup_BCE', bce)
         self.log('Train_sup_Dice', dice)
@@ -89,10 +91,11 @@ class Unet_BCE_multilabel(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        mask = torch.ones_like(labels)
-        mask[torch.where(labels == self.ignore_index)] = 0
+        mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
+        ignore_idx = torch.where(labels == self.ignore_index)
+        mask[ignore_idx] = 0
         mask = torch.unsqueeze(mask, dim=1)
-        logits = self.forward(inputs).squeeze()
+        logits = self.forward(inputs)
         probas = torch.sigmoid(logits)
         calib_error = torchmetrics.calibration_error(
             probas,
@@ -109,12 +112,13 @@ class Unet_BCE_multilabel(BaseModule):
             top_k=1,
             num_classes=self.num_classes
         )
-        labels = self.onehot(labels)
-        loss1 = self.loss1(logits*mask, labels.float()*mask)
-        loss2 = self.loss2(logits*mask, labels.float()*mask)
-        loss = loss1 + loss2
-        self.log('Val_BCE', loss1)
-        self.log('Val_Dice', loss2)
+        labels = self.onehot(labels).float()
+        bce = self.bce(logits, labels)
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.dice(logits*mask, labels*mask)
+        loss = bce + dice
+        self.log('Val_BCE', bce)
+        self.log('Val_Dice', dice)
         self.log('Val_loss', loss)
 
         return {'batch': batch,

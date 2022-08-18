@@ -73,10 +73,11 @@ class Unet_BCE_binary(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        mask = torch.ones_like(labels) # No mask here
+        mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
         logits = self.network(inputs).squeeze()
-        bce = self.loss1(logits*mask, labels.float()*mask)
-        dice = self.dice(logits*mask, labels.float()*mask)
+        bce = self.bce(logits, labels.float())
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.dice(logits*mask, labels*mask)
         loss = bce + dice
         self.log('Train_sup_BCE', bce)
         self.log('Train_sup_Dice', dice)
@@ -88,7 +89,7 @@ class Unet_BCE_binary(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        mask = torch.ones_like(labels) # No mask here
+        mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
         logits = self.forward(inputs).squeeze()
         probas = torch.sigmoid(logits)
         probas = torch.stack([1-probas, probas], dim=1)
@@ -107,8 +108,9 @@ class Unet_BCE_binary(BaseModule):
             top_k=1,
             num_classes=2
         )
-        bce = self.bce(logits*mask, labels.float()*mask)
-        dice = self.dice(logits*mask, labels.float()*mask)
+        bce = self.bce(logits, labels.float())
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.dice(logits*mask, labels*mask)
         loss = bce + dice
         self.log('Val_BCE', bce)
         self.log('Val_Dice', dice)
