@@ -16,7 +16,7 @@ from enum import Enum
 
 digitanie_labels = {
     
-    'base_labels' : {
+    'base' : {
         'other': {'color': (0, 0, 0)},
         'bare ground': {'color': (100, 50, 0)},
         'low vegetation': {'color':(0, 250, 50)},
@@ -29,7 +29,7 @@ digitanie_labels = {
         'railways': {'color': (200, 100, 200)},
         'swimming pool': {'color': (50, 150, 250)}
     },
-    'six_class_labels' : {
+    'semcity' : {
         'other': {'color': (255, 255, 255)},
         'pervious surface': {'color': (34, 139, 34)},
         'water': {'color': (0, 0, 238)},
@@ -37,16 +37,16 @@ digitanie_labels = {
         'high vegetation': {'color': (0, 222, 137)},
         'impervious surface': {'color': (38, 38, 38)}
     },
-    'binary_labels' : {
+    'building' : {
         'background': {'color': (0,0,0)},
         'building': {'color': (255, 255, 255)}
     }
 }
 
 digitanie_label_mergers = {
-    'no_merge' : [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]],
-    'six_class_merger' : [[0, 9], [1, 2], [3, 10], [4], [5], [6, 7, 8]],
-    'binary_merger' : [[0,1,2,3,5,6,7,8,9,10],[4]]
+    'base' : [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]],
+    'semcity' : [[0, 9], [1, 2], [3, 10], [4], [5], [6, 7, 8]],
+    'building' : [[0,1,2,3,5,6,7,8,9,10],[4]]
 }
 
 class DigitanieOldDs(RasterDs):

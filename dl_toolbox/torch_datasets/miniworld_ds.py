@@ -15,14 +15,14 @@ from dl_toolbox.utils import LabelsToRGB
 
 miniworld_labels = {
 
-    'base_labels' : {
+    'base' : {
         'background': {'color': (0,0,0)},
         'building': {'color': (255, 255, 255)}
     }
 }
 
 miniworld_label_mergers = {
-    'no_merge' : [[0], [1]],
+    'base' : [[0], [1]],
 }
 
 

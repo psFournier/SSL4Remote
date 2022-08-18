@@ -25,7 +25,7 @@ from dl_toolbox.utils import MergeLabels, OneHot
 
 semcity_labels = {
 
-    'base_labels' : {
+    'base' : {
         'void': {'color': (255, 255, 255)},
         'impervious surface': {'color': (38, 38, 38)},
         'building': {'color': (238, 118, 33)},
@@ -35,7 +35,7 @@ semcity_labels = {
         'water': {'color': (0, 0, 238)},
         'sport venue': {'color': (160, 30, 230)}
     },
-    'six_class_labels' : {
+    'semcity' : {
         'other': {'color': (255, 255, 255)},
         'pervious surface': {'color': (34, 139, 34)},
         'water': {'color': (0, 0, 238)},
@@ -43,16 +43,16 @@ semcity_labels = {
         'high vegetation': {'color': (0, 222, 137)},
         'impervious surface': {'color': (38, 38, 38)}
     },
-    'binary_labels': {
+    'building': {
         'background': {'color': (0,0,0)},
         'building': {'color': (255, 255, 255)}
     }
 }
 
 semcity_label_mergers = {
-    'no_merge' : [[0], [1], [2], [3], [4], [5], [6], [7]],
-    'six_class_merger' : [[0,7], [3], [6], [2], [4], [1, 5]],
-    'binary_merger' : [[0,1,4,3,5,6,7],[2]]
+    'base' : [[0], [1], [2], [3], [4], [5], [6], [7]],
+    'semcity' : [[0,7], [3], [6], [2], [4], [1, 5]],
+    'building' : [[0,1,4,3,5,6,7],[2]]
 }
 
 class SemcityBdsdDs(RasterDs):
@@ -93,8 +93,8 @@ class SemcityBdsdDs(RasterDs):
         )
         rgb = rgb.transpose((1,2,0))
         labels = np.zeros(shape=rgb.shape[:-1], dtype=np.uint8)
-        for label, key in enumerate(semcity_labels['base_labels']):
-            c = semcity_labels['base_labels'][key]['color']
+        for label, key in enumerate(semcity_labels['base']):
+            c = semcity_labels['base'][key]['color']
             d = rgb[..., 0] == c[0]
             d = np.logical_and(d, (rgb[..., 1] == c[1]))
             d = np.logical_and(d, (rgb[..., 2] == c[2]))
