@@ -14,7 +14,7 @@ from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
 from dl_toolbox.utils import TorchOneHot
 
-class Unet_BCE_multilabel(BaseModule):
+class Smp_Unet_BCE_multilabel(BaseModule):
 
     # BCE_multilabel = Binary Cross Entropy for multilabel prediction
 

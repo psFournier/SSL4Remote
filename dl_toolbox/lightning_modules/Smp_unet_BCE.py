@@ -12,12 +12,11 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
-from dl_toolbox.augmentations import Mixup
 from dl_toolbox.utils import TorchOneHot
 
-class Unet_BCE_Mixup(BaseModule):
+class Smp_Unet_BCE(BaseModule):
 
-    # BCE_Mixup = Binary Cross Entropy multilabel + mixup
+    # BCE = Binary Cross Entropy
 
     def __init__(self,
                  encoder,
@@ -43,12 +42,14 @@ class Unet_BCE_Mixup(BaseModule):
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
         self.loss1 = nn.BCEWithLogitsLoss(reduction='none')
-        self.onehot = TorchOneHot(range(self.num_classes))
-        self.mixup = Mixup(alpha=0.4)
+        if self.num_classes != 1:
+            # multiclass multilabel case, otherwise binary classif
+            self.onehot = TorchOneHot(range(self.num_classes))
         self.loss2 = DiceLoss(
             mode="multilabel",
             log_loss=False,
-            from_logits=True
+            from_logits=True,
+            ignore_index=self.ignore_index
         )
         self.save_hyperparameters()
 
@@ -75,12 +76,15 @@ class Unet_BCE_Mixup(BaseModule):
         labels = batch['mask']
         mask = torch.ones_like(labels)
         mask[torch.where(labels == self.ignore_index)] = 0
-        mask = torch.unsqueeze(mask, dim=1)
-        onehot_labels = self.onehot(labels)
-        mixed_inputs, mixed_labels = self.mixup(inputs, onehot_labels)
-        logits = self.network(mixed_inputs)
-        loss1 = self.loss1(logits, mixed_labels)
-        loss2 = self.loss2(logits, mixed_labels)
+
+        if self.num_classes != 1:
+            labels = self.onehot(labels)
+        logits = self.network(inputs).squeeze()
+        bce = self.loss1(
+            logits * 
+        )
+        loss1 = self.loss1(logits, labels.float())
+        loss2 = self.loss2(logits, labels.float())
         loss = loss1 + loss2
         self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
@@ -94,6 +98,8 @@ class Unet_BCE_Mixup(BaseModule):
         labels = batch['mask']
         logits = self.forward(inputs).squeeze()
         probas = torch.sigmoid(logits)
+        if self.num_classes == 1:
+            probas = torch.stack([1-probas, probas], dim=1)
 
         calib_error = torchmetrics.calibration_error(
             probas,
@@ -109,12 +115,13 @@ class Unet_BCE_Mixup(BaseModule):
             reduce='macro',
             threshold=0.5,
             top_k=1,
-            num_classes=self.num_classes
+            num_classes=2 if self.num_classes == 1 else self.num_classes
         )
         
-        labels = self.onehot(labels)
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
+        if self.num_classes != 1:
+            labels = self.onehot(labels)
+        loss1 = self.loss1(logits, labels.float())
+        loss2 = self.loss2(logits, labels.float())
         loss = loss1 + loss2
         self.log('Val_BCE', loss1)
         self.log('Val_Dice', loss2)
