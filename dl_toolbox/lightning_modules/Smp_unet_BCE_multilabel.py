@@ -71,16 +71,25 @@ class Smp_Unet_BCE_multilabel(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
-        ignore_idx = torch.where(labels == self.ignore_index)
-        mask[ignore_idx] = 0
-        mask = torch.unsqueeze(mask, dim=1)
-        labels = self.onehot(labels).float()
+        onehot_labels = self.onehot(labels).float()
         logits = self.network(inputs)
-        bce = self.bce(logits, labels)
+        
+        mask = torch.ones_like(
+            onehot_labels,
+            dtype=onehot_labels.dtype,
+            device=onehot_labels.device
+        )
+        idx_b, idx_h, idx_w = torch.nonzero(
+            labels == self.ignore_index,
+            as_tuple=True
+        )
+        mask[idx_b, :, idx_h, idx_w] = 0
+        
+        bce = self.bce(logits, onehot_labels)
         bce = torch.sum(mask * bce) / torch.sum(mask)
-        dice = self.dice(logits * mask, labels * mask)
+        dice = self.dice(logits * mask, onehot_labels * mask)
         loss = bce + dice
+        
         self.log('Train_sup_BCE', bce)
         self.log('Train_sup_Dice', dice)
         self.log('Train_sup_loss', loss)
@@ -92,8 +101,7 @@ class Smp_Unet_BCE_multilabel(BaseModule):
         inputs = batch['image']
         labels = batch['mask']
         mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
-        ignore_idx = torch.where(labels == self.ignore_index)
-        mask[ignore_idx] = 0
+        mask[torch.where(labels == self.ignore_index)] = 0
         mask = torch.unsqueeze(mask, dim=1)
         logits = self.forward(inputs)
         probas = torch.sigmoid(logits)
