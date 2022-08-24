@@ -72,19 +72,15 @@ class Smp_Unet_BCE_multilabel(BaseModule):
         inputs = batch['image']
         labels = batch['mask']
         onehot_labels = self.onehot(labels).float()
-        logits = self.network(inputs)
         
         mask = torch.ones_like(
             onehot_labels,
             dtype=onehot_labels.dtype,
             device=onehot_labels.device
         )
-        idx_b, idx_h, idx_w = torch.nonzero(
-            labels == self.ignore_index,
-            as_tuple=True
-        )
-        mask[idx_b, :, idx_h, idx_w] = 0
+        mask -= onehot_labels[:, [self.ignore_index], ...]
         
+        logits = self.network(inputs)
         bce = self.bce(logits, onehot_labels)
         bce = torch.sum(mask * bce) / torch.sum(mask)
         dice = self.dice(logits * mask, onehot_labels * mask)

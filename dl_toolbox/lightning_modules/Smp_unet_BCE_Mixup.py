@@ -42,10 +42,10 @@ class Smp_Unet_BCE_Mixup(BaseModule):
         self.initial_lr = initial_lr
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
-        self.loss1 = nn.BCEWithLogitsLoss(reduction='none')
+        self.bce = nn.BCEWithLogitsLoss(reduction='none')
         self.onehot = TorchOneHot(range(self.num_classes))
         self.mixup = Mixup(alpha=0.4)
-        self.loss2 = DiceLoss(
+        self.dice = DiceLoss(
             mode="multilabel",
             log_loss=False,
             from_logits=True
@@ -73,15 +73,22 @@ class Smp_Unet_BCE_Mixup(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        mask = torch.ones_like(labels)
-        mask[torch.where(labels == self.ignore_index)] = 0
-        mask = torch.unsqueeze(mask, dim=1)
-        onehot_labels = self.onehot(labels)
+        onehot_labels = self.onehot(labels).float()
         mixed_inputs, mixed_labels = self.mixup(inputs, onehot_labels)
+        
+        mask = torch.ones_like(
+            onehot_labels,
+            dtype=onehot_labels.dtype,
+            device=onehot_labels.device
+        )
+        mask -= mixed_labels[:, [self.ignore_index], ...]
+        
         logits = self.network(mixed_inputs)
-        loss1 = self.loss1(logits, mixed_labels)
-        loss2 = self.loss2(logits, mixed_labels)
+        bce = self.bce(logits, mixed_labels)
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.dice(logits * mask, mixed_labels * mask)
         loss = loss1 + loss2
+        
         self.log('Train_sup_BCE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
