@@ -81,16 +81,17 @@ class Smp_Unet_BCE_Mixup(BaseModule):
             dtype=onehot_labels.dtype,
             device=onehot_labels.device
         )
-        mask -= mixed_labels[:, [self.ignore_index], ...]
+        if self.ignore_index >= 0:
+            mask -= mixed_labels[:, [self.ignore_index], ...]
         
         logits = self.network(mixed_inputs)
         bce = self.bce(logits, mixed_labels)
         bce = torch.sum(mask * bce) / torch.sum(mask)
         dice = self.dice(logits * mask, mixed_labels * mask)
-        loss = loss1 + loss2
+        loss = bce + dice
         
-        self.log('Train_sup_BCE', loss1)
-        self.log('Train_sup_Dice', loss2)
+        self.log('Train_sup_BCE', bce)
+        self.log('Train_sup_Dice', dice)
         self.log('Train_sup_loss', loss)
 
         return {'batch': batch, 'logits': logits.detach(), "loss": loss}
@@ -99,14 +100,19 @@ class Smp_Unet_BCE_Mixup(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
+        onehot_labels = self.onehot(labels).float()
+        
+        mask = torch.ones_like(
+            onehot_labels,
+            dtype=onehot_labels.dtype,
+            device=onehot_labels.device
+        )
+        if self.ignore_index >= 0:
+            mask -= onehot_labels[:, [self.ignore_index], ...]
+            
         logits = self.forward(inputs).squeeze()
         probas = torch.sigmoid(logits)
-
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
+        preds = torch.argmax(probas, dim=1)
 
         stat_scores = torchmetrics.stat_scores(
             probas,
@@ -114,17 +120,18 @@ class Smp_Unet_BCE_Mixup(BaseModule):
             ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
             mdmc_reduce='global',
             reduce='macro',
-            threshold=0.5,
-            top_k=1,
+            #threshold=0.5,
+            #top_k=1,
             num_classes=self.num_classes
         )
         
-        labels = self.onehot(labels)
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
-        loss = loss1 + loss2
-        self.log('Val_BCE', loss1)
-        self.log('Val_Dice', loss2)
+        bce = self.bce(logits, onehot_labels)
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.dice(logits * mask, onehot_labels * mask)
+        loss = bce + dice
+        
+        self.log('Val_BCE', bce)
+        self.log('Val_Dice', dice)
         self.log('Val_loss', loss)
 
         return {'batch': batch,

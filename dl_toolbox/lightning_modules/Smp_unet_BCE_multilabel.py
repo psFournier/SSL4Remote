@@ -78,7 +78,8 @@ class Smp_Unet_BCE_multilabel(BaseModule):
             dtype=onehot_labels.dtype,
             device=onehot_labels.device
         )
-        mask -= onehot_labels[:, [self.ignore_index], ...]
+        if self.ignore_index >= 0:
+            mask -= onehot_labels[:, [self.ignore_index], ...]
         
         logits = self.network(inputs)
         bce = self.bce(logits, onehot_labels)
@@ -96,31 +97,36 @@ class Smp_Unet_BCE_multilabel(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
-        mask[torch.where(labels == self.ignore_index)] = 0
-        mask = torch.unsqueeze(mask, dim=1)
+        onehot_labels = self.onehot(labels).float()
+        
+        mask = torch.ones_like(
+            onehot_labels,
+            dtype=onehot_labels.dtype,
+            device=onehot_labels.device
+        )
+        if self.ignore_index >= 0:
+            mask -= onehot_labels[:, [self.ignore_index], ...]
+        
         logits = self.forward(inputs)
         probas = torch.sigmoid(logits)
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
+        preds = torch.argmax(probas, dim=1)
+
         stat_scores = torchmetrics.stat_scores(
-            probas,
+            preds,
             labels,
             ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
             mdmc_reduce='global',
             reduce='macro',
-            threshold=0.5,
-            top_k=1,
+            #threshold=0.5,
+            #top_k=1,
             num_classes=self.num_classes
         )
-        labels = self.onehot(labels).float()
-        bce = self.bce(logits, labels)
+        
+        bce = self.bce(logits, onehot_labels)
         bce = torch.sum(mask * bce) / torch.sum(mask)
-        dice = self.dice(logits*mask, labels*mask)
+        dice = self.dice(logits * mask, onehot_labels * mask)
         loss = bce + dice
+        
         self.log('Val_BCE', bce)
         self.log('Val_Dice', dice)
         self.log('Val_loss', loss)
