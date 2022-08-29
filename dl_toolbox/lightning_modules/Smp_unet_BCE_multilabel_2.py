@@ -13,12 +13,9 @@ import torch.nn.functional as F
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
 from dl_toolbox.utils import TorchOneHot
-from networks import *
+from dl_toolbox.networks import *
 
-networks = {
-    'unet': UNet,
-    'smp_unet': SmpUNet
-}
+
 
 class Smp_Unet_BCE_multilabel_2(BaseModule):
 
@@ -61,7 +58,6 @@ class Smp_Unet_BCE_multilabel_2(BaseModule):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--in_channels", type=int)
-        parser.add_argument("--num_classes", type=int)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str)
         parser.add_argument("--initial_lr", type=float)
@@ -103,7 +99,7 @@ class Smp_Unet_BCE_multilabel_2(BaseModule):
     def validation_step(self, batch, batch_idx):
 
         inputs = batch['image']
-        labels = batch['mask']
+        labels = batch['mask'] # B,H,W
         onehot_labels = self.onehot(labels).float() # B,C,H,W
         
         final_labels = onehot_labels[:, 1:, ...]
@@ -120,7 +116,7 @@ class Smp_Unet_BCE_multilabel_2(BaseModule):
 
         stat_scores = torchmetrics.stat_scores(
             probas,
-            final_labels,
+            labels,
             ignore_index=None,
             mdmc_reduce='global',
             reduce='macro',
@@ -138,10 +134,20 @@ class Smp_Unet_BCE_multilabel_2(BaseModule):
         self.log('Val_Dice', dice)
         self.log('Val_loss', loss)
 
+        full_probas = torch.cat(
+            [torch.zeros_like(
+                labels,
+                device=probas.device,
+                dtype=probas.dtype
+            ).unsqueeze(dim=1),
+            probas],
+            dim=1
+        )
+
         return {'batch': batch,
                 'logits': logits.detach(),
                 'stat_scores': stat_scores.detach(),
-                'probas': probas.detach()
+                'probas': full_probas.detach()
                 }
     
     def validation_epoch_end(self, outs):
