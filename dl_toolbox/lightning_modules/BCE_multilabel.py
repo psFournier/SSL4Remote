@@ -20,12 +20,11 @@ networks = {
     'smp_unet': SmpUNet
 }
 
-class BCE_multilabel(BaseModule):
+class Smp_Unet_BCE_multilabel_2(BaseModule):
 
     # BCE_multilabel = Binary Cross Entropy for multilabel prediction
 
     def __init__(self,
-                 network,
                  encoder,
                  in_channels,
                  pretrained=True,
@@ -41,7 +40,7 @@ class BCE_multilabel(BaseModule):
             encoder_name=encoder,
             encoder_weights='imagenet' if pretrained else None,
             in_channels=in_channels,
-            classes=self.num_classes,
+            classes=self.num_classes - 1,
             decoder_use_batchnorm=True
         )
         self.in_channels = in_channels
@@ -62,6 +61,7 @@ class BCE_multilabel(BaseModule):
 
         parser = super().add_model_specific_args(parent_parser)
         parser.add_argument("--in_channels", type=int)
+        parser.add_argument("--num_classes", type=int)
         parser.add_argument("--pretrained", action='store_true')
         parser.add_argument("--encoder", type=str)
         parser.add_argument("--initial_lr", type=float)
@@ -78,20 +78,20 @@ class BCE_multilabel(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        onehot_labels = self.onehot(labels).float()
+        onehot_labels = self.onehot(labels).float() # B,C,H,W
+
+        final_labels = onehot_labels[:, 1:, ...] # B,C-1,H,W
         
         mask = torch.ones_like(
-            onehot_labels,
+            final_labels,
             dtype=onehot_labels.dtype,
             device=onehot_labels.device
         )
-        if self.ignore_index >= 0:
-            mask -= onehot_labels[:, [self.ignore_index], ...]
         
-        logits = self.network(inputs)
-        bce = self.bce(logits, onehot_labels)
+        logits = self.network(inputs) # B,C-1,H,W
+        bce = self.bce(logits, final_labels)
         bce = torch.sum(mask * bce) / torch.sum(mask)
-        dice = self.dice(logits * mask, onehot_labels * mask)
+        dice = self.dice(logits * mask, final_labels * mask)
         loss = bce + dice
         
         self.log('Train_sup_BCE', bce)
@@ -104,34 +104,34 @@ class BCE_multilabel(BaseModule):
 
         inputs = batch['image']
         labels = batch['mask']
-        onehot_labels = self.onehot(labels).float()
+        onehot_labels = self.onehot(labels).float() # B,C,H,W
+        
+        final_labels = onehot_labels[:, 1:, ...]
         
         mask = torch.ones_like(
-            onehot_labels,
+            final_labels,
             dtype=onehot_labels.dtype,
             device=onehot_labels.device
         )
-        if self.ignore_index >= 0:
-            mask -= onehot_labels[:, [self.ignore_index], ...]
         
         logits = self.forward(inputs)
-        probas = torch.sigmoid(logits)
-        preds = torch.argmax(probas, dim=1)
+        probas = torch.sigmoid(logits) # B,C-1,H,W
+        #preds = torch.argmax(probas, dim=1)
 
         stat_scores = torchmetrics.stat_scores(
-            preds,
-            labels,
-            ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
+            probas,
+            final_labels,
+            ignore_index=None,
             mdmc_reduce='global',
             reduce='macro',
-            #threshold=0.5,
-            #top_k=1,
-            num_classes=self.num_classes
+            threshold=0.5,
+            top_k=1,
+            num_classes=self.num_classes-1
         )
         
-        bce = self.bce(logits, onehot_labels)
+        bce = self.bce(logits, final_labels)
         bce = torch.sum(mask * bce) / torch.sum(mask)
-        dice = self.dice(logits * mask, onehot_labels * mask)
+        dice = self.dice(logits * mask, final_labels * mask)
         loss = bce + dice
         
         self.log('Val_BCE', bce)
@@ -143,3 +143,27 @@ class BCE_multilabel(BaseModule):
                 'stat_scores': stat_scores.detach(),
                 'probas': probas.detach()
                 }
+    
+    def validation_epoch_end(self, outs):
+        
+        stat_scores = [out['stat_scores'] for out in outs]
+
+        class_stat_scores = torch.sum(torch.stack(stat_scores), dim=0)
+        f1_sum = 0
+        tp_sum = 0
+        supp_sum = 0
+        nc = 0
+        # ignore_index = 0
+        for i in range(1, self.num_classes):
+            tp, fp, tn, fn, supp = class_stat_scores[i-1, :]
+            if supp > 0:
+                nc += 1
+                f1 = tp / (tp + 0.5 * (fp + fn))
+                self.log(f'Val_f1_{i}', f1)
+                f1_sum += f1
+                tp_sum += tp
+                supp_sum += supp
+        
+        self.log('Val_acc', tp_sum / supp_sum)
+        self.log('Val_f1', f1_sum / nc) 
+
