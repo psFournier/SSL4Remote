@@ -29,14 +29,13 @@ digitanie_labels = {
         'railways': {'color': (200, 100, 200)},
         'swimming pool': {'color': (50, 150, 250)}
     },
-    '8class' : {
+    '7class' : {
         'other': {'color': (0, 0, 0)},
         'low vegetation': {'color':(0, 250, 50)},
         'water': {'color': (0, 50, 250)},
         'building': {'color': (250, 50, 50)},
         'high vegetation': {'color': (0, 100, 50)},
         'bitumen': {'color': (100, 100, 100)},
-        'railways': {'color': (200, 100, 200)},
         'swimming pool': {'color': (50, 150, 250)}
     },
     'semcity' : {
@@ -55,7 +54,7 @@ digitanie_labels = {
 
 digitanie_label_mergers = {
     'base' : [[0], [1], [2], [3], [4], [5], [6], [7], [8], [9], [10]],
-    '8class' : [[0, 1, 7], [2], [3], [4], [5], [6, 8], [9], [10]],
+    '7class' : [[0, 1, 7, 9], [2], [3], [4], [5], [6, 8], [10]],
     'semcity' : [[0, 9], [1, 2], [3, 10], [4], [5], [6, 7, 8]],
     'building' : [[0,1,2,3,5,6,7,8,9,10],[4]]
 }

@@ -61,7 +61,7 @@ class ConfMatLogger(pl.Callback):
 
         inputs, labels = batch['image'], batch['mask'] # labels shape B,H,W, values in {0, C-1}
         #probas = outputs['probas'] # dim B,C-1,H,W
-        preds = torch.argmax(outputs['probas'], dim=1)
+        preds = outputs['preds'] # ajouter preds aux autres méthodes
 
         self.conf_mat(preds.cpu(), labels.cpu())
 

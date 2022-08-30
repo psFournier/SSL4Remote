@@ -31,7 +31,7 @@ class CalibrationLogger(pl.Callback):
 
     def on_fit_start(self, trainer, pl_module):
 
-        self.n_bins = 10
+        self.n_bins = 20
         self.calibration = CalibrationError(
             n_bins=self.n_bins
         )

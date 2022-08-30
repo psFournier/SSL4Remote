@@ -112,25 +112,16 @@ class Smp_Unet_BCE_multilabel_2(BaseModule):
         
         logits = self.forward(inputs)
         probas = torch.sigmoid(logits) # B,C-1,H,W
-        #preds = torch.argmax(probas, dim=1)
-        full_probas = torch.cat(
-            [torch.zeros_like(
-                labels,
-                device=probas.device,
-                dtype=probas.dtype
-            ).unsqueeze(dim=1),
-            probas],
-            dim=1
-        )
+        preds = torch.argmax(probas, dim=1) + 1
         
         stat_scores = torchmetrics.stat_scores(
-            full_probas,
+            preds,
             labels,
-            ignore_index=None,
+            ignore_index=0,
             mdmc_reduce='global',
             reduce='macro',
-            threshold=0.5,
-            top_k=1,
+            #threshold=0.5,
+            #top_k=1,
             num_classes=self.num_classes
         )
         
@@ -146,7 +137,8 @@ class Smp_Unet_BCE_multilabel_2(BaseModule):
         return {'batch': batch,
                 'logits': logits.detach(),
                 'stat_scores': stat_scores.detach(),
-                'probas': full_probas.detach()
+                'probas': probas.detach(),
+                'preds': preds.detach()
                 }
     
     def validation_epoch_end(self, outs):
