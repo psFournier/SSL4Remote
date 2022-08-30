@@ -117,12 +117,12 @@ class PLM(BaseModule):
             onehot_labels,
             dtype=onehot_labels.dtype,
             device=onehot_labels.device
-        )
+        ) # B,C,H,W
         if self.ignore_index >= 0:
             mask -= mixed_labels[:, [self.ignore_index], ...]
         
         logits = self.network(mixed_inputs)
-        bce = self.loss1(logits, mixed_labels)
+        bce = self.loss1(logits, mixed_labels) # B,C,H,W
         bce = torch.sum(mask * bce) / torch.sum(mask)
         dice = self.loss2(logits * mask, mixed_labels * mask)
         loss = bce + dice

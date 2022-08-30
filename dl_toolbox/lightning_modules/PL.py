@@ -123,13 +123,13 @@ class PL(BaseModule):
             
             pseudo_probs = unsup_outputs.detach().softmax(dim=1)
             
-            pseudo_probas, pseudo_preds = torch.max(pseudo_probs, dim=1)
+            pseudo_probas, pseudo_preds = torch.max(pseudo_probs, dim=1) # B,H,W
             loss_no_reduce = self.unsup_loss(
                 unsup_outputs,
                 pseudo_preds
-            )
-            pseudo_certain = pseudo_probas > self.pseudo_threshold
-            certain = torch.sum(pseudo_certain)
+            ) # B,C,H,W
+            pseudo_certain = pseudo_probas > self.pseudo_threshold # B,H,W
+            certain = torch.sum(pseudo_certain) * self.num_classes
             pseudo_loss = torch.sum(pseudo_certain * loss_no_reduce) / certain
             self.log('Pseudo label loss', pseudo_loss)
             loss += self.alpha * pseudo_loss

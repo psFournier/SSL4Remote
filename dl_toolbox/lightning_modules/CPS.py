@@ -130,11 +130,11 @@ class CPS(BaseModule):
         # Supervising network 1 with pseudolabels from network 2
             
         pseudo_probs_2 = logits2.detach().softmax(dim=1)
-        top_probs_2, pseudo_preds_2 = torch.max(pseudo_probs_2, dim=1)
+        top_probs_2, pseudo_preds_2 = torch.max(pseudo_probs_2, dim=1) # B,H,W
         loss_no_reduce_1 = self.unsup_loss(
             logits1,
             pseudo_preds_2
-        )
+        ) # B,H,W
         pseudo_certain_2 = top_probs_2 > self.pseudo_threshold
         certain_2 = torch.sum(pseudo_certain_2)
         pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
@@ -170,8 +170,8 @@ class CPS(BaseModule):
             loss_no_reduce_1 = self.unsup_loss(
                 unsup_outputs_1,
                 pseudo_preds_2
-            )
-            pseudo_certain_2 = top_probs_2 > self.pseudo_threshold
+            ) # B,H,W
+            pseudo_certain_2 = top_probs_2 > self.pseudo_threshold # B,H,W
             certain_2 = torch.sum(pseudo_certain_2)
             pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
 
