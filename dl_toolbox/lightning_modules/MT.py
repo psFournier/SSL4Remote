@@ -69,7 +69,7 @@ class MT(BaseModule):
         self.alpha_milestones = alpha_milestones
         self.alpha = 0.
         self.pseudo_threshold = pseudo_threshold
-        self.cutmix = Cutmix(alpha=0.4)
+        self.cutmix = Cutmix2(alpha=0.4)
         self.save_hyperparameters()
 
 
