@@ -92,15 +92,11 @@ class Smp_Unet_BCE_binary(BaseModule):
         mask = torch.ones_like(labels, dtype=labels.dtype, device=labels.device)
         logits = self.forward(inputs).squeeze()
         probas = torch.sigmoid(logits)
-        probas = torch.stack([1-probas, probas], dim=1)
         preds = (probas > 0.5).int()
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
+        full_probas = torch.stack([1-probas, probas], dim=1)
+
         stat_scores = torchmetrics.stat_scores(
-            probas,
+            full_probas,
             labels,
             ignore_index=None,
             mdmc_reduce='global',
@@ -109,6 +105,7 @@ class Smp_Unet_BCE_binary(BaseModule):
             top_k=1,
             num_classes=2
         )
+
         bce = self.bce(logits, labels.float())
         bce = torch.sum(mask * bce) / torch.sum(mask)
         dice = self.dice(logits*mask, labels*mask)
@@ -120,6 +117,6 @@ class Smp_Unet_BCE_binary(BaseModule):
         return {'batch': batch,
                 'logits': logits.detach(),
                 'stat_scores': stat_scores.detach(),
-                'probas': probas.detach(),
+                'probas': full_probas.detach(),
                 'preds': preds.detach()
                 }

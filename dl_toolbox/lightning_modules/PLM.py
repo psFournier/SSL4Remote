@@ -12,7 +12,7 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
-from dl_toolbox.augmentations import Mixup2
+from dl_toolbox.augmentations import Mixup, Mixup2
 from dl_toolbox.utils import TorchOneHot
 
 class PLM(BaseModule):
@@ -47,15 +47,13 @@ class PLM(BaseModule):
         self.final_lr = final_lr
         self.lr_milestones = list(lr_milestones)
 
-        self.loss1 = nn.CrossEntropyLoss(
-            ignore_index=self.ignore_index
-        )
+        self.onehot = TorchOneHot(range(self.num_classes))
+        self.loss1 = nn.BCEWithLogitsLoss(reduction='none')
 
         self.loss2 = DiceLoss(
-            mode="multiclass",
+            mode="multilabel",
             log_loss=False,
             from_logits=True,
-            ignore_index=self.ignore_index
         )
 
         self.unsup_loss = nn.BCEWithLogitsLoss(
@@ -66,7 +64,8 @@ class PLM(BaseModule):
         self.alpha_milestones = alpha_milestones
         self.alpha = 0.
         self.pseudo_threshold = pseudo_threshold
-        self.mixup = Mixup2(alpha=0.4)
+        self.mixup = Mixup(alpha=0.4)
+        self.mixup2 = Mixup2(alpha=0.4)
         self.onehot = TorchOneHot(range(self.num_classes))
         self.save_hyperparameters()
 
@@ -111,13 +110,25 @@ class PLM(BaseModule):
         inputs = batch['image']
         labels = batch['mask']
 
-        logits = self.network(inputs)
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
-        loss = loss1 + loss2
-
-        self.log('Train_sup_CE', loss1)
-        self.log('Train_sup_Dice', loss2)
+        onehot_labels = self.onehot(labels).float()
+        mixed_inputs, mixed_labels = self.mixup(inputs, onehot_labels)
+        
+        mask = torch.ones_like(
+            onehot_labels,
+            dtype=onehot_labels.dtype,
+            device=onehot_labels.device
+        )
+        if self.ignore_index >= 0:
+            mask -= mixed_labels[:, [self.ignore_index], ...]
+        
+        logits = self.network(mixed_inputs)
+        bce = self.loss1(logits, mixed_labels)
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.loss2(logits * mask, mixed_labels * mask)
+        loss = bce + dice
+        
+        self.log('Train_sup_BCE', bce)
+        self.log('Train_sup_Dice', dice)
         self.log('Train_sup_loss', loss)
 
         if self.trainer.current_epoch > self.alpha_milestones[0]:
@@ -125,26 +136,25 @@ class PLM(BaseModule):
             unsup_inputs = unsup_batch['image']
             unsup_outputs = self.network(unsup_inputs)
             
-            pseudo_probs = unsup_outputs.detach().softmax(dim=1)
+            pseudo_probs = torch.sigmoid(unsup_outputs.detach)
             pseudo_probas, pseudo_preds = torch.max(pseudo_probs, dim=1)
-            onehot_pseudo_labels = self.onehot(pseudo_preds)
+            onehot_pseudo_labels = self.onehot(pseudo_preds).float()
 
-            onehot_labels = self.onehot(labels)
-            mixup_inputs, mixup_targets = self.mixup(
+            mixup_inputs, mixup_targets = self.mixup2(
                 unsup_inputs,
                 onehot_pseudo_labels,
                 inputs,
                 onehot_labels
-            )
-            mixup_outputs = self.network(mixup_inputs)
+            ) # B,C,H,W
+            mixup_outputs = self.network(mixup_inputs) # B,C,H,W 
 
             loss_no_reduce = self.unsup_loss(
                 mixup_outputs,
                 mixup_targets
-            )
+            ) # B,C,H,W
 
-            pseudo_certain = pseudo_probas > self.pseudo_threshold
-            pseudo_certain = torch.unsqueeze(pseudo_certain, dim=1)
+            pseudo_certain = pseudo_probas > self.pseudo_threshold # B,H,W
+            pseudo_certain = torch.unsqueeze(pseudo_certain, dim=1) # B,1,H,W
             certain = torch.sum(pseudo_certain) * self.num_classes
 
             pseudo_loss = torch.sum(pseudo_certain * loss_no_reduce) / certain
@@ -172,12 +182,23 @@ class PLM(BaseModule):
             reduce='macro',
             num_classes=self.num_classes
         )
+            
+        onehot_labels = self.onehot(labels).float()
+        mask = torch.ones_like(
+            onehot_labels,
+            dtype=onehot_labels.dtype,
+            device=onehot_labels.device
+        )
+        if self.ignore_index >= 0:
+            mask -= onehot_labels[:, [self.ignore_index], ...]    
+            
+        bce = self.loss1(logits, onehot_labels)
+        bce = torch.sum(mask * bce) / torch.sum(mask)
+        dice = self.loss2(logits * mask, onehot_labels * mask)
+        loss = bce + dice
         
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
-        loss = loss1 + loss2
-        self.log('Val_CE', loss1)
-        self.log('Val_Dice', loss2)
+        self.log('Val_BCE', bce)
+        self.log('Val_Dice', dice)
         self.log('Val_loss', loss)
 
         return {'batch': batch,
@@ -186,25 +207,3 @@ class PLM(BaseModule):
                 'probas': probas.detach(),
                 'preds': preds.detach()
                 }
-
-    def validation_step(self, batch, batch_idx):
-
-        res_dict = super().validation_step(batch, batch_idx)
-        logits = res_dict['logits']
-        labels = batch['mask']
-        
-        loss1 = self.loss1(logits, labels)
-        loss2 = self.loss2(logits, labels)
-        loss = loss1 + loss2
-        self.log('Val_CE', loss1)
-        self.log('Val_Dice', loss2)
-        self.log('Val_loss', loss)
-
-        probas = logits.softmax(dim=1)
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
-
-        return {**res_dict, **{'probas': probas.detach()}}

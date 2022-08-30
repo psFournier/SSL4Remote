@@ -88,6 +88,7 @@ class Smp_Unet_CE(BaseModule):
         labels = batch['mask']
         logits = self.forward(inputs)
         preds = logits.argmax(dim=1)
+        probas = logits.softmax(dim=1)
 
         stat_scores = torchmetrics.stat_scores(
             preds,

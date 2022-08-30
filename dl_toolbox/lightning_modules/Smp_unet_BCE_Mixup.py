@@ -110,12 +110,12 @@ class Smp_Unet_BCE_Mixup(BaseModule):
         if self.ignore_index >= 0:
             mask -= onehot_labels[:, [self.ignore_index], ...]
             
-        logits = self.forward(inputs).squeeze()
+        logits = self.forward(inputs)
         probas = torch.sigmoid(logits)
         preds = torch.argmax(probas, dim=1)
 
         stat_scores = torchmetrics.stat_scores(
-            probas,
+            preds,
             labels,
             ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
             mdmc_reduce='global',

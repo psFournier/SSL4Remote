@@ -122,9 +122,9 @@ class MT(BaseModule):
         batch, unsup_batch = batch["sup"], batch["unsup"]
 
         inputs = batch['image']
-        labels = batch['mask']
+        labels = batch['mask'] # BxHxW
 
-        logits1 = self.network1(inputs)
+        logits1 = self.network1(inputs) # BxCxHxW
         loss1 = self.loss1(logits1, labels) 
         loss2 = self.loss2(logits1, labels)
         loss = loss1 + loss2
@@ -137,21 +137,21 @@ class MT(BaseModule):
             unsup_inputs = unsup_batch['image']
 
             with torch.no_grad():
-                teacher_probs = self.network2(unsup_inputs).softmax(dim=1)
+                teacher_probs = self.network2(unsup_inputs).softmax(dim=1) # BxCxHxW
 
             cutmixed_inputs, cutmixed_probs = self.cutmix(
                 input_batch=unsup_inputs,
                 target_batch=teacher_probs
-            )
+            ) # BxCxHxW
 
-            cutmix_confs, cutmix_preds = torch.max(cutmixed_probs, dim=1)
+            cutmix_confs, cutmix_preds = torch.max(cutmixed_probs, dim=1) # BxHxW
             cutmixed_logits = self.network1(cutmixed_inputs)
             loss_no_reduce = self.unsup_loss(
                 cutmixed_logits,
                 cutmix_preds
-            )
+            ) # BxHxW
 
-            cutmix_certain = cutmix_confs > self.pseudo_threshold
+            cutmix_certain = cutmix_confs > self.pseudo_threshold # BxHxW
             certain = torch.sum(cutmix_certain)
             cutmix_loss = torch.sum(cutmix_certain * loss_no_reduce) / certain
 
@@ -167,9 +167,20 @@ class MT(BaseModule):
 
     def validation_step(self, batch, batch_idx):
 
-        res_dict = super().validation_step(batch, batch_idx)
-        logits = res_dict['logits']
+        inputs = batch['image']
         labels = batch['mask']
+        logits = self.forward(inputs)
+        probas = torch.sigmoid(logits)
+        preds = torch.argmax(probas, dim=1)
+
+        stat_scores = torchmetrics.stat_scores(
+            preds,
+            labels,
+            ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
+            mdmc_reduce='global',
+            reduce='macro',
+            num_classes=self.num_classes
+        )
         
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
@@ -178,16 +189,9 @@ class MT(BaseModule):
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
 
-        probas = logits.softmax(dim=1)
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
-
-        return {**res_dict, **{'probas': probas.detach()}}
-
-    def on_train_epoch_end(self):
-        for param_group in self.optimizer.param_groups:
-            self.log(f'learning_rate', param_group['lr'])
-            break
+        return {'batch': batch,
+                'logits': logits.detach(),
+                'stat_scores': stat_scores.detach(),
+                'probas': probas.detach(),
+                'preds': preds.detach()
+                }
