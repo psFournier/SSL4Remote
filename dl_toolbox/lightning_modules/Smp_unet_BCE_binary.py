@@ -93,6 +93,7 @@ class Smp_Unet_BCE_binary(BaseModule):
         logits = self.forward(inputs).squeeze()
         probas = torch.sigmoid(logits)
         probas = torch.stack([1-probas, probas], dim=1)
+        preds = (probas > 0.5).int()
         calib_error = torchmetrics.calibration_error(
             probas,
             labels
@@ -119,5 +120,6 @@ class Smp_Unet_BCE_binary(BaseModule):
         return {'batch': batch,
                 'logits': logits.detach(),
                 'stat_scores': stat_scores.detach(),
-                'probas': probas.detach()
+                'probas': probas.detach(),
+                'preds': preds.detach()
                 }

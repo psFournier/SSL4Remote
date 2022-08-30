@@ -105,15 +105,9 @@ class Smp_Unet_CE(BaseModule):
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
 
-        probas = logits.softmax(dim=1)
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
-
         return {'batch': batch,
                 'logits': logits.detach(),
                 'stat_scores': stat_scores.detach(),
-                'probas': probas.detach()
+                'probas': probas.detach(),
+                'preds': preds.detach()
                 }

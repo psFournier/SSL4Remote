@@ -134,5 +134,6 @@ class Smp_Unet_BCE_multilabel(BaseModule):
         return {'batch': batch,
                 'logits': logits.detach(),
                 'stat_scores': stat_scores.detach(),
-                'probas': probas.detach()
+                'probas': probas.detach(),
+                'preds': preds.detach()
                 }

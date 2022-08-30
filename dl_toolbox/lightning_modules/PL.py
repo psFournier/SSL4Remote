@@ -142,9 +142,20 @@ class PL(BaseModule):
 
     def validation_step(self, batch, batch_idx):
 
-        res_dict = super().validation_step(batch, batch_idx)
-        logits = res_dict['logits']
+        inputs = batch['image']
         labels = batch['mask']
+        logits = self.forward(inputs)
+        probas = torch.sigmoid(logits)
+        preds = torch.argmax(probas, dim=1)
+
+        stat_scores = torchmetrics.stat_scores(
+            preds,
+            labels,
+            ignore_index=self.ignore_index if self.ignore_index >= 0 else None,
+            mdmc_reduce='global',
+            reduce='macro',
+            num_classes=self.num_classes
+        )
         
         loss1 = self.loss1(logits, labels)
         loss2 = self.loss2(logits, labels)
@@ -153,16 +164,9 @@ class PL(BaseModule):
         self.log('Val_Dice', loss2)
         self.log('Val_loss', loss)
 
-        probas = logits.softmax(dim=1)
-        calib_error = torchmetrics.calibration_error(
-            probas,
-            labels
-        )
-        self.log('Calibration error', calib_error)
-
-        return {**res_dict, **{'probas': probas.detach()}}
-
-    def on_train_epoch_end(self):
-        for param_group in self.optimizer.param_groups:
-            self.log(f'learning_rate', param_group['lr'])
-            break
+        return {'batch': batch,
+                'logits': logits.detach(),
+                'stat_scores': stat_scores.detach(),
+                'probas': probas.detach(),
+                'preds': preds.detach()
+                }
