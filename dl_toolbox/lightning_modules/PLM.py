@@ -136,7 +136,7 @@ class PLM(BaseModule):
             unsup_inputs = unsup_batch['image']
             unsup_outputs = self.network(unsup_inputs)
             
-            pseudo_probs = torch.sigmoid(unsup_outputs.detach)
+            pseudo_probs = torch.sigmoid(unsup_outputs.detach())
             pseudo_probas, pseudo_preds = torch.max(pseudo_probs, dim=1)
             onehot_pseudo_labels = self.onehot(pseudo_preds).float()
 
