@@ -126,7 +126,11 @@ class CPS(BaseModule):
         loss2 += self.loss2(logits2, labels)
         loss2 /= 2
         loss = loss1 + loss2
-        
+
+        batch['logits'] = (logits1 + logits2) / 2
+
+        outputs = {'batch': batch}
+ 
         # Supervising network 1 with pseudolabels from network 2
             
         pseudo_probs_2 = logits2.detach().softmax(dim=1)
@@ -135,7 +139,7 @@ class CPS(BaseModule):
             logits1,
             pseudo_preds_2
         ) # B,H,W
-        pseudo_certain_2 = top_probs_2 > self.pseudo_threshold
+        pseudo_certain_2 = (top_probs_2 > self.pseudo_threshold).float()
         certain_2 = torch.sum(pseudo_certain_2)
         self.log('Pseudo_certain_2_sup', torch.mean(pseudo_certain_2))
         pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
@@ -148,11 +152,12 @@ class CPS(BaseModule):
             logits2,
             pseudo_preds_1
         )
-        pseudo_certain_1 = top_probs_1 > self.pseudo_threshold
+        pseudo_certain_1 = (top_probs_1 > self.pseudo_threshold).float()
         certain_1 = torch.sum(pseudo_certain_1)
         pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / certain_1
 
         pseudo_loss_sup = (pseudo_loss_1 + pseudo_loss_2) / 2
+        pseudo_loss = pseudo_loss_sup
 
         self.log('Train_sup_CE', loss1)
         self.log('Train_sup_Dice', loss2)
@@ -164,6 +169,8 @@ class CPS(BaseModule):
             unsup_inputs = unsup_batch['image']
             unsup_outputs_1 = self.network1(unsup_inputs)
             unsup_outputs_2 = self.network2(unsup_inputs)
+            unsup_batch['logits'] = (unsup_outputs_1 + unsup_outputs_2) / 2
+            outputs['unsup_batch'] = unsup_batch
 
             # Supervising network 1 with pseudolabels from network 2
             
@@ -173,7 +180,7 @@ class CPS(BaseModule):
                 unsup_outputs_1,
                 pseudo_preds_2
             ) # B,H,W
-            pseudo_certain_2 = top_probs_2 > self.pseudo_threshold # B,H,W
+            pseudo_certain_2 = (top_probs_2 > self.pseudo_threshold).float() # B,H,W
             certain_2 = torch.sum(pseudo_certain_2)
             self.log('Pseudo_certain_2_unsup', torch.mean(pseudo_certain_2))
             pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
@@ -186,27 +193,29 @@ class CPS(BaseModule):
                 unsup_outputs_2,
                 pseudo_preds_1
             )
-            pseudo_certain_1 = top_probs_1 > self.pseudo_threshold
+            pseudo_certain_1 = (top_probs_1 > self.pseudo_threshold).float()
             certain_1 = torch.sum(pseudo_certain_1)
             pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / certain_1
 
             pseudo_loss_unsup = (pseudo_loss_1 + pseudo_loss_2) / 2
+            pseudo_loss += pseudo_loss_unsup
             self.log('Pseudo_loss_unsup', pseudo_loss_unsup)
 
-        pseudo_loss = pseudo_loss_sup + pseudo_loss_unsup
         self.log('Pseudo label loss', pseudo_loss)
         loss += self.alpha * pseudo_loss
+        outputs['loss'] = loss
 
         self.log('Prop unsup train', self.alpha)
         self.log("Train_loss", loss)
 
-        return {'batch': batch, "loss": loss}
+        return outputs
 
     def validation_step(self, batch, batch_idx):
 
         inputs = batch['image']
         labels = batch['mask']
         logits = self.forward(inputs)
+        batch['logits'] = logits
         probas = torch.sigmoid(logits)
         preds = torch.argmax(probas, dim=1)
 

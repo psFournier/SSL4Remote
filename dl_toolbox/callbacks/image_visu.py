@@ -25,24 +25,36 @@ class SegmentationImagesVisualisation(pl.Callback):
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
 
-        if trainer.current_epoch % 10 == 0 and trainer.global_step % 100 == 0:
+        if trainer.current_epoch % 50 == 0 and batch_idx == 0:
 
-            self.display_batch(trainer, pl_module, outputs, batch_idx=0,
-                               prefix='Train')
+            self.display_batch(
+                trainer,
+                outputs['batch'],
+                prefix='Train'
+            )
+
+            if 'unsup_batch' in outputs.keys():
+                self.display_batch(
+                    trainer,
+                    outputs['unsup_batch'],
+                    prefix='UnsupTrain'
+                )
             
-    def display_batch(self, trainer, pl_module, outputs, batch_idx, prefix):
+    def display_batch(self, trainer, batch, prefix):
 
-        img, mask = outputs['batch']['image'].cpu(), outputs['batch']['mask'].cpu()
-        orig_img = outputs['batch']['orig_image'].cpu()
-        logits = outputs['logits'].cpu()
+        img = batch['image'].cpu()
+        orig_img = batch['orig_image'].cpu()
+        logits = batch['logits'].cpu()
 
-        labels = torch.argmax(mask, dim=1) # torch tensor of dim B,H,W
-        preds = torch.argmax(logits, dim=1)
-        #preds += int(not pl_module.train_with_void) # torch tensor of dim B,H,W
-        labels_rgb = self.visu_fn(labels).transpose((0,3,1,2))
+        probs = torch.softmax(logits, dim=1)
+        top_probs, preds = torch.max(probs, dim=1)
         preds_rgb = self.visu_fn(preds).transpose((0,3,1,2))
-        mask_rgb = torch.from_numpy(labels_rgb).float()
-        out_rgb = torch.from_numpy(preds_rgb).float()
+        np_preds_rgb = torch.from_numpy(preds_rgb).float()
+
+        if 'mask' in batch.keys(): 
+            labels = batch['mask'].cpu()
+            labels_rgb = self.visu_fn(labels).transpose((0,3,1,2))
+            np_labels_rgb = torch.from_numpy(labels_rgb).float()
 
         # Number of grids to log depends on the batch size
         quotient, remainder = divmod(img.shape[0], self.NB_COL)
@@ -58,20 +70,23 @@ class SegmentationImagesVisualisation(pl.Callback):
 
             img_grid = torchvision.utils.make_grid(img[start:end, :, :, :], padding=10, normalize=True)
             orig_img_grid = torchvision.utils.make_grid(orig_img[start:end, :, :, :], padding=10, normalize=True)
-            mask_grid = torchvision.utils.make_grid(mask_rgb[start:end, :, :, :], padding=10, normalize=True)
-            out_grid = torchvision.utils.make_grid(out_rgb[start:end, :, :, :], padding=10, normalize=True)
-            final_grid = torch.cat((orig_img_grid, img_grid, mask_grid, out_grid), dim=1)
+            out_grid = torchvision.utils.make_grid(np_preds_rgb[start:end, :, :, :], padding=10, normalize=True)
+            grids = [orig_img_grid, img_grid, out_grid]
 
-            trainer.logger.experiment.add_image(f'Images/{prefix}_batch_{batch_idx}_part_{idx}', final_grid, global_step=trainer.global_step)
+            if 'mask' in batch.keys():
+                mask_grid = torchvision.utils.make_grid(np_labels_rgb[start:end, :, :, :], padding=10, normalize=True)
+                grids.append(mask_grid)
+
+            final_grid = torch.cat(grids, dim=1)
+
+            trainer.logger.experiment.add_image(f'Images/{prefix}_batch_art_{idx}', final_grid, global_step=trainer.global_step)
             break
 
     def on_validation_batch_end(
             self, trainer: pl.Trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ) -> None:
         """Called when the validation batch ends."""
-
-        nb_val_batch = trainer.datamodule.nb_val_batch
-        
-        if trainer.current_epoch % 10 == 0 and batch_idx % (nb_val_batch // 4) == 0:
-            self.display_batch(trainer, pl_module, outputs, batch_idx=batch_idx, prefix='Val')
+ 
+        if trainer.current_epoch % 50 == 0 and batch_idx == 0:
+            self.display_batch(trainer, outputs['batch'], prefix='Val')
 

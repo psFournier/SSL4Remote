@@ -5,7 +5,7 @@ from pytorch_lightning.profiler import SimpleProfiler
 from pytorch_lightning.loggers import TensorBoardLogger
 from dl_toolbox.lightning_modules import *
 from dl_toolbox.lightning_datamodules import *
-from dl_toolbox.callbacks import ConfMatLogger, CalibrationLogger
+from dl_toolbox.callbacks import ConfMatLogger, CalibrationLogger, SegmentationImagesVisualisation
 from dl_toolbox.torch_datasets import *
 from dl_toolbox.utils import LabelsToRGB
 
@@ -24,6 +24,10 @@ models = {
     },
     'Smp_Unet_BCE_multilabel': {
         'cls': Smp_Unet_BCE_multilabel,
+        'datamodule_cls': SupervisedDm
+    },   
+    'Smp_Unet_BCE_multilabel_2': {
+        'cls': Smp_Unet_BCE_multilabel_2,
         'datamodule_cls': SupervisedDm
     },
     'Smp_Unet_BCE_Mixup': {
@@ -82,15 +86,15 @@ def main():
         profiler=SimpleProfiler(),
         callbacks=[
             ModelCheckpoint(),
-            #SegmentationImagesVisualisation(
-            #    visu_fn=LabelsToRGB(
-            #        labels=datasets[args.dataset]['labels'][args.labels]
-            #    )
-            #),
+            SegmentationImagesVisualisation(
+                visu_fn=LabelsToRGB(
+                    labels=datasets[args.dataset]['labels'][args.labels]
+                )
+            ),
             ConfMatLogger(
                 labels=datasets[args.dataset]['labels'][args.labels].keys()
             ),
-            CalibrationLogger(),
+            #CalibrationLogger(),
             #StochasticWeightAveraging(
             #    swa_epoch_start=0.91,
             #    swa_lrs=0.005,
@@ -99,8 +103,8 @@ def main():
             #    device=None
             #),
         ],
-        log_every_n_steps=300,
-        flush_logs_every_n_steps=1000,
+        log_every_n_steps=1,
+        flush_logs_every_n_steps=10,
         num_sanity_val_steps=0,
         check_val_every_n_epoch=1,
         benchmark=True
