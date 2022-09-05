@@ -137,6 +137,7 @@ class CPS(BaseModule):
         ) # B,H,W
         pseudo_certain_2 = top_probs_2 > self.pseudo_threshold
         certain_2 = torch.sum(pseudo_certain_2)
+        self.log('Pseudo_certain_2_sup', torch.mean(pseudo_certain_2))
         pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
 
         # Supervising network 2 with pseudolabels from network 1
@@ -151,11 +152,12 @@ class CPS(BaseModule):
         certain_1 = torch.sum(pseudo_certain_1)
         pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / certain_1
 
-        pseudo_loss = (pseudo_loss_1 + pseudo_loss_2) / 2
+        pseudo_loss_sup = (pseudo_loss_1 + pseudo_loss_2) / 2
 
         self.log('Train_sup_CE', loss1)
         self.log('Train_sup_Dice', loss2)
         self.log('Train_sup_loss', loss)
+        self.log('Pseudo_loss_sup', pseudo_loss_sup)
 
         if self.trainer.current_epoch > self.alpha_milestones[0]:
 
@@ -173,6 +175,7 @@ class CPS(BaseModule):
             ) # B,H,W
             pseudo_certain_2 = top_probs_2 > self.pseudo_threshold # B,H,W
             certain_2 = torch.sum(pseudo_certain_2)
+            self.log('Pseudo_certain_2_unsup', torch.mean(pseudo_certain_2))
             pseudo_loss_1 = torch.sum(pseudo_certain_2 * loss_no_reduce_1) / certain_2
 
             # Supervising network 2 with pseudolabels from network 1
@@ -187,8 +190,10 @@ class CPS(BaseModule):
             certain_1 = torch.sum(pseudo_certain_1)
             pseudo_loss_2 = torch.sum(pseudo_certain_1 * loss_no_reduce_2) / certain_1
 
-            pseudo_loss += (pseudo_loss_1 + pseudo_loss_2) / 2
+            pseudo_loss_unsup = (pseudo_loss_1 + pseudo_loss_2) / 2
+            self.log('Pseudo_loss_unsup', pseudo_loss_unsup)
 
+        pseudo_loss = pseudo_loss_sup + pseudo_loss_unsup
         self.log('Pseudo label loss', pseudo_loss)
         loss += self.alpha * pseudo_loss
 
