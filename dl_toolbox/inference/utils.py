@@ -6,9 +6,7 @@ import numpy as np
 import rasterio
 from rasterio.windows import Window
 from torch import nn
-from dl_toolbox.torch_datasets import SemcityBdsdDs, DigitanieDs
 from dl_toolbox.torch_collate import CustomCollate
-from dl_toolbox.lightning_modules import Unet
 from dl_toolbox.utils import worker_init_function, get_tiles
 import torchmetrics.functional as  M
 import dl_toolbox.augmentations as aug 
