@@ -12,6 +12,7 @@ import torch.nn.functional as F
 
 from dl_toolbox.lightning_modules.utils import *
 from dl_toolbox.lightning_modules import BaseModule
+from dl_toolbox.
 
 class CPS(BaseModule):
 
@@ -215,9 +216,13 @@ class CPS(BaseModule):
         inputs = batch['image']
         labels = batch['mask']
         logits = self.forward(inputs)
-        batch['logits'] = logits
-        probas = torch.sigmoid(logits)
-        preds = torch.argmax(probas, dim=1)
+        probas = torch.softmax(logits, dim=1)
+        confidences, preds = torch.max(probas, dim=1)
+
+        batch['probas'] = probas.detach()
+        batch['confs'] = confidences.detach()
+        batch['preds'] = preds.detach()
+        batch['logits'] = logits.detach()
 
         stat_scores = torchmetrics.stat_scores(
             preds,
@@ -236,8 +241,5 @@ class CPS(BaseModule):
         self.log('Val_loss', loss)
 
         return {'batch': batch,
-                'logits': logits.detach(),
                 'stat_scores': stat_scores.detach(),
-                'probas': probas.detach(),
-                'preds': preds.detach()
                 }

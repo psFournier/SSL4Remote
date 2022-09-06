@@ -59,9 +59,10 @@ class ConfMatLogger(pl.Callback):
             self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
 
+        batch = outputs['batch']
         inputs, labels = batch['image'], batch['mask'] # labels shape B,H,W, values in {0, C-1}
         #probas = outputs['probas'] # dim B,C-1,H,W
-        preds = outputs['preds'] # ajouter preds aux autres méthodes
+        preds = batch['preds'] # ajouter preds aux autres méthodes
 
         self.conf_mat(preds.cpu(), labels.cpu())
 

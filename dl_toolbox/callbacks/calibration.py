@@ -26,54 +26,81 @@ def plot_reliability_diagram(acc_bin, conf_bin):
 
     return figure
 
+def compute_calibration_bins(bin_boundaries, labels, confs, preds, ignore_index):
+
+    """
+    All inputs must be flattened torch tensors.
+    """
+      
+    accus = preds.eq(labels).float()
+
+    indices = torch.bucketize(confs, bin_boundaries) - 1
+    n_bins = len(bin_boundaries)
+
+    count_bins = torch.zeros(n_bins, dtype=float)
+    count_bins.scatter_add_(dim=0, index=indices, src=torch.ones_like(confs))
+    
+    conf_bins = torch.zeros(n_bins, dtype=float)
+    conf_bins.scatter_add_(dim=0, index=indices, src=confs)
+    conf_bins = torch.nan_to_num(conf_bins / count_bins)
+
+    acc_bins = torch.zeros(n_bins, dtype=float)
+    acc_bins.scatter_add_(dim=0, index=indices, src=accus)
+    acc_bins = torch.nan_to_num(acc_bins / count_bins)
+
+    prop_bins = count_bins / count_bins.sum()
+
+    return acc_bins, conf_bins, prop_bins
+   
 
 class CalibrationLogger(pl.Callback):
 
     def on_fit_start(self, trainer, pl_module):
 
         self.n_bins = 20
-        self.calibration = CalibrationError(
-            n_bins=self.n_bins
-        )
+        self.bin_boundaries = torch.linspace(0, 1, n_bins + 1)
+        self.acc_bins = torch.zeros(self.n_bins, dtype=float)
+        self.conf_bins = torch.zeros(self.n_bins, dtype=float)
+        self.prop_bins = torch.zeros(self.n_bins, dtype=float)
+        self.nb_step = 0
 
     def on_validation_batch_end(
             self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx
     ):
 
-        _, labels = batch['image'], batch['mask']
-        probas = outputs['probas']
-
-        self.calibration(probas.cpu(), labels.cpu())
+        labels = batch['mask'].cpu().flatten()
+        confs = batch['confs'].cpu().flatten()
+        preds = batch['preds'].cpu().flatten()
+        acc_bins, conf_bins, prop_bins = compute_calibration_bins(
+            self.bin_boundaries,
+            labels,
+            confs,
+            preds,
+            pl_module.ignore_index
+        )
+        self.acc_bins += acc_bins
+        self.conf_bins += conf_bins
+        self.prop_bins += prop_bins
+        self.nb_step += 1
 
     def on_validation_epoch_end(self, trainer, pl_module):
 
-        confidences = dim_zero_cat(self.calibration.confidences)
-        accuracies = dim_zero_cat(self.calibration.accuracies)
-        bin_boundaries = self.calibration.bin_boundaries.cpu()
-
-        acc_bin = torch.zeros(len(bin_boundaries) - 1, device=confidences.device, dtype=confidences.dtype)
-        conf_bin = torch.zeros(len(bin_boundaries) - 1, device=confidences.device, dtype=confidences.dtype)
-        count_bin = torch.zeros(len(bin_boundaries) - 1, device=confidences.device, dtype=confidences.dtype)
-
-        indices = torch.bucketize(confidences, bin_boundaries) - 1
-
-        count_bin.scatter_add_(dim=0, index=indices, src=torch.ones_like(confidences))
-
-        conf_bin.scatter_add_(dim=0, index=indices, src=confidences)
-        conf_bin = torch.nan_to_num(conf_bin / count_bin)
-
-        acc_bin.scatter_add_(dim=0, index=indices, src=accuracies)
-        acc_bin = torch.nan_to_num(acc_bin / count_bin)
+        self.acc_bins /= self.nb_step
+        self.conf_bins /= self.nb_step
+        self.prop_bins /= self.nb_step
 
         figure = plot_reliability_diagram(
-            acc_bin.numpy(),
-            conf_bin.numpy(),
+            self.acc_bins.numpy(),
+            self.conf_bin.numpy(),
         )
         trainer.logger.experiment.add_figure(
             "Reliability diagram",
             figure,
             global_step=trainer.global_step
         )
-        self.calibration.confidences = []
-        self.calibration.accuracies = []
+        self.bin_boundaries = torch.linspace(0, 1, n_bins + 1)
+        self.acc_bins = torch.zeros(self.n_bins, dtype=float)
+        self.conf_bins = torch.zeros(self.n_bins, dtype=float)
+        self.prop_bins = torch.zeros(self.n_bins, dtype=float)
+        self.nb_step = 0
 

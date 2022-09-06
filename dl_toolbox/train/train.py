@@ -94,7 +94,7 @@ def main():
             ConfMatLogger(
                 labels=datasets[args.dataset]['labels'][args.labels].keys()
             ),
-            #CalibrationLogger(),
+            CalibrationLogger(),
             #StochasticWeightAveraging(
             #    swa_epoch_start=0.91,
             #    swa_lrs=0.005,
