@@ -35,16 +35,18 @@ def compute_calibration_bins(bin_boundaries, labels, confs, preds, ignore_index)
     accus = preds.eq(labels).float()
 
     indices = torch.bucketize(confs, bin_boundaries) - 1
-    n_bins = len(bin_boundaries)
+    print(indices)
+    print(torch.max(confs))
+    n_bins = len(bin_boundaries) - 1
 
-    count_bins = torch.zeros(n_bins, dtype=float)
+    count_bins = torch.zeros(n_bins, dtype=confs.dtype)
     count_bins.scatter_add_(dim=0, index=indices, src=torch.ones_like(confs))
     
-    conf_bins = torch.zeros(n_bins, dtype=float)
+    conf_bins = torch.zeros(n_bins, dtype=confs.dtype)
     conf_bins.scatter_add_(dim=0, index=indices, src=confs)
     conf_bins = torch.nan_to_num(conf_bins / count_bins)
 
-    acc_bins = torch.zeros(n_bins, dtype=float)
+    acc_bins = torch.zeros(n_bins, dtype=accus.dtype)
     acc_bins.scatter_add_(dim=0, index=indices, src=accus)
     acc_bins = torch.nan_to_num(acc_bins / count_bins)
 
@@ -58,10 +60,11 @@ class CalibrationLogger(pl.Callback):
     def on_fit_start(self, trainer, pl_module):
 
         self.n_bins = 20
-        self.bin_boundaries = torch.linspace(0, 1, n_bins + 1)
-        self.acc_bins = torch.zeros(self.n_bins, dtype=float)
-        self.conf_bins = torch.zeros(self.n_bins, dtype=float)
-        self.prop_bins = torch.zeros(self.n_bins, dtype=float)
+        self.bin_boundaries = torch.linspace(0, 1, self.n_bins + 1)
+        print(self.bin_boundaries)
+        self.acc_bins = torch.zeros(self.n_bins)
+        self.conf_bins = torch.zeros(self.n_bins)
+        self.prop_bins = torch.zeros(self.n_bins)
         self.nb_step = 0
 
     def on_validation_batch_end(
@@ -91,16 +94,15 @@ class CalibrationLogger(pl.Callback):
 
         figure = plot_reliability_diagram(
             self.acc_bins.numpy(),
-            self.conf_bin.numpy(),
+            self.conf_bins.numpy(),
         )
         trainer.logger.experiment.add_figure(
             "Reliability diagram",
             figure,
             global_step=trainer.global_step
         )
-        self.bin_boundaries = torch.linspace(0, 1, n_bins + 1)
-        self.acc_bins = torch.zeros(self.n_bins, dtype=float)
-        self.conf_bins = torch.zeros(self.n_bins, dtype=float)
-        self.prop_bins = torch.zeros(self.n_bins, dtype=float)
+        self.acc_bins = torch.zeros(self.n_bins)
+        self.conf_bins = torch.zeros(self.n_bins)
+        self.prop_bins = torch.zeros(self.n_bins)
         self.nb_step = 0
 
